@@ -240,10 +240,16 @@ $ iidy list-stacks | grep iidy-demo
 Wed Aug 02 2017 00:41:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
 
 # edit something in stack-args to demo a simple update-stack
-sed s/tavis/Tavis/ -ibak stack-args.yaml
+sed s/tavis/Tavis/ stack-args.yaml > stack-args2.yaml
+
+$ iidy update-stack stack-args2.yaml
+# ... lots of useful output about what iidy and CloudFormation are doing ...
 
 $ iidy list-stacks | grep iidy-demo
 Wed Aug 02 2017 00:45:49 UPDATE_COMPLETE          iidy-demo owner=Tavis, environment=development, lifetime=short, project=iidy-demo
+
+$ iidy describe-stack iidy-demo
+# ... more details ...
 
 $ iidy delete-stack iidy-demo
 # ... confirm Yes ...
@@ -275,23 +281,26 @@ $ iidy create-stack-via-changeset initialset stack-args.yaml
 $ iidy describe-stack iidy-demo
 # ... a complete description of the pending stack
 
-$ iidy execute-changeset initialset stack-args.yaml
+$ iidy exec-changeset initialset stack-args.yaml
 # ... lots of useful output about what iidy and CloudFormation are doing ...
 
 $ iidy list-stacks | grep iidy-demo
 Wed Aug 02 2017 00:51:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
 
 # edit something in stack-args to demo a simple update-stack
-sed s/tavis/Tavis/ -ibak stack-args.yaml
+sed s/tavis/Tavis/ stack-args.yaml > stack-args2.yaml
 
-$ iidy create-changeset change1 stack-args.yaml
+$ iidy create-changeset change1 stack-args2.yaml
 # ... lots of useful output about what iidy and CloudFormation are doing ...
 
-$ iidy execute-changeset change1 stack-args.yaml
+$ iidy execute-changeset change1 stack-args2.yaml
 # ... lots of useful output about what iidy and CloudFormation are doing ...
 
 $ iidy list-stacks | grep iidy-demo
 Wed Aug 02 2017 00:55:49 UPDATE_COMPLETE          iidy-demo owner=Tavis, environment=development, lifetime=short, project=iidy-demo
+
+$ iidy describe-stack iidy-demo
+# ... more details ...
 
 $ iidy delete-stack iidy-demo
 # ... confirm Yes ...

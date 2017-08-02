@@ -1,0 +1,5 @@
+Resources:
+  HelloWorld:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: HelloWorldIIDY

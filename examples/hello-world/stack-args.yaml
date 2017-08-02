@@ -1,0 +1,7 @@
+StackName: iidy-demo
+Template: ./cfn-template.yaml # details are irrelevant for the demo
+Tags:
+  owner: tavis
+  project: iidy-demo
+  environment: development
+  lifetime: short
