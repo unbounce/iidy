@@ -82,7 +82,7 @@ on. More information will be coming on these topics later.
 Who supports and maintains it? Tavis. I will be providing extensive
 examples, documentation, and training.
 
-How does this related to `Simple Infrastructure`? It's orthogonal and
+How does this relate to `Simple Infrastructure`? It's orthogonal and
 complimentary. They solve different problems and can be used together.
 Like all existing production stacks, `Simple Infrastructure` should be
 updated to use this rather than Ansible. I am working on a pull
