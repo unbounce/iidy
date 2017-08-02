@@ -56,7 +56,7 @@ be required to accept pull requests that implement this change. These
 pull requests will not change the details of your stacks once
 provisioned - i.e. they will be low risk and impact tooling only. I
 aim to have all production services migrated by the end of Sept 2017.
-Why and why now?
+Ansible usage by Core is not included in this scope. Why and why now?
 
 1) Ansible is an unnecessary layer above CloudFormation that has a bad
 UX for this use-case (see above).
@@ -304,17 +304,36 @@ $ iidy describe-stack iidy-demo
 
 $ iidy delete-stack iidy-demo
 # ... confirm Yes ...
-
-
 ```
-
 
 
 ## Yaml Pre-Processing
 ...
 
-### Imports
-...
+### Imports and Includes
+
+```
+# Example of stitching in values from another yaml file
+$imports:
+  # <importName>: <importSource>
+  mappings: ./mappings.yaml
+  
+Mappings: !$ mappings
+```
+
+#### Import Source Options
+
+* file
+* filehash
+* s3
+* https
+* environment variables
+* AWS SSM ParameterStore
+* git 
+* random 
+* literal
+
+
 
 ### Working With CloudFormation Yaml
 
@@ -322,8 +341,10 @@ $ iidy delete-stack iidy-demo
 ...
 
 ### Working with *Non*-CloudFormation Yaml
-
-
+`iidy` autodetects whether a Yaml document is a CloudFormation
+template or not. If it's not, the CloudFormation custom resource
+templates described above and some validation/normalization features
+are disabled. Everything else should work as described above.
 
 ## Examples
 See the examples/ directory.
