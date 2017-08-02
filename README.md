@@ -64,7 +64,7 @@ UX for this use-case (see above).
 2) We want to retire Ansible Vault as our use of it has some security
 issues.
 
-3) our developers have not had a good onboarding experience learning
+3) Our developers have not had a good onboarding experience learning
 Ansible and CloudFormation at the same time. It has scared people away
 from a good tool - CloudFormation - and given them the impression it
 is more complex than it truely is.
@@ -106,9 +106,12 @@ api, and most importantly e) are simple and unopinionated.
 * Binary installation
 ```
 # Grab the appropriate binary from the releases page.
-wget -O /usr/local/bin/iidy https://github.com/unbounce/iidy/releases/download/v1.0.0/iidy-macos
-# or wget -O /usr/local/bin/iidy https://github.com/unbounce/iidy/releases/download/v1.0.0/iidy-linux
-chmod +x /usr/local/bin/iidy
+open https://github.com/unbounce/iidy/releases/download/v1.0.0/iidy-macos.gz # or -linux.gz
+cd ~/Downloads                # or wherever Linux puts it
+mv iidy*.gz iidy.gz
+gunzip iidy.gz
+chmod +x iidy
+mv iidy /usr/local/bin/iidy   # or somewhere more appropriate
 ```
 
 * Installing from source if you have node installed.
