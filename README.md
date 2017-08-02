@@ -49,44 +49,49 @@ role in server bootstrapping, which is not a concern of `iidy`.
 Over time, it will become the sole tool we use for talking to the
 CloudFormation API while creating or updating stacks.
 
-Migration from Ansible / Ansible Vault to `iidy` is **mandatory**.
+Migration from Ansible (+ Vault) or Troposphere to `iidy` will be
+**mandatory** once the tool has been through some further testing.
 However, you won't have to do the work yourself. All dev squads will
 be required to accept pull requests that implement this change. These
 pull requests will not change the details of your stacks once
-provisioned. I.e. they will be low risk and impact tooling only. I aim
-to have all production services migrated by the end of Sept 2017. Why?
+provisioned - i.e. they will be low risk and impact tooling only. I
+aim to have all production services migrated by the end of Sept 2017.
+Why and why now?
 
 1) Ansible is an unnecessary layer above CloudFormation that has a bad
-UX for this use-case,
+UX for this use-case (see above).
 
-2) we want to retire Ansible Vault as our use of
-it has some security issues,
+2) We want to retire Ansible Vault as our use of it has some security
+issues.
 
-3) our developers have not had a good
-onboarding experience learning Ansible and CloudFormation at the same
-time. It has scared people away from a good tool: CloudFormation.
+3) our developers have not had a good onboarding experience learning
+Ansible and CloudFormation at the same time. It has scared people away
+from a good tool - CloudFormation - and given them the impression it
+is more complex than it truely is.
 
 4) We do not have the bandwidth to support multiple tools. Unlike
 previous introductions of new tools, we are cleaning house of the old
 tools before moving on.
 
-Same for migration from Troposphere? Hell yes!
-
-Why now? This is a step to some broader changes to the way we
+5) This is a step to some broader changes to the way we
 provision infrastructure. It will simplify the path towards a) a
 secure production account with no `#superuser` required for
 deployments, b) proper separation between `staging` and `production`,
 c) some architectural normalization that Roman and others are working
 on. More information will be coming on these topics later.
 
-Who supports and maintains it? Tavis. I will be providing extensive
-examples, documentation, and training.
+Use of the yaml pre-processor is **completely optional**. If you use it,
+please share your experiences with me.
 
 How does this relate to `Simple Infrastructure`? It's orthogonal and
 complimentary. They solve different problems and can be used together.
 Like all existing production stacks, `Simple Infrastructure` should be
 updated to use this rather than Ansible. I am working on a pull
 request.
+
+Who supports and maintains it? Tavis. I will be providing extensive
+examples, documentation, and training. Pull requests and feature
+requests are welcome.
 
 Isn't this an example of NIH syndrome? Roman and I built a prototype
 of this back in Dec. 2015. We searched for good alternatives then and
@@ -212,10 +217,88 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
     c) the standard environment variables.
 
 ### Creating or Updating CloudFormation Stacks
-...
+
+```
+$ tree ex/
+ex/
+├── stack-args.yaml         # see above
+├── cfn-template.yaml # a vanilla cloudformation template
+
+$ cat stack-args.yaml
+StackName: iidy-demo
+Template: ./cfn-template.yaml # details are irrelevant for the demo
+Tags:
+  owner: tavis
+  project: iidy-demo
+  environment: development
+  lifetime: short
+
+$ iidy create-stack stack-args.yaml
+# ... lots of useful output about what iidy and CloudFormation are doing ...
+
+$ iidy list-stacks | grep iidy-demo
+Wed Aug 02 2017 00:41:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
+
+# edit something in stack-args to demo a simple update-stack
+sed s/tavis/Tavis/ -ibak stack-args.yaml
+
+$ iidy list-stacks | grep iidy-demo
+Wed Aug 02 2017 00:45:49 UPDATE_COMPLETE          iidy-demo owner=Tavis, environment=development, lifetime=short, project=iidy-demo
+
+$ iidy delete-stack iidy-demo
+# ... confirm Yes ...
+
+
+```
+
 
 ### Creating or Executing CloudFormation Changesets
-...
+
+```
+$ tree ex/
+ex/
+├── stack-args.yaml         # see above
+├── cfn-template.yaml # a vanilla cloudformation template
+
+$ cat stack-args.yaml
+StackName: iidy-demo
+Template: ./cfn-template.yaml # details are irrelevant for the demo
+Tags:
+  owner: tavis
+  project: iidy-demo
+  environment: development
+  lifetime: short
+
+$ iidy create-stack-via-changeset initialset stack-args.yaml
+# ... lots of useful output about what iidy and CloudFormation are doing ...
+
+$ iidy describe-stack iidy-demo
+# ... a complete description of the pending stack
+
+$ iidy execute-changeset initialset stack-args.yaml
+# ... lots of useful output about what iidy and CloudFormation are doing ...
+
+$ iidy list-stacks | grep iidy-demo
+Wed Aug 02 2017 00:51:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
+
+# edit something in stack-args to demo a simple update-stack
+sed s/tavis/Tavis/ -ibak stack-args.yaml
+
+$ iidy create-changeset change1 stack-args.yaml
+# ... lots of useful output about what iidy and CloudFormation are doing ...
+
+$ iidy execute-changeset change1 stack-args.yaml
+# ... lots of useful output about what iidy and CloudFormation are doing ...
+
+$ iidy list-stacks | grep iidy-demo
+Wed Aug 02 2017 00:55:49 UPDATE_COMPLETE          iidy-demo owner=Tavis, environment=development, lifetime=short, project=iidy-demo
+
+$ iidy delete-stack iidy-demo
+# ... confirm Yes ...
+
+
+```
+
 
 
 ## Yaml Pre-Processing
@@ -247,4 +330,9 @@ commands in `package.json` for details about the build process.
 
 ## Changelog
 
-* v1.0.0: Initial Release
+* v1.0.0: Initial Release -- August 1, 2017
+
+
+## Roadmap
+
+...
