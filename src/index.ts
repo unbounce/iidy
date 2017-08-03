@@ -983,6 +983,9 @@ function runCommandSet(commands: string[]) {
 }
 
 async function loadCFNStackPolicy(location: string, baseLocation: string): Promise<{StackPolicyBody?: string, StackPolicyURL?: string}> {
+  if (_.isUndefined(location)) {
+    return {};
+  }
   const shouldRender = (location.trim().indexOf('render:') === 0);
   const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
   if (!shouldRender && importData.importType === 's3') {
@@ -996,6 +999,9 @@ async function loadCFNStackPolicy(location: string, baseLocation: string): Promi
 
 const TEMPLATE_MAX_BYTES = 51199
 async function loadCFNTemplate(location: string, baseLocation: string): Promise<{TemplateBody?: string, TemplateURL?: string}> {
+  if (_.isUndefined(location)) {
+    return {};
+  }
   const shouldRender = (location.trim().indexOf('render:') === 0);
   const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
   if (!shouldRender && importData.importType === 's3') {
@@ -1157,10 +1163,14 @@ export type StackArgs = {
   StackPolicy?: string,
   ResourceTypes?: string[],
 
+  // for updates
+  UsePreviousTemplate?: boolean,
+  
   CommandsBefore?: string[]
 }
 
 export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
+  // TODO json schema validation
   return _loadStackArgs(argv.argsfile, argv.region, argv.profile);
 }
 
@@ -1196,12 +1206,11 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
 
 async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, stackName?: string)
 : Promise<aws.CloudFormation.CreateStackInput> {
-  const { TemplateBody, TemplateURL } = await loadCFNTemplate(stackArgs.Template, argsFilePath);
 
-  let StackPolicyBody = undefined, StackPolicyURL = undefined;
-  if ( ! _.isUndefined(stackArgs.StackPolicy)) {
-    let { StackPolicyBody, StackPolicyURL } = await loadCFNStackPolicy(stackArgs.StackPolicy, argsFilePath);
-  }
+  // Template is optional for updates and update changesets
+  let { TemplateBody, TemplateURL } = await loadCFNTemplate(stackArgs.Template, argsFilePath);
+  let { StackPolicyBody, StackPolicyURL } = await loadCFNStackPolicy(stackArgs.StackPolicy as string, argsFilePath);
+
   // TODO: ClientRequestToken, DisableRollback
 
   return {
@@ -1227,6 +1236,8 @@ async function stackArgsToUpdateStackInput(stackArgs: StackArgs, argsFilePath: s
   const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, stackName);
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
+  const input = input0 as aws.CloudFormation.UpdateStackInput;
+  input.UsePreviousTemplate = stackArgs.UsePreviousTemplate;
   return input0;
 }
 
@@ -1351,6 +1362,9 @@ class CreateStack extends AbstractCloudFormationStackCommand {
   _showPreviousEvents = false;
 
   async _run() {
+    if (! this.stackArgs.Template) {
+      throw new Error('For create-stack you must provide at Template: parameter in your argsfile')
+    };
     const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
     const createStackOutput = await this._cfn.createStack(createStackInput).promise();
     return this._watchAndSummarize(createStackOutput.StackId as string);
