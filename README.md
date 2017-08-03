@@ -222,10 +222,12 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
 ### Creating or Updating CloudFormation Stacks
 
 ```
-$ tree ex/
-ex/
+$ tree examples/hello-world
+examples/hello-world
 ├── stack-args.yaml         # see above
 ├── cfn-template.yaml # a vanilla cloudformation template
+
+$ cd examples/hello-world/
 
 $ cat stack-args.yaml
 StackName: iidy-demo
@@ -264,10 +266,12 @@ $ iidy delete-stack iidy-demo
 ### Creating or Executing CloudFormation Changesets
 
 ```
-$ tree ex/
-ex/
+$ tree examples/hello-world
+examples/hello-world
 ├── stack-args.yaml         # see above
 ├── cfn-template.yaml # a vanilla cloudformation template
+
+$ cd examples/hello-world/
 
 $ cat stack-args.yaml
 StackName: iidy-demo
@@ -311,12 +315,12 @@ $ iidy delete-stack iidy-demo
 
 ### Using Parameter Store for secrets and ARNs
 
-
+Here's an example of importing a single secret from Parameter Store.
 ```
 # example stack-args.yaml
 $imports:
   dbPasswd: ssm:/staging/lp-webapp/dbPasswd
-  # the ssm: prefix ^ is use to ask for a ssm:parameterstore import 
+  # the ssm: prefix ^ is used to ask for a ssm:parameterstore import 
 
 StackName: iidy-demo
 Template: ./cfn-template.yaml
@@ -324,7 +328,26 @@ Parameters:
   DbPasswd: !$ dbPasswd
   ...
 ```
-See below for more on Imports and Includes (the `!$` yaml tag).
+See below for more on `$imports` and `includes` (i.e. the `!$` yaml tag).
+
+
+You can also import the full set of parameters under a path prefix:
+```
+# example stack-args.yaml
+$imports:
+  secrets: ssm-path:/staging/lp-webapp/
+  # ssm-path: prefix ^ grabs all parameters under that path
+  # and makes them accessible as a key-value map.
+
+StackName: iidy-demo
+Template: ./cfn-template.yaml
+Parameters:
+  DbPasswd: !$ secrets.dbPasswd
+  SomeOtherPasswd: !$ secrets.otherPasswd
+  ...
+```
+
+
 
 ## Yaml Pre-Processing
 ...
