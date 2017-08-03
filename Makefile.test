@@ -1,0 +1,10 @@
+.PHONY : test
+
+.DEFAULT_GOAL := test
+
+test:
+	@iidy help > /dev/null
+	@cd examples/hello-world/ && make test
+#	iidy list-stacks
+#	iidy create-stack examples/hello-world/stack-args.yaml
+#	iidy list-stacks --region us-east-1

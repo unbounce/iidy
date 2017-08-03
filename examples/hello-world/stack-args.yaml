@@ -1,7 +1,17 @@
-StackName: iidy-demo
+$imports:
+  nameSuffix: random:dashed-name
+
+StackName: iidy-demo-{{nameSuffix}}
 Template: ./cfn-template.yaml # details are irrelevant for the demo
+
+Profile: sandbox
+Region: us-west-2
+
+Parameters:
+  Name: world
+
 Tags:
-  owner: tavis
+  owner: your-name
   project: iidy-demo
   environment: development
   lifetime: short

@@ -1,10 +1,12 @@
 rfind = $(shell find '$(1)' -name '$(2)')
 
-SRC_FILES := Makefile \
-	src/index.ts \
+# TODO add this back in: Makefile 
+SRC_FILES := src/index.ts \
 	$(call rfind,src,[^.]*.ts) \
 	$(call rfind,src,[^.]*.js) \
 	$(call rfind,src,[^.]*.json)
+
+EXAMPLE_FILES = $(shell find examples/ -type f)
 
 PREREQS_STATEFILE = .make/done_prereqs
 DEPS_STATEFILE = .make/done_deps
@@ -59,12 +61,21 @@ $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 
 
 # TODO expand this
-$(TESTS_STATEFILE) : $(BUILD_ARTIFACTS)
-ifeq ($(shell uname),Darwin)
-	dist/iidy-macos help
-else
-	dist/iidy-linux help
-endif
+$(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
+	mkdir -p dist/docker/
+	cp dist/iidy-linux dist/docker/iidy
+	cp Dockerfile.test dist/docker/Dockerfile
+	cp Makefile.test dist/docker/Makefile
+	cp -a examples dist/docker/
+	docker build -t iidy-test dist/docker
+	docker run --rm -v ~/.aws/:/root/.aws/ iidy-test make test
+	touch $(TESTS_STATEFILE)
+
+# ifeq ($(shell uname),Darwin)
+# 	dist/iidy-macos help
+# else
+# 	dist/iidy-linux help
+# endif
 
 check_working_dir_is_clean :
 	git diff --quiet --ignore-submodules HEAD

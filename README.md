@@ -233,7 +233,7 @@ $ cat stack-args.yaml
 StackName: iidy-demo
 Template: ./cfn-template.yaml # details are irrelevant for the demo
 Tags:
-  owner: tavis
+  owner: your-name
   project: iidy-demo
   environment: development
   lifetime: short
@@ -245,7 +245,7 @@ $ iidy list-stacks | grep iidy-demo
 Wed Aug 02 2017 00:41:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
 
 # edit something in stack-args to demo a simple update-stack
-sed s/tavis/Tavis/ stack-args.yaml > stack-args2.yaml
+sed s/your-name/Tavis/ stack-args.yaml > stack-args2.yaml
 
 $ iidy update-stack stack-args2.yaml
 # ... lots of useful output about what iidy and CloudFormation are doing ...
