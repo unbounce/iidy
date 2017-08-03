@@ -3,10 +3,6 @@ node_modules/
 
 # output
 .make
-lib/*js
-lib/*d.ts
-lib/*map
-
 dist/
 tmp/
 
