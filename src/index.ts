@@ -1054,8 +1054,10 @@ async function summarizeStackProperties(StackName: string, region: string, showT
       if (cs.Description) {
         console.log('  ', cli.blackBright(cs.Description))
       }
+      // TODO describe the change set ...
     }
   }
+  return stack;
 
 }
 
@@ -1475,16 +1477,17 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
   const startTime = new Date();
 
   console.log();
-  await summarizeStackProperties(StackName, region, true);
+  const stack = await summarizeStackProperties(StackName, region, true);
+  const StackId = stack.StackId as string;
   console.log();
 
   console.log(cli.underline('Previous 10 Stack Events:'))
-  await showStackEvents(StackName, 10);
+  await showStackEvents(StackId, 10);
 
   console.log();
-  await watchStack(StackName, startTime);
+  await watchStack(StackId, startTime);
   console.log();
-  await summarizeCompletedStackOperation(StackName);
+  await summarizeCompletedStackOperation(StackId);
   return 0;
 }
 
@@ -1562,11 +1565,17 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   console.log();
   const {StackId} = await summarizeCompletedStackOperation(StackName);
 
-  let resp = await inquirer.prompt(
-    {name: 'confirm',
-     type:'confirm', default: false,
-     message:`Are you sure you want to DELETE the stack ${StackName}?`})
-  if (resp.confirm) {
+  let confirmed: boolean;
+  if (argv.yes) {
+    confirmed = true;
+  } else {
+    let resp = await inquirer.prompt(
+      {name: 'confirm',
+       type:'confirm', default: false,
+       message:`Are you sure you want to DELETE the stack ${StackName}?`})
+    confirmed = resp.confirm;
+  }
+  if (confirmed) {
     const cfn = new aws.CloudFormation();
     const deleteStackOutput = await cfn.deleteStack({StackName}).promise();
     const startTime = new Date();
