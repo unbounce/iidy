@@ -106,7 +106,7 @@ api, and most importantly e) are simple and unopinionated.
 * Binary installation
 ```
 # Grab the appropriate binary from the releases page.
-open https://github.com/unbounce/iidy/releases/download/v1.0.0/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.1.0/iidy-macos.gz # or -linux.gz
 cd ~/Downloads                # or wherever Linux puts it
 mv iidy*.gz iidy.gz
 gunzip iidy.gz
