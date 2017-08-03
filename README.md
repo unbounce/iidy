@@ -309,6 +309,20 @@ $ iidy delete-stack iidy-demo
 # ... confirm Yes ...
 ```
 
+### Using Parameter Store for secrets and ARNs
+
+
+```
+$imports:
+  dbPasswd: ssm:/staging/lp-webapp/dbPasswd
+
+StackName: iidy-demo
+Template: ./cfn-template.yaml
+Parameters:
+  DbPasswd: !$ dbPasswd
+  ...
+```
+See below for more on Imports and Includes (the `!$` yaml tag).
 
 ## Yaml Pre-Processing
 ...
