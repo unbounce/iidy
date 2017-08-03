@@ -313,8 +313,10 @@ $ iidy delete-stack iidy-demo
 
 
 ```
+# example stack-args.yaml
 $imports:
   dbPasswd: ssm:/staging/lp-webapp/dbPasswd
+  # the ssm: prefix ^ is use to ask for a ssm:parameterstore import 
 
 StackName: iidy-demo
 Template: ./cfn-template.yaml
