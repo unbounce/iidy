@@ -402,6 +402,7 @@ commands in `package.json` for details about the build process.
 
 ## Changelog
 
+* v1.1.0: Docs, examples, and improvements -- August 3, 2017
 * v1.0.0: Initial Release -- August 1, 2017
 
 
