@@ -91,7 +91,7 @@ export async function main() {
   const args = yargs
     .command(
       'create-stack <argsfile>',
-      'create a cloudformation stack as defined in stack-args.yaml',
+      'create a cfn stack based on stack-args.yaml',
       (yargs) => yargs
         .demand(0, 0)
         .usage('Usage: iidy create-stack <stack-args.yaml>')
@@ -102,7 +102,7 @@ export async function main() {
 
     .command(
       'update-stack <argsfile>',
-      'update a cloudformation stack as defined in stack-args.yaml',
+      'update a cfn stack based on stack-args.yaml',
       (yargs) => yargs
         .demand(0, 0)
         .usage('Usage: iidy update-stack <stack-args.yaml>')
