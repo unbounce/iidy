@@ -209,6 +209,17 @@ async function readFromImportLocation(location: ImportLocation, baseLocation: Im
         `Invalid ssm parameter value ${s} import from ${location} in ${baseLocation}`)
     }
   }
+
+  const parseData = (data: string, format?: string) => {
+    if (format === 'json') {
+      return tryParseJson(data);
+    } else if (format === 'yaml') {
+      return yaml.loadString(data, 'location');
+    } else {
+      return data
+    }
+  }
+  
   switch (importType) {
   case "ssm":
     const ssm = new aws.SSM();
@@ -216,12 +227,7 @@ async function readFromImportLocation(location: ImportLocation, baseLocation: Im
     const param =
       await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
     if (param.Parameter && param.Parameter.Value) {
-      data = param.Parameter.Value;
-      if (format === 'json') {
-        data = tryParseJson(param.Parameter.Value);
-      } else {
-        data = param.Parameter.Value;
-      }
+      data = parseData(param.Parameter.Value, format);
       return {importType, resolvedLocation, data, doc: data}
     } else {
       throw new Error(
@@ -234,7 +240,7 @@ async function readFromImportLocation(location: ImportLocation, baseLocation: Im
       {Path: resolvedLocation, WithDecryption:true}).promise()
     doc = _.fromPairs(_.map(params.Parameters, ({Name, Value})=>
                             [(''+Name).replace(resolvedLocation,''),
-                             format === 'json' ? tryParseJson(Value+'') : Value]))
+                             parseData(Value as string, format)]))
     return {importType, resolvedLocation, data: JSON.stringify(doc), doc}
   case "s3":
     const s3 = new aws.S3();
