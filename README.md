@@ -38,7 +38,7 @@ Yaml templates. It includes an optional yaml pre-processor that:
   invoking CloudFormation on the rendered output.
 
 ## Demo
-[![asciicast](https://asciinema.org/a/T9InDj91OUzYucywCVbLACvSA.png)](https://asciinema.org/a/T9InDj91OUzYucywCVbLACvSA)
+[![asciicast](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC.png)](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC)
 
 ## iidy at Unbounce
 
@@ -227,6 +227,8 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
 [![asciicast](https://asciinema.org/a/l4vDhmKiTLr10oKypXRG7y1eW.png)](https://asciinema.org/a/l4vDhmKiTLr10oKypXRG7y1eW)
 
 ### Creating or Updating CloudFormation Stacks
+
+[![asciicast](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC.png)](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC)
 
 ```
 $ tree examples/hello-world

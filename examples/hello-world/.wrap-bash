@@ -1,4 +1,16 @@
 #!/bin/bash
-echo -e "\033[91mEXECUTING: \033[96m $* \033[0m"
+
+# echo -e "\033[91mEXECUTING: \033[96m $* \033[0m"
+
+echo -ne "\033[91mUser CLI Input: \033[96m "
+
+comm="$*"
+for (( i=0; i<${#comm}; i++ )); do
+    echo -n "${comm:$i:1}"
+    sleep 0.04
+done
+
+echo -e "\033[0m"
+
 
 bash -c "$*"
