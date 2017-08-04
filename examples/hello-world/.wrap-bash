@@ -1,4 +1,4 @@
 #!/bin/bash
 echo -e "\033[91mEXECUTING: \033[96m $* \033[0m"
 
-$*
+bash -c "$*"
