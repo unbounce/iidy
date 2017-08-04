@@ -37,6 +37,10 @@ Yaml templates. It includes an optional yaml pre-processor that:
   expansion and validation happens as a pre-process step prior to
   invoking CloudFormation on the rendered output.
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/zxepSlVOyQUeN88WOJjnXOpXL.png)](https://asciinema.org/a/zxepSlVOyQUeN88WOJjnXOpXL)
+
 ## iidy at Unbounce
 
 `iidy` is a replacement for our use of Ansible as a wrapper around
