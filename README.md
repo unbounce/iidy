@@ -38,8 +38,7 @@ Yaml templates. It includes an optional yaml pre-processor that:
   invoking CloudFormation on the rendered output.
 
 ## Demo
-
-[![asciicast](https://asciinema.org/a/zxepSlVOyQUeN88WOJjnXOpXL.png)](https://asciinema.org/a/zxepSlVOyQUeN88WOJjnXOpXL)
+[![asciicast](https://asciinema.org/a/T9InDj91OUzYucywCVbLACvSA.png)](https://asciinema.org/a/T9InDj91OUzYucywCVbLACvSA)
 
 ## iidy at Unbounce
 
