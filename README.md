@@ -222,6 +222,10 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
     b) `Region` or `Profile` settings in `stack-args.yaml`, or
     c) the standard environment variables.
 
+### Listing and Describing Live Stacks
+
+[![asciicast](https://asciinema.org/a/l4vDhmKiTLr10oKypXRG7y1eW.png)](https://asciinema.org/a/l4vDhmKiTLr10oKypXRG7y1eW)
+
 ### Creating or Updating CloudFormation Stacks
 
 ```
