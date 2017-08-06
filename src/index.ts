@@ -775,6 +775,8 @@ function colorizeResourceStatus(status: string, padding=DEFAULT_STATUS_PADDING):
     return cli.green(padded)
   case 'UPDATE_COMPLETE':
     return cli.greenBright(padded)
+  case 'UPDATE_IN_PROGRESS':
+    return cli.yellow(padded);
   case 'UPDATE_ROLLBACK_COMPLETE':
     return cli.green(padded)
   case 'UPDATE_ROLLBACK_FAILED':
@@ -1297,9 +1299,9 @@ abstract class AbstractCloudFormationStackCommand {
     const iamIdent = await sts.getCallerIdentity().promise();
     console.log(
       'Current Account / IAM Arn:',
-      cli.magenta(iamIdent.Account),
+      cli.blackBright(iamIdent.Account),
       '\n',
-      cli.magenta(iamIdent.Arn));
+      cli.blackBright(iamIdent.Arn));
 
     console.log('IAM Service Role:', cli.blackBright(this.stackArgs.RoleARN || 'None'));
     console.log();
