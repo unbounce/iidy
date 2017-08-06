@@ -10,10 +10,11 @@
     "private": true
   },
   "scripts": {
-    "build": "tsc",
+    "prepublish": "npm run build",
+    "build": "tsc -p .",
     "watch": "tsc --watch",
     "pkg-binaries": "pkg --out-path dist -t node7-macos,node7-linux package.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "make test"
   },
   "author": "",
   "license": "MIT",
