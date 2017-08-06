@@ -106,22 +106,27 @@ api, and most importantly e) are simple and unopinionated.
 
 ## Installation
 
-* Binary installation
+* Binary installation. This is the preferred method.
 ```
 # Grab the appropriate binary from the releases page.
+# (Wget won't work while this is a private repo)
 open https://github.com/unbounce/iidy/releases/download/v1.1.0/iidy-macos.gz # or -linux.gz
+
 cd ~/Downloads                # or wherever Linux puts it
-mv iidy*.gz iidy.gz
-gunzip iidy.gz
-chmod +x iidy
-mv iidy /usr/local/bin/iidy   # or somewhere more appropriate
+gunzip iidy*.gz
+chmod +x iidy*
+mv iidy* /usr/local/bin/iidy   # or somewhere more appropriate
 ```
 
 * Installing from source if you have node installed.
+  Counter-intuitively, this requires more disk space than the binary
+  install.
+
 ```
-# If you already have Node 6 or above installed
+# You need Node 6 or above installed.
 git clone git@github.com:unbounce/iidy.git
 cd iidy
+npm install . # to compile our source first
 npm install -g .
 ```
 
@@ -329,7 +334,7 @@ Here's an example of importing a single secret from Parameter Store.
 # example stack-args.yaml
 $imports:
   dbPasswd: ssm:/staging/lp-webapp/dbPasswd
-  # the ssm: prefix ^ is used to ask for a ssm:parameterstore import 
+  # the ssm: prefix ^ is used to ask for a ssm:parameterstore import
 
 StackName: iidy-demo
 Template: ./cfn-template.yaml
@@ -368,7 +373,7 @@ Parameters:
 $imports:
   # <importName>: <importSource>
   mappings: ./mappings.yaml
-  
+
 Mappings: !$ mappings
 ```
 
@@ -380,8 +385,8 @@ Mappings: !$ mappings
 * https
 * environment variables
 * AWS SSM ParameterStore
-* git 
-* random 
+* git
+* random
 * literal
 
 
