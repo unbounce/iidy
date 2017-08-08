@@ -110,7 +110,7 @@ api, and most importantly e) are simple and unopinionated.
 ```
 # Grab the appropriate binary from the releases page.
 # (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.1.0/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.2.0/iidy-macos.gz # or -linux.gz
 
 cd ~/Downloads                # or wherever Linux puts it
 gunzip iidy*.gz
@@ -415,7 +415,13 @@ commands in `package.json` for details about the build process.
 
 ## Changelog
 
+* v1.2.0: CLI output is prettier, new `demo` command, `--role-arn`
+  option for `delete-stack`, add missing `prepublish` entry to
+  `package.json`, improved handling of aws region in cli output. --
+  August 8, 2017
+
 * v1.1.0: Docs, examples, and improvements -- August 3, 2017
+
 * v1.0.0: Initial Release -- August 1, 2017
 
 
