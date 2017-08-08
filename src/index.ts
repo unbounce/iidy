@@ -889,12 +889,14 @@ type ExitCode = number;
 const timeout = (ms:number) => new Promise(res => setTimeout(res, ms));
 
 async function showStackEvents(StackName: string, limit=10) {
-  const cfn = new aws.CloudFormation()
-  let evs = (await cfn.describeStackEvents(
-    {StackName}).promise()).StackEvents || [];
-  evs = _.sortBy(evs, (ev) => ev.Timestamp).slice(Math.max(0, evs.length - limit), evs.length);
+  let evs = (await getAllStackEvents(StackName));
+  evs = _.sortBy(evs, (ev) => ev.Timestamp)
+  const selectedEvs = evs.slice(Math.max(0, evs.length - limit), evs.length);
   const statusPadding = _.max(_.map(evs, (ev)=> (ev.ResourceStatus as string).length))
-  _.forEach(evs, ev => displayStackEvent(ev, statusPadding));
+  _.forEach(selectedEvs, ev => displayStackEvent(ev, statusPadding));
+  if (evs.length > selectedEvs.length) {
+    console.log(cli.blackBright(` ${selectedEvs.length} of ${evs.length} total events shown`))
+  }
 }
 
 async function getAllStackEvents(StackName: string, cfn?: aws.CloudFormation) {
