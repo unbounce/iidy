@@ -1,6 +1,6 @@
 {
   "name": "iidy",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A tool for working with CloudFormation and yaml templates.",
   "main": "lib/cli.js",
   "types": "lib/index",
