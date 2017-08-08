@@ -219,7 +219,7 @@ async function readFromImportLocation(location: ImportLocation, baseLocation: Im
       return data
     }
   }
-  
+
   switch (importType) {
   case "ssm":
     const ssm = new aws.SSM();
@@ -736,6 +736,13 @@ import { sprintf } from 'sprintf-js';
 
 import * as cli from 'cli-color';
 
+let getStrippedLength: (s: string) => number;
+getStrippedLength = require('cli-color/get-stripped-length');
+//import * as getStrippedLength from 'cli-color/get-stripped-length';
+
+import * as wrapAnsi from 'wrap-ansi';
+import * as ora from 'ora';
+
 import {AWSRegion} from './aws-regions';
 
 async function configureAWS(profile?: string, region?: AWSRegion) {
@@ -748,41 +755,51 @@ async function configureAWS(profile?: string, region?: AWSRegion) {
   }
 }
 
-const DEFAULT_STATUS_PADDING = 26;
+const DEFAULT_STATUS_PADDING = 35;
 
 function colorizeResourceStatus(status: string, padding=DEFAULT_STATUS_PADDING): string {
+  padding = _.isNumber(padding) && padding > 20 ? padding : DEFAULT_STATUS_PADDING;
   const padded = sprintf(`%-${padding}s`, status)
+  const fail = cli.redBright;
+  const progress = cli.yellow;
+  const complete = cli.green;
   switch (status) {
   case 'CREATE_IN_PROGRESS':
-    return cli.yellow(padded)
+    return progress(padded)
   case 'CREATE_FAILED':
-    return cli.red(padded)
+    return fail(padded)
   case 'CREATE_COMPLETE':
-    return cli.greenBright(padded)
+    return complete(padded)
   case 'REVIEW_IN_PROGRESS':
-    return cli.yellow(padded);
+    return progress(padded);
   case 'ROLLBACK_COMPLETE':
-    return cli.green(padded);
+    return complete(padded);
   case 'ROLLBACK_FAILED':
-    return cli.red(padded);
+    return fail(padded);
   case 'ROLLBACK_IN_PROGRESS':
-    return cli.yellow(padded)
+    return progress(padded)
   case 'DELETE_IN_PROGRESS':
-    return cli.yellow(padded)
+    return progress(padded)
   case 'DELETE_FAILED':
-    return cli.red(padded);
+    return fail(padded);
   case 'DELETE_COMPLETE':
-    return cli.green(padded)
+    return complete(padded)
   case 'UPDATE_COMPLETE':
-    return cli.greenBright(padded)
+    return complete(padded)
   case 'UPDATE_IN_PROGRESS':
-    return cli.yellow(padded);
+    return progress(padded);
+  case 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS':
+    return progress(padded);
   case 'UPDATE_ROLLBACK_COMPLETE':
-    return cli.green(padded)
+    return complete(padded)
+  case 'UPDATE_ROLLBACK_IN_PROGRESS':
+    return progress(padded);
+  case 'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS':
+    return progress(padded);
   case 'UPDATE_ROLLBACK_FAILED':
-    return cli.red(padded)
+    return fail(padded)
   case 'UPDATE_FAILED':
-    return cli.red(padded);
+    return fail(padded);
   default:
     return padded;
   }
@@ -796,20 +813,55 @@ function renderTimestamp(ts: Date) {
   }
 }
 
+const COLUMN2_START = 25;
+const formatTimestamp = (s: string) => cli.xterm(253)(s);
+const formatSectionHeading = (s: string) => cli.xterm(255)(cli.bold(s));
+const formatLogicalId = (s: string) => cli.xterm(252)(s);
+const formatStackOutputName = formatLogicalId;
+const formatStackExportName = formatLogicalId;
+
 function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPadding=DEFAULT_STATUS_PADDING) {
-  process.stdout.write(
-    // TODO timePadding
-    sprintf(
-      '%s %s %-40s %s ',
-      cli.cyan(sprintf('%24s', renderTimestamp(ev.Timestamp))),
-      colorizeResourceStatus(ev.ResourceStatus || '', statusPadding),
-      ev.ResourceType,
-      sprintf('%-35s', ev.LogicalResourceId),
-    ));
-  if ((ev.ResourceStatusReason || '').length > 30) {
+  const tty: any = process.stdout;
+  const screenWidth = (tty.columns || 130);
+  const status = ev.ResourceStatus || '';
+  const reason = (ev.ResourceStatusReason || '').replace(/.*Initiated/,'');
+  const resourceTypePadding = 40;
+  const resourceIdPadding = 35;
+  const LogicalResourceId = ev.LogicalResourceId || '';
+  let line = sprintf(` %s %s `,
+                     formatTimestamp(renderTimestamp(ev.Timestamp)),
+                     colorizeResourceStatus(status, statusPadding))
+  const columnOfResourceType = getStrippedLength(line);
+  line += sprintf(`%-${resourceTypePadding}s `, ev.ResourceType)
+  process.stdout.write(line);
+
+  if (getStrippedLength(line) + LogicalResourceId.length < screenWidth) {
+    process.stdout.write(formatLogicalId(LogicalResourceId));
+    line += LogicalResourceId;
+  } else {
+    line = ' '.repeat(columnOfResourceType + 3) + formatLogicalId(LogicalResourceId);
+    process.stdout.write('\n'+line);
+  }
+  if (reason) {
+    let reasonColor;
+    if (status.indexOf('FAIL') > -1 || reason.indexOf('fail') > -1) {
+      reasonColor = cli.red;
+    } else {
+      reasonColor = cli.blackBright
+    }
+    if (reason.length + getStrippedLength(line) < screenWidth) {
+      console.log(' ' + reasonColor(reason));
+    } else {
+      process.stdout.write('\n');
+      const breakColumn = screenWidth - (COLUMN2_START + 1);
+      for (const ln of wrapAnsi(reasonColor(reason), breakColumn).split('\n')) {
+        console.log(' '.repeat(COLUMN2_START + 1) + ln);
+      }
+    }
+  } else {
     process.stdout.write('\n');
   }
-  console.log(cli.blackBright(ev.ResourceStatusReason || ''));
+
 }
 
 const objectToCFNTags =
@@ -850,39 +902,43 @@ async function getAllStackEvents(StackName: string, cfn?: aws.CloudFormation) {
 }
 
 async function watchStack(StackName: string, startTime: Date, pollInterval=2) {
+  // TODO passthrough of statusPadding
   const cfn = new aws.CloudFormation()
-
-  console.log(cli.underline(`Live Stack Events (${pollInterval}s poll):`))
+  console.log(formatSectionHeading(`Live Stack Events (${pollInterval}s poll):`))
 
   // TODO add a timeout for super long stacks
   const seen: {[key: string]: boolean} = {};
-
+  const tty: any = process.stdout;
+  const spinner = ora({spinner: 'dots12',
+                       text: '',
+                       enabled: _.isNumber(tty.columns)});
+  const calcElapsedSeconds = () => Math.ceil((+(new Date()) - +(startTime))/1000);
   let DONE = false;
   while (! DONE) {
-    // let evs = (await cfn.describeStackEvents(
-    //   {StackName}).promise()).StackEvents || [];
     let evs = await getAllStackEvents(StackName);
-    // sort by timestamp
+    spinner.stop();
     evs = _.sortBy(evs, (ev)=>ev.Timestamp);
-
+    const statusPadding = _.max(_.map(evs, (ev)=> (ev.ResourceStatus as string).length))
     for (let ev of evs) {
       if (ev.Timestamp < startTime) {
         seen[ev.EventId] = true
       }
       if (!seen[ev.EventId]){
-        displayStackEvent(ev);
+        displayStackEvent(ev, statusPadding);
       }
       seen[ev.EventId] = true
       if (ev.ResourceType === 'AWS::CloudFormation::Stack') {
         if (_.includes(terminalStackStates, ev.ResourceStatus) && ev.Timestamp > startTime) {
           console.log(
-            cli.cyan('elapsed seconds:', Math.ceil((+(new Date()) - +(startTime))/1000)));
+            cli.blackBright(` ${calcElapsedSeconds()} seconds elapsed`));
           DONE = true;
         }
       }
     }
     if (! DONE) {
+      spinner.start();
       await timeout(pollInterval*1000);
+      spinner.text = cli.xterm(240)(`${calcElapsedSeconds()} seconds elapsed`);
     }
   }
 }
@@ -906,39 +962,38 @@ async function summarizeCompletedStackOperation(StackName: string): Promise<aws.
   if (_.isUndefined(stack)) {
     throw new Error(`Final call to describeStacks returned no results. Check aws console`);
   }
-  console.log(cli.underline('Current Stack Status:'),
-              colorizeResourceStatus(stack.StackStatus),
-              stack.StackStatusReason || '')
-
   const resources = (
     (await cfn.describeStackResources({StackName}).promise()
     ).StackResources || []);
 
   const MAX_PADDING = 60;
   if (resources.length) {
-    console.log()
-    console.log(cli.underline('Stack Resources:'));
+    console.log(formatSectionHeading('Stack Resources:'));
     const idPadding = Math.min(
       _.max(_.map(resources, (r)=> (r.LogicalResourceId as string).length)) as number,
       MAX_PADDING);
 
     for (const resource of resources) {
       console.log(
-        sprintf(`%-${idPadding}s`, resource.LogicalResourceId),
+        formatLogicalId(sprintf(` %-${idPadding}s`, resource.LogicalResourceId)),
         cli.blackBright(resource.PhysicalResourceId)
       );
     }
   }
 
   console.log()
-  console.log(cli.underline('Stack Outputs:'));
+  process.stdout.write(formatSectionHeading('Stack Outputs:'));
   const outputKeyPadding = Math.min(
     _.max(_.map(stack.Outputs, (output)=> (output.OutputKey as string).length)) as number,
     MAX_PADDING);
-
-  for (let {OutputKey, OutputValue} of (stack.Outputs || [])) {
-    console.log(sprintf(`%-${outputKeyPadding}s`, OutputKey),
-                cli.blackBright(OutputValue));
+  if (stack.Outputs && stack.Outputs.length) {
+    process.stdout.write('\n')
+    for (let {OutputKey, OutputValue} of (stack.Outputs || [])) {
+      console.log(formatStackOutputName(sprintf(` %-${outputKeyPadding}s`, OutputKey)),
+                  cli.blackBright(OutputValue));
+    }
+  } else {
+    console.log(' ' + cli.blackBright('None'))
   }
 
   const exports = (await getAllStackExports())
@@ -946,12 +1001,12 @@ async function summarizeCompletedStackOperation(StackName: string): Promise<aws.
 
   if (exports.length) {
     console.log()
-    console.log(cli.underline('Stack Exports:'));
+    console.log(formatSectionHeading('Stack Exports:'));
     const exportNamePadding = Math.min(
       _.max(_.map(exports, (ex)=> (ex.Name as string).length)) as number,
       MAX_PADDING);
     for (const ex of exports) {
-      console.log(sprintf(`%-${exportNamePadding}s`, ex.Name),
+      console.log(formatStackExportName(sprintf(` %-${exportNamePadding}s`, ex.Name)),
                   cli.blackBright(ex.Value));
       // handle NextToken
       try {
@@ -965,6 +1020,11 @@ async function summarizeCompletedStackOperation(StackName: string): Promise<aws.
     }
   }
   console.log()
+
+  console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Current Stack Status:')),
+              colorizeResourceStatus(stack.StackStatus),
+              stack.StackStatusReason || '')
+
   return stack;
 }
 
@@ -1027,14 +1087,14 @@ async function summarizeStackProperties(StackName: string, region: string, showT
     throw new Error(`${StackName} not found`);
   }
   // cfn.getStackPolicy({StackName})
-  console.log(cli.underline('Stack Details:'))
+  console.log(formatSectionHeading('Stack Details:'))
   const printEntry = (label:any, data:any) =>
-    process.stdout.write(sprintf('%-17s %s\n', label, data));
+    process.stdout.write(' ' + cli.xterm(253)(sprintf(`%-${COLUMN2_START-1}s `, label)) + data + '\n');
 
-  printEntry('Name:', cli.blackBright(stack.StackName));
+  printEntry('Name:', cli.magenta(stack.StackName));
   printEntry('Status', colorizeResourceStatus(stack.StackStatus));
-  printEntry('ARN:', cli.blackBright(stack.StackId));
-  printEntry('Capabilities:', cli.blackBright(stack.Capabilities || 'None'));
+  printEntry('Capabilities:', cli.blackBright(_.isEmpty(stack.Capabilities) ? 'None' : stack.Capabilities));
+  printEntry('Service Role:', cli.blackBright(stack.RoleARN || 'None'));
 
   printEntry('Tags:', cli.blackBright(prettyFormatTags(stack.Tags)));
   printEntry('DisableRollback:', cli.blackBright(stack.DisableRollback));
@@ -1044,18 +1104,19 @@ async function summarizeStackProperties(StackName: string, region: string, showT
     printEntry('Last Update Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));
   }
   printEntry('Timeout In Minutes:', cli.blackBright(stack.TimeoutInMinutes || 'None'));
-  printEntry('NotificationARNs:', cli.blackBright(stack.NotificationARNs));
+  printEntry('NotificationARNs:', cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
   //printEntry('Stack Policy Source:', cli.blackBright(StackPolicy));
-  console.log('Console URL:', '')
-  console.log(cli.blackBright(`https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stack/detail?stackId=${querystring.escape(stack.StackId || '')}`));
+  printEntry('ARN:', cli.blackBright(stack.StackId));
+  printEntry('Console URL:',
+             cli.blackBright(`https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stack/detail?stackId=${querystring.escape(stack.StackId || '')}`))
 
   const changeSets = (await cfn.listChangeSets({StackName}).promise()).Summaries || [];
   if (changeSets.length) {
     console.log();
-    console.log(cli.underline('Pending Changesets:'))
+    console.log(formatSectionHeading('Pending Changesets:'))
     for (let cs of changeSets) {
       // colorize status
-      console.log(cli.cyan(renderTimestamp(cs.CreationTime as Date)),
+      console.log(formatTimestamp(renderTimestamp(cs.CreationTime as Date)),
                   cli.magenta(cs.ChangeSetName),
                   cs.ExecutionStatus,
                   cs.StatusReason || '');
@@ -1114,7 +1175,7 @@ async function listStacks() {
   for (let stack of stacks) {
     process.stdout.write(
       sprintf('%s %s %s %s\n',
-              cli.cyan(
+              formatTimestamp(
                 sprintf(`%${timePadding}s`,
                         renderTimestamp(stack.LastUpdatedTime || stack.CreationTime))),
               colorizeResourceStatus(stack.StackStatus, statusPadding),
@@ -1131,7 +1192,6 @@ async function listStacks() {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 import {Arguments} from 'yargs';
-
 
 export async function renderMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region)
@@ -1167,7 +1227,7 @@ export type StackArgs = {
 
   // for updates
   UsePreviousTemplate?: boolean,
-  
+
   CommandsBefore?: string[]
 }
 
@@ -1198,7 +1258,7 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
 
     // TODO might want to inject ENV vars or handlebars into the
     // commands. Also the AWS_ENV
-    console.log(cli.underline('Preflight steps:'))
+    console.log(formatSectionHeading('Preflight steps:'))
     console.log('Executing CommandsBefore from argsfile');
     runCommandSet(argsdata.CommandsBefore);
   }
@@ -1284,26 +1344,25 @@ abstract class AbstractCloudFormationStackCommand {
 
   async _showCommandSummary() {
     console.log(); // blank line
-    console.log(cli.underline('Command Metadata:'))
-    console.log('Cloudformation operation:', cli.magenta(this._cfnOperation));
-    console.log(
-      'Command line arguments:',
+    console.log(formatSectionHeading('Command Metadata:'))
+    const printEntry = (label:any, data:any) =>
+      process.stdout.write(' ' + cli.xterm(253)(sprintf(`%-${COLUMN2_START-1}s `, label)) + data + '\n');
+
+    printEntry('CFN Operation:', cli.magenta(this._cfnOperation));
+    printEntry('Region:', cli.magenta(this.region));
+    if (this.profile) {
+      printEntry('Profile:', cli.magenta(this.profile));
+    }
+    printEntry(
+      'CLI Arguments:',
       cli.blackBright(prettyFormatSmallMap(_.pick(this.argv, ['region','profile', 'argsfile']))));
 
-    console.log('Region:', cli.magenta(this.region));
-    if (this.profile) {
-      console.log('Profile:', cli.magenta(this.profile));
-    }
+    printEntry('IAM Service Role:', cli.blackBright(this.stackArgs.RoleARN || 'None'));
 
     const sts = new aws.STS();
     const iamIdent = await sts.getCallerIdentity().promise();
-    console.log(
-      'Current Account / IAM Arn:',
-      cli.blackBright(iamIdent.Account),
-      '\n',
-      cli.blackBright(iamIdent.Arn));
-
-    console.log('IAM Service Role:', cli.blackBright(this.stackArgs.RoleARN || 'None'));
+    printEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
+    // cli.blackBright(iamIdent.Account)
     console.log();
   }
 
@@ -1323,7 +1382,7 @@ abstract class AbstractCloudFormationStackCommand {
 
     if (this._showPreviousEvents) {
       console.log();
-      console.log(cli.underline('Previous 10 Stack Events:'))
+      console.log(formatSectionHeading('Previous Stack Events (max 10):'))
       await showStackEvents(this.stackName, 10);
     }
 
@@ -1336,17 +1395,16 @@ abstract class AbstractCloudFormationStackCommand {
     const stack = await summarizeCompletedStackOperation(stackId);
 
     if (_.includes(this._expectedFinalStackStatus, stack.StackStatus)) {
-      console.log(
-        cli.underline('Summary:'),
-        cli.black(cli.bgGreenBright('Success')),
-        '👍')
+      console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
+                  cli.black(cli.bgGreenBright('Success')),
+                  '👍')
       return 0;
     } else {
       console.log(
-        cli.underline('Summary:'),
-        cli.bgRedBright('Failure') + '.',
-        'Fix and try again. ',
-        '(╯°□°）╯︵ ┻━┻'
+        formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
+        cli.bgRedBright('Failure'),
+        ' (╯°□°）╯︵ ┻━┻ ',
+        'Fix and try again.'
       )
       return 1;
     }
@@ -1420,7 +1478,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
       await this._cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
       throw new Error('ChangeSet failed to create');
     }
-    console.log(cli.underline('Changeset:'));
+    console.log(formatSectionHeading('Changeset:'));
     console.log(yaml.dump(changeSet));
     // ... need to branch off here and watch the events on the changeset
     // https://...console.aws.amazon.com/cloudformation/home?region=..#/changeset/detail?changeSetId=..&stackId=..
@@ -1497,7 +1555,7 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
   const StackId = stack.StackId as string;
   console.log();
 
-  console.log(cli.underline('Previous 10 Stack Events:'))
+  console.log(formatSectionHeading('Previous Stack Events (max 10):'))
   await showStackEvents(StackId, 10);
 
   console.log();
@@ -1518,7 +1576,7 @@ export async function describeStackMain(argv: Arguments): Promise<number> {
   console.log();
 
   const eventCount = argv.events || 50;
-  console.log(cli.underline(`Previous ${eventCount} Stack Events:`))
+  console.log(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`))
   await showStackEvents(StackName, eventCount);
   console.log();
   await summarizeCompletedStackOperation(StackName);
@@ -1576,7 +1634,7 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   await summarizeStackProperties(StackName, region, true);
   console.log();
 
-  console.log(cli.underline('Previous 10 Stack Events:'))
+  console.log(formatSectionHeading('Previous Stack Events (max 10):'))
   await showStackEvents(StackName, 10);
   console.log();
   const {StackId} = await summarizeCompletedStackOperation(StackName);
@@ -1585,7 +1643,7 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   if (argv.yes) {
     confirmed = true;
   } else {
-    let resp = await inquirer.prompt(
+   let resp = await inquirer.prompt(
       {name: 'confirm',
        type:'confirm', default: false,
        message:`Are you sure you want to DELETE the stack ${StackName}?`})
@@ -1597,8 +1655,22 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
     const startTime = new Date();
     await watchStack(StackId as string, startTime);
     console.log();
-    const {StackStatus} = await summarizeCompletedStackOperation(StackId as string);
-    return StackStatus == 'DELETE_COMPLETE' ? 0 : 1;
+    const {StackStatus} = ((await cfn.describeStacks(
+      {StackName: StackId}).promise()).Stacks || [])[0];
+    if (StackStatus == 'DELETE_COMPLETE') {
+      console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
+        cli.black(cli.bgGreenBright('Success')),
+        '👍')
+      return 0;
+    } else {
+      console.log(
+        formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
+        cli.bgRedBright('Failure'),
+        ' (╯°□°）╯︵ ┻━┻' ,
+        'Fix and try again.'
+      )
+      return 1;
+    }
   } else {
     return 1
   }
