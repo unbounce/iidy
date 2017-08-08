@@ -1642,7 +1642,8 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   console.log(formatSectionHeading('Previous Stack Events (max 10):'))
   await showStackEvents(StackName, 10);
   console.log();
-  const {StackId} = await summarizeCompletedStackOperation(StackName);
+  const stack = await summarizeCompletedStackOperation(StackName);
+  console.log();
 
   let confirmed: boolean;
   if (argv.yes) {
@@ -1656,8 +1657,11 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   }
   if (confirmed) {
     const cfn = new aws.CloudFormation();
-    const deleteStackOutput = await cfn.deleteStack({StackName}).promise();
+     // --retain-resources, --client-request-token
+    const deleteStackOutput = await cfn.deleteStack(
+      {StackName, RoleARN: argv.roleArn}).promise();
     const startTime = new Date();
+    const StackId: string = stack.StackId as string;
     await watchStack(StackId as string, startTime);
     console.log();
     const {StackStatus} = ((await cfn.describeStacks(

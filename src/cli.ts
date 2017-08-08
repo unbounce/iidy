@@ -191,6 +191,9 @@ export async function main() {
       'delete a stack (after confirmation)',
       (yargs) => yargs
         .demand(0, 0)
+        .option('role-arn', {
+          type: 'string',
+          description: 'Role to assume for delete operation'})
         .option('yes', {
           type: 'boolean', default: false,
           description: 'Confirm deletion of stack'})
