@@ -1604,17 +1604,17 @@ export async function getStackTemplateMain(argv: Arguments): Promise<number> {
   process.stderr.write(`# Stage Shown: ${TemplateStage}\n\n`);
   switch (argv.format) {
   case 'yaml':
-    if (output.TemplateBody.match(/ *\{/)) {
+    if (output.TemplateBody.match(/^ *\{/)) {
       console.log(yaml.dump(JSON.parse(output.TemplateBody)))
     } else {
       console.log(output.TemplateBody);
     }
     break;
   case 'json':
-    if (output.TemplateBody.indexOf('{') === 0) {
+    if (output.TemplateBody.match(/^ *\{/)) {
       console.log(output.TemplateBody);
     } else {
-      console.log(JSON.parse(yaml.loadString(output.TemplateBody, 'cfn')));
+      console.log(JSON.stringify(yaml.loadString(output.TemplateBody, 'cfn'), null,' '));
     }
     break;
   case 'original':
