@@ -754,6 +754,13 @@ async function configureAWS(profile?: string, region?: AWSRegion) {
     aws.config.update({region});
   }
 }
+function getCurrentAWSRegion(): AWSRegion {
+  // MUST be called after configureAWS()
+  // this cast is only safe after that
+  const region = (aws.config.region || process.env.AWS_REGION) as AWSRegion;
+  return region;
+}
+
 
 const DEFAULT_STATUS_PADDING = 35;
 
@@ -1317,7 +1324,7 @@ async function stackArgsToCreateChangeSetInput(changeSetName: string, stackArgs:
 }
 
 abstract class AbstractCloudFormationStackCommand {
-  readonly region: AWSRegion
+  region: AWSRegion
   readonly profile: string
   readonly stackName: string
   readonly argsfile: string
@@ -1339,6 +1346,7 @@ abstract class AbstractCloudFormationStackCommand {
 
   async _setup() {
     await configureAWS(this.profile, this.region)
+    this.region = this.region || getCurrentAWSRegion();
     this._cfn = new aws.CloudFormation()
   }
 
@@ -1536,17 +1544,14 @@ export async function createCreationChangesetMain(argv: Arguments): Promise<numb
 };
 
 export async function listStacksMain(argv: Arguments): Promise<number> {
-  const profile =  argv.profile;
-  const region =  argv.region;
-  await configureAWS(profile, region);
+  await configureAWS(argv.profile, argv.region);
   await listStacks();
   return 0;
 }
 
 export async function watchStackMain(argv: Arguments): Promise<number> {
-  const region = argv.region;
-  await configureAWS(argv.profile, region);
-
+  await configureAWS(argv.profile, argv.region);
+  const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
   const startTime = new Date();
 
@@ -1566,9 +1571,8 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
 }
 
 export async function describeStackMain(argv: Arguments): Promise<number> {
-  const region = argv.region;
   await configureAWS(argv.profile, argv.region);
-
+  const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
 
   console.log();
@@ -1584,7 +1588,6 @@ export async function describeStackMain(argv: Arguments): Promise<number> {
 }
 
 export async function getStackTemplateMain(argv: Arguments): Promise<number> {
-  const region = argv.region;
   await configureAWS(argv.profile, argv.region);
 
   const StackName = argv.stackname;
@@ -1625,8 +1628,8 @@ export async function getStackTemplateMain(argv: Arguments): Promise<number> {
 import * as inquirer from 'inquirer';
 
 export async function deleteStackMain(argv: Arguments): Promise<number> {
-  const region = argv.region;
-  await configureAWS(argv.profile, region);
+  await configureAWS(argv.profile, argv.region);
+  const region = getCurrentAWSRegion();
 
   const StackName = argv.stackname;
 
