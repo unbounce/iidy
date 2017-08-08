@@ -38,7 +38,7 @@ Yaml templates. It includes an optional yaml pre-processor that:
   invoking CloudFormation on the rendered output.
 
 ## Demo
-[![asciicast](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC.png)](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC)
+[![asciicast](https://asciinema.org/a/L3nLBD1vAshEQwgOjivN2XDWC.png)](https://asciinema.org/a/L3nLBD1vAshEQwgOjivN2XDWC)
 
 ## iidy at Unbounce
 
@@ -222,10 +222,9 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
 
 ### AWS IAM Settings
 
-`iidy` supports loading AWS IAM credentials/profiles from
-    a) the cli options shown above,
-    b) `Region` or `Profile` settings in `stack-args.yaml`, or
-    c) the standard environment variables.
+`iidy` supports loading AWS IAM credentials/profiles from a) the cli
+    options shown above, b) `Region` or `Profile` settings in
+    `stack-args.yaml`, or c) the standard environment variables.
 
 ### Listing and Describing Live Stacks
 
@@ -233,7 +232,7 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
 
 ### Creating or Updating CloudFormation Stacks
 
-[![asciicast](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC.png)](https://asciinema.org/a/hYdznipYvML7su0CnQ4j8ZtHC)
+[![asciicast](https://asciinema.org/a/L3nLBD1vAshEQwgOjivN2XDWC.png)](https://asciinema.org/a/L3nLBD1vAshEQwgOjivN2XDWC)
 
 ```
 $ tree examples/hello-world
