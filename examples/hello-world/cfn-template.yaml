@@ -5,4 +5,4 @@ Resources:
   HelloWorld:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: !Sub "Hello ${Name}}"
+      DisplayName: !Sub "Hello ${Name}"

@@ -69,9 +69,9 @@ export type ImportRecord = {
   sha256Digest: SHA256Digest,
 };
 
-type $envValues = {[key: string]: any} // TODO might need more general value type
+export type $envValues = {[key: string]: any} // TODO might need more general value type
 
-type $param = {
+export type $param = {
   Name: string,
   Default?: any,
   Type?: any,
@@ -81,7 +81,7 @@ type $param = {
 };
 
 // TODO find a better name for this Interface
-interface ExtendedCfnDoc extends CfnDoc {
+export interface ExtendedCfnDoc extends CfnDoc {
   $imports?: {[key: string]: any},
   $params?: Array<$param>,
   $location: string,
@@ -653,7 +653,7 @@ function visitNode(node: any, path: string, env: Env): any {
 };
 
 
-async function transform(root: ExtendedCfnDoc, rootDocLocation: ImportLocation): Promise<CfnDoc> {
+export async function transform(root: ExtendedCfnDoc, rootDocLocation: ImportLocation): Promise<CfnDoc> {
   const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports);
@@ -744,6 +744,7 @@ import * as wrapAnsi from 'wrap-ansi';
 import * as ora from 'ora';
 
 import {AWSRegion} from './aws-regions';
+import timeout from './timeout';
 
 async function configureAWS(profile?: string, region?: AWSRegion) {
   process.env.AWS_SDK_LOAD_CONFIG = 'true'; // see https://github.com/aws/aws-sdk-js/pull/1391
@@ -885,8 +886,6 @@ const objectToCFNParams =
           return {ParameterKey, ParameterValue}})
 
 type ExitCode = number;
-
-const timeout = (ms:number) => new Promise(res => setTimeout(res, ms));
 
 async function showStackEvents(StackName: string, limit=10) {
   let evs = (await getAllStackEvents(StackName));
@@ -1040,6 +1039,7 @@ async function summarizeCompletedStackOperation(StackName: string): Promise<aws.
 export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' | 'EXECUTE_CHANGESET' | 'ESTIMATE_COST';
 
 function runCommandSet(commands: string[]) {
+  // TODO: merge this with the demo script functionality
   for (let command of commands) {
     console.log('Running command:\n' + cli.blackBright(command))
     const result = child_process.spawnSync(command, [], {shell: true});

@@ -68,7 +68,7 @@ $(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	cp Makefile.test dist/docker/Makefile
 	cp -a examples dist/docker/
 	docker build -t iidy-test dist/docker
-	docker run --rm -v ~/.aws/:/root/.aws/ iidy-test make test
+	docker run --rm -it -v ~/.aws/:/root/.aws/ iidy-test make test
 	touch $(TESTS_STATEFILE)
 
 # ifeq ($(shell uname),Darwin)

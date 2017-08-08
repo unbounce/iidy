@@ -1,0 +1,110 @@
+#!/usr/bin/env iidy demo
+$imports:
+  nameSuffix: random:dashed-name
+  StackName: "literal:iidy-demo-{{ nameSuffix }}"
+
+files:
+  cfn-template.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello ${Name}"
+
+  .broken-cfn-template.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello ${Name}"
+          Foo: 1234
+
+  stack-args.yaml: |-
+    StackName: "{{ StackName }}"  # auto generated name
+    Template: ./cfn-template.yaml
+    
+    Profile: sandbox
+    Region: us-west-2
+    
+    Parameters:
+      Name: world
+    
+    Tags:
+      owner: your-name
+      project: iidy-demo
+      environment: development
+      lifetime: short
+
+demo:
+  - setenv:
+      AWS_REGION: us-west-2
+      AWS_PROFILE: sandbox
+      "BASH_FUNC_highlight%%": |
+        () {
+          GREP_COLOR="1;32" grep --color -E "$1|$";
+        }
+
+  - banner: In this *live* demo we will create, update, and then delete a simple stack.
+  - sleep: 3
+  - ls .
+  - banner: "We'll use these 2 files throughout the demo."
+  - sleep: 3
+  - banner: "'cfn-template.yaml' is a very simple CloudFormation Template. It creates an SNS Topic."
+  - cat cfn-template.yaml
+  - sleep: 3
+
+  - banner: |-
+      'stack-args.yaml' specifies the arguments for CloudFormation operations, including 'Template: cfn-template.yaml'.
+  - sleep: 1
+  - cat stack-args.yaml
+  - sleep: 4
+
+  - banner: "Let's review the help docs for 'iidy create-stack' and then use it."
+  - sleep: 1
+  - iidy help | highlight 'create-stack .*'
+  - sleep: 2
+  - iidy create-stack stack-args.yaml
+  - sleep: 1
+
+  - banner: "We can see it with `iidy list-stacks` or `iidy describe-stack {{ StackName }}`."
+  - "iidy list-stacks | grep {{ StackName }}"
+  - sleep: 1
+
+
+  - banner: "Let's change the 'owner' tag and then update the stack."
+  - sleep: 2
+
+  - highlight 'owner.*' < stack-args.yaml
+  - "sed -i.bak s/your-name/${USER:-demouser}/ stack-args.yaml"
+  - highlight 'owner.*' < stack-args.yaml
+  - sleep: 2
+
+  - banner: "Now, we update-stack."
+  - sleep: 1
+  - iidy update-stack stack-args.yaml
+
+  - banner: "Let's break the template on purpose to see what an error looks like."
+  - sleep: 3
+  - mv cfn-template.yaml cfn-template.yaml.bak
+  - mv .broken-cfn-template.yaml cfn-template.yaml
+  - iidy update-stack stack-args.yaml || true
+
+  - banner: "We can now see the full stack history via 'describe-stack'."
+  - sleep: 2
+  - iidy describe-stack {{ StackName }}
+  - sleep: 2
+
+  #- mv cfn-template.yaml.bak cfn-template.yaml
+
+  - sleep: 2
+  - banner: "We've created and updated the stack. Time to delete it."
+  - sleep: 1
+  - "iidy delete-stack --region us-west-2 --profile sandbox --yes {{ StackName }}"
+
+  - banner: "That's all folks. Thanks for watching!"

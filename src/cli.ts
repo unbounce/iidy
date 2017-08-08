@@ -37,7 +37,8 @@ interface Commands {
   createCreationChangesetMain: Handler
   executeChangesetMain: Handler
 
-  renderMain: Handler
+  renderMain: Handler,
+  demoMain: Handler
 
 };
 
@@ -59,8 +60,17 @@ interface Commands {
 //   estimateCost: index.estimateCost
 // }
 
-const lazyLoad = (fnname: keyof Commands): Handler =>
-  (args) => require('./index')[fnname](args);
+type LazyLoadModules = './index' | './demo'
+
+const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules='./index'): Handler =>
+  (args) => {
+    // note, the requires must be literal for `pkg` to find the modules to include
+    if (modName === './index') {
+      return require('./index')[fnname](args);
+    } else if (modName === './demo') {
+      return require('./demo')[fnname](args);
+    }
+  }
 
 const lazy: Commands = {
   createStackMain: lazyLoad('createStackMain'),
@@ -77,7 +87,9 @@ const lazy: Commands = {
 
   renderMain: lazyLoad('renderMain'),
 
-  estimateCost: lazyLoad('estimateCost')
+  estimateCost: lazyLoad('estimateCost'),
+
+  demoMain: lazyLoad('demoMain', './demo'),
 
   // TODO init-stack-args command to create a stack-args.yaml
   // TODO example command pull down an examples dir
@@ -218,10 +230,17 @@ export async function main() {
         .strict(),
       wrapMainHandler(commands.renderMain))
 
+    .command(
+      'demo <demoscript>',
+      'run a demo script',
+      (yargs) => yargs
+        .demand(0, 0)
+        .strict(),
+      wrapMainHandler(commands.demoMain))
+
     .option('region', {
       type: 'string', default: null,
       group: 'AWS Options',
-      //choices: AWSRegions,
       description: 'AWS region'})
     .option('profile', {
       type: 'string', default: null,
