@@ -738,7 +738,6 @@ import * as cli from 'cli-color';
 
 let getStrippedLength: (s: string) => number;
 getStrippedLength = require('cli-color/get-stripped-length');
-//import * as getStrippedLength from 'cli-color/get-stripped-length';
 
 import * as wrapAnsi from 'wrap-ansi';
 import * as ora from 'ora';
