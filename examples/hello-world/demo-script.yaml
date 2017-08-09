@@ -50,6 +50,14 @@ demo:
           GREP_COLOR="1;32" grep --color -E "$1|$";
         }
 
+  - banner: |-
+      iidy is a CLI tool for working with the CloudFormation API.
+
+      It improves the developer experience, especially the feedback loop.
+  - sleep: 3
+  - iidy help
+  - sleep: 4
+
   - banner: In this *live* demo we will create, update, and then delete a simple stack.
   - sleep: 3
   - ls .
@@ -60,15 +68,11 @@ demo:
   - sleep: 3
 
   - banner: |-
-      'stack-args.yaml' specifies the arguments for CloudFormation operations, including 'Template: cfn-template.yaml'.
-  - sleep: 1
+      The other file 'stack-args.yaml' specifies arguments for CloudFormation operations.
+  - sleep: 3
   - cat stack-args.yaml
   - sleep: 4
 
-  - banner: "Let's review the help docs for 'iidy create-stack' and then use it."
-  - sleep: 1
-  - iidy help | highlight 'create-stack .*'
-  - sleep: 2
   - iidy create-stack stack-args.yaml
   - sleep: 1
 
@@ -91,7 +95,7 @@ demo:
 
   - banner: "Let's break the template on purpose to see what an error looks like."
   - sleep: 3
-  - mv cfn-template.yaml cfn-template.yaml.bak
+  #- mv cfn-template.yaml cfn-template.yaml.bak
   - mv .broken-cfn-template.yaml cfn-template.yaml
   - iidy update-stack stack-args.yaml || true
 
@@ -107,4 +111,11 @@ demo:
   - sleep: 1
   - "iidy delete-stack --region us-west-2 --profile sandbox --yes {{ StackName }}"
 
-  - banner: "That's all folks. Thanks for watching!"
+  - banner: "That's all for our demo. Thanks for watching!"
+  - sleep: 3
+  - banner: |-
+      In addition to what you just saw, iidy:
+        - is integrated with AWS Parameter Store for secrets management.
+          This is a replacement for Ansible Vault.
+
+        - supports CFN changesets for safe updates to long-lived stacks.
