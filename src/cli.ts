@@ -1,5 +1,6 @@
 import * as process from 'process';
 import * as yargs from 'yargs';
+import * as cli from 'cli-color';
 
 import {logger} from './logger';
 import {AWSRegions} from './aws-regions';
@@ -99,11 +100,14 @@ const lazy: Commands = {
 const commands: Commands = lazy;
 
 export async function main() {
+  const description = cli.xterm(250);
+  const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
+                 + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
 
   const args = yargs
     .command(
-      'create-stack <argsfile>',
-      'create a cfn stack based on stack-args.yaml',
+      'create-stack  <argsfile>',
+      description('create a cfn stack based on stack-args.yaml'),
       (yargs) => yargs
         .demand(0, 0)
         .usage('Usage: iidy create-stack <stack-args.yaml>')
@@ -113,8 +117,8 @@ export async function main() {
       wrapMainHandler(commands.createStackMain))
 
     .command(
-      'update-stack <argsfile>',
-      'update a cfn stack based on stack-args.yaml',
+      'update-stack  <argsfile>',
+      description('update a cfn stack based on stack-args.yaml'),
       (yargs) => yargs
         .demand(0, 0)
         .usage('Usage: iidy update-stack <stack-args.yaml>')
@@ -124,8 +128,20 @@ export async function main() {
       wrapMainHandler(commands.updateStackMain))
 
     .command(
-      'create-changeset <changesetName> <argsfile>',
-      'create a cfn changeset based on stack-args.yaml',
+      'estimate-cost <argsfile>',
+      description('estimate aws costs based on stack-args.yaml'),
+      (yargs) => yargs
+        .demand(0, 0)
+        .option('stack-name', {
+          type: 'string', default: null,
+          description: 'override the StackName from --argsfile'}),
+      wrapMainHandler(commands.estimateCost))
+
+    .command('\t', '') // fake command to add a line-break to the help output
+  
+    .command(
+      'create-changeset           <changesetName> <argsfile>',
+      description('create a cfn changeset based on stack-args.yaml'),
       (yargs) => yargs
         .demand(0, 0)
         .option('stack-name', {
@@ -134,18 +150,8 @@ export async function main() {
       wrapMainHandler(commands.createUpdateChangesetMain))
 
     .command(
-      'create-stack-via-changeset <changesetName> <argsfile>',
-      'create a new stack via a cfn changeset based on stack-args.yaml',
-      (yargs) => yargs
-        .demand(0, 0)
-        .option('stack-name', {
-          type: 'string', default: null,
-          description: 'override the StackName from --argsfile'}),
-      wrapMainHandler(commands.createCreationChangesetMain))
-
-    .command(
-      'exec-changeset <changesetName> <argsfile>',
-      'execute a cfn changeset based on stack-args.yaml',
+      'exec-changeset             <changesetName> <argsfile>',
+      description('execute a cfn changeset based on stack-args.yaml'),
       (yargs) => yargs
         .demand(0, 0)
         .option('stack-name', {
@@ -154,26 +160,21 @@ export async function main() {
       wrapMainHandler(commands.executeChangesetMain))
 
     .command(
-      'estimate-cost <argsfile>',
-      'estimate stack costs based on stack-args.yaml',
+      'create-stack-via-changeset <changesetName> <argsfile>',
+      description('create a cfn changeset to create a new stack'),
       (yargs) => yargs
         .demand(0, 0)
         .option('stack-name', {
           type: 'string', default: null,
           description: 'override the StackName from --argsfile'}),
-      wrapMainHandler(commands.estimateCost))
+      wrapMainHandler(commands.createCreationChangesetMain))
+
+    .command('\t', '') // fake command to add a line-break to the help output
+
 
     .command(
-      'watch-stack <stackname>',
-      'watch a stack that is already being created or updated',
-      (yargs) => yargs
-        .demand(0, 0)
-        .usage('Usage: iidy watch-stack <stackname>'),
-      wrapMainHandler(commands.watchStackMain))
-
-    .command(
-      'describe-stack <stackname>',
-      'describe a stack',
+      'describe-stack     <stackname>',
+      description('describe a stack'),
       (yargs) => yargs
         .demand(0, 0)
         .option('events', {
@@ -183,8 +184,30 @@ export async function main() {
       wrapMainHandler(commands.describeStackMain))
 
     .command(
+      'watch-stack        <stackname>',
+      description('watch a stack that is already being created or updated'),
+      (yargs) => yargs
+        .demand(0, 0)
+        .usage('Usage: iidy watch-stack <stackname>'),
+      wrapMainHandler(commands.watchStackMain))
+
+    .command(
+      'delete-stack       <stackname>',
+      description('delete a stack (after confirmation)'),
+      (yargs) => yargs
+        .demand(0, 0)
+        .option('role-arn', {
+          type: 'string',
+          description: 'Role to assume for delete operation'})
+        .option('yes', {
+          type: 'boolean', default: false,
+          description: 'Confirm deletion of stack'})
+        .usage('Usage: iidy delete-stack <stackname>'),
+      wrapMainHandler(commands.deleteStackMain))
+
+    .command(
       'get-stack-template <stackname>',
-      'download the template of a live stack',
+      description('download the template of a live stack'),
       (yargs) => yargs
         .demand(0, 0)
         .option('format', {
@@ -199,28 +222,16 @@ export async function main() {
       wrapMainHandler(commands.getStackTemplateMain))
 
     .command(
-      'delete-stack <stackname>',
-      'delete a stack (after confirmation)',
-      (yargs) => yargs
-        .demand(0, 0)
-        .option('role-arn', {
-          type: 'string',
-          description: 'Role to assume for delete operation'})
-        .option('yes', {
-          type: 'boolean', default: false,
-          description: 'Confirm deletion of stack'})
-        .usage('Usage: iidy delete-stack <stackname>'),
-      wrapMainHandler(commands.deleteStackMain))
-
-    .command(
       'list-stacks',
-      'list the stacks within a region',
+      description('list all stacks within a region'),
       (yargs) => yargs.demand(0, 0),
       wrapMainHandler(commands.listStacksMain))
 
+    .command('\t', '') // fake command to add a line-break to the help output
+
     .command(
       'render <template>',
-      'pre-process and render cloudformation yaml template',
+      description('pre-process and render cloudformation yaml template'),
       (yargs) => yargs
         .demand(0, 0)
         .usage('Usage: iidy render <input-template.yaml>')
@@ -232,9 +243,12 @@ export async function main() {
 
     .command(
       'demo <demoscript>',
-      'run a demo script',
+      description('run a demo script'),
       (yargs) => yargs
         .demand(0, 0)
+        .option('timescaling', {
+          type: 'number', default: 1,
+          description: 'time scaling factor for sleeps, etc.'})
         .strict(),
       wrapMainHandler(commands.demoMain))
 
@@ -248,13 +262,13 @@ export async function main() {
       description: 'AWS profile'})
     .demandCommand(1)
 
-    .usage("$ iidy (Is it done yet?) -- a tool for working with Yaml and the CloudFormation API")
+    .usage(usage)
     .alias('v', 'version')
     .version(function() { return require('../package').version;})
     .describe('v', 'show version information')
     .help()
     .alias('h', 'help')
-    .completion()
+    .completion('completion', description('generate bash completion script. To use: "source <(iidy completion)"'))
     .recommendCommands()
     // .completion('completion', (current, argv, done) => {
     //   console.log('-----')
@@ -266,7 +280,8 @@ export async function main() {
 
     .strict()
     .wrap(yargs.terminalWidth())
-    .argv;
+    .argv; // to force parsing / handling
+
 }
 
 
