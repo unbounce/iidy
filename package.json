@@ -60,6 +60,7 @@
     "@types/wrap-ansi": "^2.0.14",
     "@types/yargs": "^8.0.1",
     "tslint": "^5.4.3",
-    "typescript": "^2.4.2"
+    "typescript": "^2.4.2",
+    "pkg": "^4.2.2"
   }
 }
