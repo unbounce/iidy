@@ -1109,7 +1109,7 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   //console.log('Stack OnFailure Mode:', cli.blackBright(OnFailure));
   if (showTimes) {
     printEntry('Creation Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));
-    printEntry('Last Update Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));
+    printEntry('Last Update Time:', cli.blackBright(renderTimestamp(stack.LastUpdatedTime || stack.CreationTime)));
   }
   printEntry('Timeout In Minutes:', cli.blackBright(stack.TimeoutInMinutes || 'None'));
   printEntry('NotificationARNs:', cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
