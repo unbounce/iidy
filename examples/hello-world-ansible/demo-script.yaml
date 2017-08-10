@@ -1,0 +1,77 @@
+#!/usr/bin/env iidy demo
+$imports:
+  nameSuffix: random:dashed-name
+  StackName: "literal:iidy-ansible-comparison-{{ nameSuffix }}"
+
+files:
+  cfn-template.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello ${Name}"
+
+  broken-cfn-template.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello ${Name}"
+          Foo: 1234
+
+  inventory/localhost: |-
+    localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python"
+
+  create-stack.yml: |-
+    - hosts: all
+      gather_facts: no
+      connection: local
+      vars: {}
+      tasks:
+        - name: ensure stack exists
+          cloudformation:
+            stack_name: "{{ StackName }}"
+            region: "us-west-2"
+            state: 'present'
+            disable_rollback: true
+            template: "cfn-template.yaml"
+            template_parameters:
+              Name: "World"
+            tags:
+              owner: "your-name"
+              project: "iidy-demo"
+              environment: "development"
+              lifetime: "short"
+demo:
+  - setenv:
+      AWS_REGION: us-west-2
+      AWS_PROFILE: sandbox
+
+  - banner: "perform ansible's pre-flight check"
+  - ansible-playbook --check -i inventory/localhost create-stack.yml
+  - banner: create the stack
+  - ansible-playbook -i inventory/localhost create-stack.yml
+  - silent: aws cloudformation describe-stacks --stack-name "{{ StackName }}" --query 'Stacks[0].StackId' --output text > stackid.txt
+
+  - banner: run a failing update
+  - mv broken-cfn-template.yaml cfn-template.yaml
+  - ansible-playbook -i inventory/localhost create-stack.yml || true
+  - silent: date
+  - banner: Note the unreadable failure message & the timestamp
+
+  - banner: |-
+      Note the unreadable failure message & the timestamp. When we run
+      `iidy describe-stack` we'll see that Ansible doesn't give us
+      feedback until after the rollback is complete. That could be a
+      very long time on a large stack.
+
+  - iidy describe-stack "$(cat stackid.txt)"
+
+  - banner: "We'll use iidy to cleanup the stack"
+  - aws cloudformation delete-stack --stack-name "{{ StackName }}"
