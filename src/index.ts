@@ -919,6 +919,8 @@ async function watchStack(StackName: string, startTime: Date, pollInterval=2) {
   const spinner = ora({spinner: 'dots12',
                        text: '',
                        enabled: _.isNumber(tty.columns)});
+  // TODO consider doing: const spinnerStart = new Date()
+  // to ensure calcElapsedSeconds is accurate in the face of innacurate local clocks
   const calcElapsedSeconds = () => Math.ceil((+(new Date()) - +(startTime))/1000);
   let DONE = false;
   while (! DONE) {
@@ -928,9 +930,11 @@ async function watchStack(StackName: string, startTime: Date, pollInterval=2) {
     const statusPadding = _.max(_.map(evs, (ev)=> (ev.ResourceStatus as string).length))
     for (let ev of evs) {
       if (ev.Timestamp < startTime) {
+        logger.debug('filtering event from past', ev=ev, startTime=startTime);
         seen[ev.EventId] = true
       }
       if (!seen[ev.EventId]){
+        logger.debug('displaying new event', ev=ev, startTime=startTime);
         displayStackEvent(ev, statusPadding);
       }
       seen[ev.EventId] = true
@@ -1109,7 +1113,9 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   //console.log('Stack OnFailure Mode:', cli.blackBright(OnFailure));
   if (showTimes) {
     printEntry('Creation Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));
-    printEntry('Last Update Time:', cli.blackBright(renderTimestamp(stack.LastUpdatedTime || stack.CreationTime)));
+    if (stack.LastUpdatedTime) {
+      printEntry('Last Update Time:', cli.blackBright(renderTimestamp(stack.LastUpdatedTime)));
+    }
   }
   printEntry('Timeout In Minutes:', cli.blackBright(stack.TimeoutInMinutes || 'None'));
   printEntry('NotificationARNs:', cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
@@ -1200,6 +1206,17 @@ async function listStacks() {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 import {Arguments} from 'yargs';
+
+import getReliableTime from './getReliableTime';
+
+async function getReliableStartTime(): Promise<Date>{
+  const startTime = await getReliableTime();
+  startTime.setTime(startTime.getTime() - 500); // to be safe
+  // TODO warn about inaccurate local clocks as that will affect the calculation of elapsed time.
+  return startTime;
+}
+
+
 
 export async function renderMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region)
@@ -1378,7 +1395,7 @@ abstract class AbstractCloudFormationStackCommand {
   async run(): Promise<number> {
     await this._setup()
     await this._showCommandSummary()
-    this._startTime = new Date();
+    this._startTime = await getReliableStartTime();
     return this._run()
   }
 
@@ -1657,9 +1674,9 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   if (confirmed) {
     const cfn = new aws.CloudFormation();
      // --retain-resources, --client-request-token
+    const startTime = await getReliableStartTime();
     const deleteStackOutput = await cfn.deleteStack(
       {StackName, RoleARN: argv.roleArn}).promise();
-    const startTime = new Date();
     const StackId: string = stack.StackId as string;
     await watchStack(StackId as string, startTime);
     console.log();
