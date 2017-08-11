@@ -40,6 +40,10 @@ Yaml templates. It includes an optional yaml pre-processor that:
 ## Demo
 [![asciicast](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E.png)](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E)
 
+Here's a comparison between developer experience of `iidy` and `Ansible`
+when you run into errors with a CloudFormation stack:
+[![asciicast](https://asciinema.org/a/jExZ5S8Pk4KzlJiufGoll0rXs.png)](https://asciinema.org/a/jExZ5S8Pk4KzlJiufGoll0rXs?t=45)
+
 ## iidy at Unbounce
 
 `iidy` is a replacement for our use of Ansible as a wrapper around
@@ -110,7 +114,7 @@ api, and most importantly e) are simple and unopinionated.
 ```
 # Grab the appropriate binary from the releases page.
 # (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.3.0/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.3.1/iidy-macos.gz # or -linux.gz
 
 cd ~/Downloads                # or wherever Linux puts it
 gunzip iidy*.gz
@@ -415,9 +419,12 @@ commands in `package.json` for details about the build process.
 
 ## Changelog
 
+* v1.3.1 Added time since last event to the event polling output. --
+  August 11, 2017
+
 * v1.3.0 More robust time handling / event filtering to protect
   against local clock drift. Also there's now a Dockerfile for
-  creating a small Alpine based container image.
+  creating a small Alpine based container image. -- August 10, 2017
 
 * v1.2.0: CLI output is prettier, new `demo` command, `--role-arn`
   option for `delete-stack`, add missing `prepublish` entry to
