@@ -110,7 +110,7 @@ api, and most importantly e) are simple and unopinionated.
 ```
 # Grab the appropriate binary from the releases page.
 # (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.2.0/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.3.0/iidy-macos.gz # or -linux.gz
 
 cd ~/Downloads                # or wherever Linux puts it
 gunzip iidy*.gz
@@ -414,6 +414,10 @@ commands in `package.json` for details about the build process.
 ...
 
 ## Changelog
+
+* v1.3.0 More robust time handling / event filtering to protect
+  against local clock drift. Also there's now a Dockerfile for
+  creating a small Alpine based container image.
 
 * v1.2.0: CLI output is prettier, new `demo` command, `--role-arn`
   option for `delete-stack`, add missing `prepublish` entry to
