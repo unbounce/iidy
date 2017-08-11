@@ -25,6 +25,22 @@ files:
           DisplayName: !Sub "Hello ${Name}"
           Foo: 1234
 
+  stack-args.yaml: |-
+    StackName: "{{ StackName }}"  # auto generated name
+    Template: ./cfn-template.yaml
+
+    Profile: sandbox
+    Region: us-west-2
+
+    Parameters:
+      Name: world
+
+    Tags:
+      owner: your-name
+      project: iidy-demo
+      environment: development
+      lifetime: short
+
   inventory/localhost: |-
     localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python"
 
@@ -53,25 +69,29 @@ demo:
       AWS_REGION: us-west-2
       AWS_PROFILE: sandbox
 
-  - banner: "perform ansible's pre-flight check"
-  - ansible-playbook --check -i inventory/localhost create-stack.yml
-  - banner: create the stack
+  - banner: We're going to compare the developer experience of Ansible and iidy.
+  - sleep: 2
+  - banner: First, we create the stack with ansible.
   - ansible-playbook -i inventory/localhost create-stack.yml
   - silent: aws cloudformation describe-stacks --stack-name "{{ StackName }}" --query 'Stacks[0].StackId' --output text > stackid.txt
 
-  - banner: run a failing update
+  - banner: Then we run a broken update.
   - mv broken-cfn-template.yaml cfn-template.yaml
   - ansible-playbook -i inventory/localhost create-stack.yml || true
   - silent: date
-  - banner: Note the unreadable failure message & the timestamp
 
   - banner: |-
-      Note the unreadable failure message & the timestamp. When we run
-      `iidy describe-stack` we'll see that Ansible doesn't give us
-      feedback until after the rollback is complete. That could be a
-      very long time on a large stack.
+      Note the unreadable failure message & the timestamp.
 
-  - iidy describe-stack "$(cat stackid.txt)"
+      Ansible gives us no feedback until after the rollback is
+      complete. That could be a *very long time* on a large stack.
+
+  - sleep: 3
+  - banner: Let's try that again with iidy for comparison.
+  - sleep: 3
+  - iidy update-stack stack-args.yaml || true
 
   - banner: "We'll use iidy to cleanup the stack"
-  - aws cloudformation delete-stack --stack-name "{{ StackName }}"
+  - sleep: 1
+  #- aws cloudformation delete-stack --stack-name "{{ StackName }}"
+  - iidy delete-stack --yes "{{ StackName }}"
