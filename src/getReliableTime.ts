@@ -12,10 +12,10 @@ const getNetworkTime = Promise.promisify(_getNetworkTime);
 const getReliableTime = (): Promise<Date> =>
   getNetworkTime("pool.ntp.org", 123)
   .catch((e) => {
-    logger.info('error in getNetworkTime. Retrying', e=e)
+    logger.debug('error in getNetworkTime. Retrying', e=e)
     return getNetworkTime("pool.ntp.org", 123)
   }).catch((e) => {
-    logger.info('error in getNetworkTime. Falling back to new Date()', e=e)
+    logger.debug('error in getNetworkTime. Falling back to new Date()', e=e)
     return new Date();
   });
 
