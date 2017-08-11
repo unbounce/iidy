@@ -917,13 +917,15 @@ async function watchStack(StackName: string, startTime: Date, pollInterval=2) {
                        enabled: _.isNumber(tty.columns)});
   // TODO consider doing: const spinnerStart = new Date()
   // to ensure calcElapsedSeconds is accurate in the face of innacurate local clocks
-  const calcElapsedSeconds = () => Math.ceil((+(new Date()) - +(startTime))/1000);
+  const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
+  let lastEvTimestamp: Date = new Date();    // might be off because of drift
+
   let DONE = false;
   while (! DONE) {
     let evs = await getAllStackEvents(StackName);
     spinner.stop();
-    evs = _.sortBy(evs, (ev)=>ev.Timestamp);
-    const statusPadding = _.max(_.map(evs, (ev)=> (ev.ResourceStatus as string).length))
+    evs = _.sortBy(evs, (ev) => ev.Timestamp);
+    const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
     for (let ev of evs) {
       if (ev.Timestamp < startTime) {
         logger.debug('filtering event from past', ev=ev, startTime=startTime);
@@ -932,20 +934,22 @@ async function watchStack(StackName: string, startTime: Date, pollInterval=2) {
       if (!seen[ev.EventId]){
         logger.debug('displaying new event', ev=ev, startTime=startTime);
         displayStackEvent(ev, statusPadding);
+        lastEvTimestamp = ev.Timestamp;
       }
       seen[ev.EventId] = true
       if (ev.ResourceType === 'AWS::CloudFormation::Stack') {
         if (_.includes(terminalStackStates, ev.ResourceStatus) && ev.Timestamp > startTime) {
           console.log(
-            cli.blackBright(` ${calcElapsedSeconds()} seconds elapsed`));
+            cli.blackBright(` ${calcElapsedSeconds(startTime)} seconds elapsed total.`));
           DONE = true;
         }
       }
     }
     if (! DONE) {
       spinner.start();
+      spinner.text = cli.xterm(240)(
+        `${calcElapsedSeconds(startTime)} seconds elapsed total. ${calcElapsedSeconds(lastEvTimestamp)} since last event.`);
       await timeout(pollInterval*1000);
-      spinner.text = cli.xterm(240)(`${calcElapsedSeconds()} seconds elapsed`);
     }
   }
 }
@@ -1574,7 +1578,7 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region);
   const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
-  const startTime = new Date();
+  const startTime = await getReliableStartTime();
 
   console.log();
   const stack = await summarizeStackProperties(StackName, region, true);
@@ -1681,7 +1685,7 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
     const deleteStackOutput = await cfn.deleteStack(
       {StackName, RoleARN: argv.roleArn}).promise();
     const StackId: string = stack.StackId as string;
-    await watchStack(StackId as string, startTime);
+    await watchStack(StackId, startTime);
     console.log();
     const {StackStatus} = await getStackDescription(StackId, cfn);
     return showFinalComandSummary(StackStatus == 'DELETE_COMPLETE');
