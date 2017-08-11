@@ -32,7 +32,7 @@ test : $(TESTS_STATEFILE)
 #release: check_working_dir_is_clean clean deps build test
 
 clean :
-	rm -f dist/*
+	rm -rf dist/*
 
 fullclean : clean
 	rm -rf .make node_modules
