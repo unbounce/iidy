@@ -813,11 +813,7 @@ function colorizeResourceStatus(status: string, padding=DEFAULT_STATUS_PADDING):
 }
 
 function renderTimestamp(ts: Date) {
-  if (false && ts.getDate() == (new Date).getDate()) {
-    //return 'TODAY ' + ts.toLocaleTimeString(undefined, {hour12: false});
-  } else {
-    return dateformat(ts);
-  }
+  return dateformat(ts);
 }
 
 const COLUMN2_START = 25;
@@ -965,14 +961,12 @@ async function getAllStackExports() {
   return exports;
 }
 
-async function summarizeCompletedStackOperation(StackName: string): Promise<aws.CloudFormation.Stack> {
+async function summarizeCompletedStackOperation(StackName: string)
+: Promise<aws.CloudFormation.Stack> {
   // TODO handle this part for when OnFailure=DELETE and stack is gone ...
   //   this would be using a stackId instead
   const cfn = new aws.CloudFormation()
-  const stack = ((await cfn.describeStacks({StackName}).promise()).Stacks || [])[0];
-  if (_.isUndefined(stack)) {
-    throw new Error(`Final call to describeStacks returned no results. Check aws console`);
-  }
+  const stack = await getStackDescription(StackName, cfn);
   const resources = (
     (await cfn.describeStackResources({StackName}).promise()
     ).StackResources || []);
@@ -1019,7 +1013,7 @@ async function summarizeCompletedStackOperation(StackName: string): Promise<aws.
     for (const ex of exports) {
       console.log(formatStackExportName(sprintf(` %-${exportNamePadding}s`, ex.Name)),
                   cli.blackBright(ex.Value));
-      // handle NextToken
+      // TODO handle NextToken, which might happen on large sets of exports
       try {
         let imports = await cfn.listImports({ExportName: ex.Name as string}).promise();
         for (let imp of (imports.Imports || [])) {
@@ -1092,12 +1086,20 @@ async function loadCFNTemplate(location: string, baseLocation: string): Promise<
   }
 }
 
-async function summarizeStackProperties(StackName: string, region: string, showTimes=false) {
-  const cfn = new aws.CloudFormation();
+async function getStackDescription(StackName: string, cfn?: aws.CloudFormation)
+: Promise<aws.CloudFormation.Stack> {
+  cfn = cfn || new aws.CloudFormation();
   const stack = ((await cfn.describeStacks({StackName}).promise()).Stacks || [])[0];
   if (_.isUndefined(stack)) {
-    throw new Error(`${StackName} not found`);
+    throw new Error(`${StackName} not found. Has it been deleted? Check the AWS Console.`);
   }
+  return stack;
+}
+
+async function summarizeStackProperties(StackName: string, region: string, showTimes=false)
+: Promise<aws.CloudFormation.Stack> {
+  const cfn = new aws.CloudFormation();
+  const stack = await getStackDescription(StackName, cfn);
   // cfn.getStackPolicy({StackName})
   console.log(formatSectionHeading('Stack Details:'))
   const printEntry = (label:any, data:any) =>
@@ -1141,7 +1143,6 @@ async function summarizeStackProperties(StackName: string, region: string, showT
     }
   }
   return stack;
-
 }
 
 const prettyFormatSmallMap = (map: object): string => {
@@ -1341,6 +1342,23 @@ async function stackArgsToCreateChangeSetInput(changeSetName: string, stackArgs:
   return input;
 }
 
+function showFinalComandSummary(wasSuccessful: boolean): number {
+    if (wasSuccessful) {
+      console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
+                  cli.black(cli.bgGreenBright('Success')),
+                  '👍')
+      return 0;
+    } else {
+      console.log(
+        formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
+        cli.bgRedBright('Failure'),
+        ' (╯°□°）╯︵ ┻━┻ ',
+        'Fix and try again.'
+      )
+      return 1;
+    }
+}
+
 abstract class AbstractCloudFormationStackCommand {
   region: AWSRegion
   readonly profile: string
@@ -1388,7 +1406,6 @@ abstract class AbstractCloudFormationStackCommand {
     const sts = new aws.STS();
     const iamIdent = await sts.getCallerIdentity().promise();
     printEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
-    // cli.blackBright(iamIdent.Account)
     console.log();
   }
 
@@ -1409,7 +1426,7 @@ abstract class AbstractCloudFormationStackCommand {
     if (this._showPreviousEvents) {
       console.log();
       console.log(formatSectionHeading('Previous Stack Events (max 10):'))
-      await showStackEvents(this.stackName, 10);
+      await showStackEvents(stackId, 10);
     }
 
     console.log();
@@ -1420,21 +1437,7 @@ abstract class AbstractCloudFormationStackCommand {
     console.log();
     const stack = await summarizeCompletedStackOperation(stackId);
 
-    if (_.includes(this._expectedFinalStackStatus, stack.StackStatus)) {
-      console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
-                  cli.black(cli.bgGreenBright('Success')),
-                  '👍')
-      return 0;
-    } else {
-      console.log(
-        formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
-        cli.bgRedBright('Failure'),
-        ' (╯°□°）╯︵ ┻━┻ ',
-        'Fix and try again.'
-      )
-      return 1;
-    }
-
+    return showFinalComandSummary(_.includes(this._expectedFinalStackStatus, stack.StackStatus));
   }
   async _run(): Promise<number> {
     throw new Error('Not implemented');
@@ -1680,22 +1683,8 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
     const StackId: string = stack.StackId as string;
     await watchStack(StackId as string, startTime);
     console.log();
-    const {StackStatus} = ((await cfn.describeStacks(
-      {StackName: StackId}).promise()).Stacks || [])[0];
-    if (StackStatus == 'DELETE_COMPLETE') {
-      console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
-        cli.black(cli.bgGreenBright('Success')),
-        '👍')
-      return 0;
-    } else {
-      console.log(
-        formatSectionHeading(sprintf(`%-${COLUMN2_START}s`,'Command Summary:')),
-        cli.bgRedBright('Failure'),
-        ' (╯°□°）╯︵ ┻━┻' ,
-        'Fix and try again.'
-      )
-      return 1;
-    }
+    const {StackStatus} = await getStackDescription(StackId, cfn);
+    return showFinalComandSummary(StackStatus == 'DELETE_COMPLETE');
   } else {
     return 1
   }
