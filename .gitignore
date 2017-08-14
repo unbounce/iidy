@@ -3,6 +3,7 @@ node_modules/
 
 # output
 .make
+lib/cfn/*
 lib/*js
 lib/*d.ts
 lib/*map

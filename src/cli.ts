@@ -2,8 +2,7 @@ import * as process from 'process';
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
 
-import {logger} from './logger';
-import {AWSRegions} from './aws-regions';
+import { logger } from './logger';
 
 type ExitCode = number;
 type Handler = (args:yargs.Arguments) => Promise<ExitCode>
@@ -61,13 +60,15 @@ interface Commands {
 //   estimateCost: index.estimateCost
 // }
 
-type LazyLoadModules = './index' | './demo'
+type LazyLoadModules = './cfn' | './index' | './demo'
 
-const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules='./index'): Handler =>
+const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules='./cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
     if (modName === './index') {
       return require('./index')[fnname](args);
+    } else if (modName === './cfn') {
+      return require('./cfn')[fnname](args);
     } else if (modName === './demo') {
       return require('./demo')[fnname](args);
     }
@@ -86,7 +87,7 @@ const lazy: Commands = {
   createCreationChangesetMain: lazyLoad('createCreationChangesetMain'),
   executeChangesetMain: lazyLoad('executeChangesetMain'),
 
-  renderMain: lazyLoad('renderMain'),
+  renderMain: lazyLoad('renderMain', './index'),
 
   estimateCost: lazyLoad('estimateCost'),
 
@@ -260,8 +261,8 @@ export async function main() {
       type: 'string', default: null,
       group: 'AWS Options',
       description: 'AWS profile'})
-    .demandCommand(1)
 
+    .demandCommand(1)
     .usage(usage)
     .alias('v', 'version')
     .version(function() { return require('../package').version;})
