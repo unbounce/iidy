@@ -37,6 +37,12 @@ Yaml templates. It includes an optional yaml pre-processor that:
   expansion and validation happens as a pre-process step prior to
   invoking CloudFormation on the rendered output.
 
+## Pronunciation 
+
+iidy is pronounced "eye-dee", like the audience's response to Cab Calloway in Minnie the
+Moocher:
+https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
+
 ## Demo
 [![asciicast](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E.png)](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E)
 
