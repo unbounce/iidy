@@ -1,14 +1,10 @@
 {
   "name": "iidy",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "A tool for working with CloudFormation and yaml templates.",
   "main": "lib/cli.js",
   "types": "lib/index",
   "bin": "bin/iidy",
-  "private": true,
-  "pkg": {
-    "private": true
-  },
   "scripts": {
     "prepublish": "npm run build",
     "build": "tsc -p .",
@@ -17,7 +13,7 @@
     "pkg-binaries": "pkg --out-path dist -t node7-macos,node7-linux package.json",
     "test": "make test"
   },
-  "author": "",
+  "author": "Tavis Rudd <tavis@unbounce.com>",
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.82.0",
