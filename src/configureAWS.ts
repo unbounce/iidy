@@ -7,7 +7,7 @@ async function configureAWS(profile?: string, region?: AWSRegion) {
   const credentials = new aws.SharedIniFileCredentials({profile});
   await credentials.refreshPromise()
   aws.config.credentials = credentials;
-  if (region) {
+  if (typeof region === 'string') {
     aws.config.update({region});
   }
 }

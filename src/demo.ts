@@ -19,10 +19,10 @@ type DemoCommand
   = {type: 'shell', script: string}
   | {type: 'silent', script: string}
   | {type: 'sleep', seconds: number}
-  | {type: 'setenv', env: {[key: string]: any}}
+  | {type: 'setenv', env: {[key: string]: string}}
   | Banner;
 
-function normalizeRawCommand(raw: any): DemoCommand {
+function normalizeRawCommand(raw: any): DemoCommand { // tslint:disable-line
   if (typeof raw === 'string') {
     return {type: 'shell', script: raw};
   } else if (raw.setenv) {
@@ -54,7 +54,7 @@ class DemoRunner {
   async run(): Promise<number>{
     const demoFile = this.demoscript;
     const script0 = yaml.loadString(fs.readFileSync(demoFile), demoFile);
-    const script: any = await transform(script0, demoFile);
+    const script: any = await transform(script0, demoFile); // tslint:disable-line
     // TODO input validation using tv4 and json schema on ^
     this.tmpdir = tmp.dirSync();
     try {
@@ -70,7 +70,7 @@ class DemoRunner {
   }
 
   _unpackFiles(files: {[key: string]: string}) {
-    for (let fp in files) {
+    for (const fp in files) {
       if (pathmod.isAbsolute(fp)) {
         throw new Error(`Illegal path ${fp}. Must be relative.`);
       }
@@ -83,7 +83,7 @@ class DemoRunner {
   }
 
   _execBashCommand(command: string) {
-    let res = child_process.spawnSync(
+    const res = child_process.spawnSync(
       command,
       {shell: '/bin/bash',
        cwd: this.tmpdir.name,
@@ -99,7 +99,7 @@ class DemoRunner {
   _displayBanner(command: Banner) {
     const bannerFormat = cli.bgXterm(236);
     console.log()
-    const tty: any = process.stdout;
+    const tty: any = process.stdout; // tslint:disable-line
     console.log(bannerFormat(' '.repeat(tty.columns)));
     for (const ln of command.banner.split('\n')) {
       const pad = (tty.columns - ln.length);
@@ -112,7 +112,7 @@ class DemoRunner {
   async _printComm(command: string) {
     process.stdout.write(cli.red('Shell Prompt > '));
     process.stdout.write('\x1b[37m')
-    for (let char of command) {
+    for (const char of command) {
       process.stdout.write(char);
       await timeout(50 * this.timescaling);
     }
@@ -121,7 +121,7 @@ class DemoRunner {
   }
 
   async _runCommands(commands: DemoCommand[]) {
-    for (let command of commands) {
+    for (const command of commands) {
       // TODO logger
       switch(command.type) {
       case 'setenv':
