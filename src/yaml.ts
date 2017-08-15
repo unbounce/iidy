@@ -1,3 +1,4 @@
+//tslint:disable no-any
 import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
 

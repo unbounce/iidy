@@ -19,7 +19,7 @@ import * as inquirer from 'inquirer';
 
 let getStrippedLength: (s: string) => number;
 // TODO declare module for this:
-getStrippedLength = require('cli-color/get-stripped-length');
+getStrippedLength = require('cli-color/get-stripped-length'); // tslint:disable-line
 
 import * as yaml from '../yaml';
 import { logger } from '../logger';
@@ -572,7 +572,7 @@ export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
 }
 
 export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string): Promise<StackArgs> {
-  let argsdata: any;
+  let argsdata: any; // tslint:disable-line
   if (!fs.existsSync(argsfile)) {
     throw new Error(`stack args file "${argsfile}" not found`);
   } else if (pathmod.extname(argsfile) === '.json') {

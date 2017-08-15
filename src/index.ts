@@ -1,3 +1,4 @@
+//tslint:disable no-any strict-boolean-expressions
 import * as os from 'os';
 import * as fs from 'fs';
 import * as pathmod from 'path';
@@ -50,7 +51,7 @@ export type ImportRecord = {
   sha256Digest: SHA256Digest,
 };
 
-export type $envValues = {[key: string]: any} // TODO might need more general value type
+export type $EnvValues = {[key: string]: any} // TODO might need more general value type
 
 export type $param = {
   Name: string,
@@ -66,7 +67,7 @@ export interface ExtendedCfnDoc extends CfnDoc {
   $imports?: {[key: string]: any},
   $params?: Array<$param>,
   $location: string,
-  $envValues?: $envValues
+  $envValues?: $EnvValues
 };
 
 const GlobalSections = {
@@ -84,7 +85,7 @@ type MaybeStackFrame = {location?: string, path: string};
 
 type Env = {
   GlobalAccumulator: CfnDoc,
-  $envValues: $envValues,
+  $envValues: $EnvValues,
   Stack: StackFrame[]
 };
 
@@ -95,10 +96,12 @@ export type ImportData = {
   doc?: any
 }
 
-export type ImportType = "ssm" | "ssm-path" | "file" | "s3" | "http" | "env" | "git" | "random" | "filehash" | "literal";
+export type ImportType =
+  "ssm" | "ssm-path" | "file" | "s3" | "http" | "env" | "git" | "random" | "filehash" | "literal";
 // https://github.com/kimamula/ts-transformer-enumerate is an alternative to this
 // repetition. Could also use a keyboard macro.
-const importTypes: ImportType[] = ["ssm", "ssm-path", "file", "s3", "http", "env", "git", "random", "filehash", "literal"];
+const importTypes: ImportType[] = [
+  "ssm", "ssm-path", "file", "s3", "http", "env", "git", "random", "filehash", "literal"];
 const localOnlyImportTypes: ImportType[] = ["file", "env"];
 
 // npm:version npm:project-name, etc. with equivs for lein/mvn
@@ -140,12 +143,16 @@ const normalizePath = (...pathSegments: string[]) : string =>
   pathmod.resolve.apply(pathmod, _.map(pathSegments, (path) => resolveHome(path.trim())));
 
 const _isPlainMap = (node: any): boolean =>
-  _.isObject(node) && !node.is_yaml_tag && !_.isDate(node) && !_.isRegExp(node) && !_.isFunction(node);
+  _.isObject(node) &&
+  !node.is_yaml_tag &&
+  !_.isDate(node) &&
+  !_.isRegExp(node) &&
+  !_.isFunction(node);
 
 const _flatten = <T>(arrs: T[]) => [].concat.apply([], arrs);
 
 const mkSubEnv = (env: Env, $envValues: any, frame: MaybeStackFrame): Env => {
-  const stackFrame = {location: frame.location || env.Stack[env.Stack.length-1].location,
+  const stackFrame = {location: frame.location || env.Stack[env.Stack.length-1].location, // tslint:disable-line
                       path: frame.path};
   return {GlobalAccumulator: env.GlobalAccumulator,
           $envValues,
@@ -195,7 +202,8 @@ function resolveDocFromImportData(data: string, location: ImportLocation): any {
   }
 }
 
-export async function readFromImportLocation(location: ImportLocation, baseLocation: ImportLocation): Promise<ImportData> {
+export async function readFromImportLocation(location: ImportLocation, baseLocation: ImportLocation)
+: Promise<ImportData> {
   const importType = parseImportType(location, baseLocation);
   let resolvedLocation: ImportLocation, data: string, doc: any;
 
@@ -210,13 +218,13 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     }
   }
 
-  const parseData = (data: string, format?: string) => {
-    if (format === 'json') {
-      return tryParseJson(data);
-    } else if (format === 'yaml') {
-      return yaml.loadString(data, 'location');
+  const parseData = (payload: string, formatType?: string) => {
+    if (formatType === 'json') {
+      return tryParseJson(payload);
+    } else if (formatType === 'yaml') {
+      return yaml.loadString(payload, 'location');
     } else {
-      return data
+      return payload
     }
   }
 
@@ -239,7 +247,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     const params = await ssm2.getParametersByPath(
       {Path: resolvedLocation, WithDecryption:true}).promise()
     doc = _.fromPairs(_.map(params.Parameters, ({Name, Value})=>
-                            [(''+Name).replace(resolvedLocation,''),
+                            [(Name as string).replace(resolvedLocation,''),
                              parseData(Value as string, format)]))
     return {importType, resolvedLocation, data: JSON.stringify(doc), doc}
   case "s3":
@@ -381,7 +389,7 @@ async function loadImports(
 };
 
 function lookupInEnv(key: string, path: string, env: Env) {
-  if (typeof key !== 'string') {
+  if (typeof key !== 'string') { // tslint:disable-line
     // this is called with the .data attribute of custom yaml tags which might not be 
     // strings.
     throw new Error(`Invalid lookup key ${JSON.stringify(key)} at ${path}`)
@@ -577,7 +585,7 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
       if (! _.has(env.$envValues, key)) {
         throw new Error(`Could not find "${key}" at ${path}`);
       }
-      const lookupRes = _.get(env.$envValues[key], selector);
+      const lookupRes: any = _.get(env.$envValues[key], selector);
       if (_.isUndefined(lookupRes)) {
         throw new Error(`Could not find path ${selector} in ${key} at ${path}`);
       } else {
