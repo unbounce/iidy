@@ -13,6 +13,7 @@
     "prepublish": "npm run build",
     "build": "tsc -p .",
     "watch": "tsc --watch",
+    "lint": "tslint -p . src/*ts src/**/*ts",
     "pkg-binaries": "pkg --out-path dist -t node7-macos,node7-linux package.json",
     "test": "make test"
   },
