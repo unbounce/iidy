@@ -120,7 +120,7 @@ api, and most importantly e) are simple and unopinionated.
 ```
 # Grab the appropriate binary from the releases page.
 # (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.3.1/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.3.3/iidy-macos.gz # or -linux.gz
 
 cd ~/Downloads                # or wherever Linux puts it
 gunzip iidy*.gz
@@ -425,8 +425,11 @@ commands in `package.json` for details about the build process.
 
 ## Changelog
 
-* v1.3.1 Added time since last event to the event polling output. --
-  August 11, 2017
+* v1.3.3 Bug fixes and input validation -- August 22, 2017
+
+* v1.3.2 Internal refactoring -- August 15, 2017
+
+* v1.3.1 Added time since last event to the event polling output. -- August 11, 2017
 
 * v1.3.0 More robust time handling / event filtering to protect
   against local clock drift. Also there's now a Dockerfile for
