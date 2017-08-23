@@ -591,6 +591,16 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
     throw new Error(`Invalid stack args file "${argsfile}" extension`);
   }
 
+  // There is chicken-and-egg situation between use of imports for
+  // profile or region and the call to configureAWS. We need to
+  // enforce that they be plain strings with no pre-processor magic.
+  if (argsdata.Profile && ! _.isString(argsdata.Profile)) {
+    throw new Error('The Profile setting in stack-args.yaml must be a plain string');
+  }
+  if (argsdata.Region && ! _.isString(argsdata.Region)) {
+    throw new Error('The Region setting in stack-args.yaml must be a plain string');
+  }
+
   // have to do it before the call to transform
   await configureAWS(profile || argsdata.Profile, region || argsdata.Region); // tslint:disable-line
 
