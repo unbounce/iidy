@@ -218,7 +218,7 @@ const objectToCFNParams =
   _.map(_.toPairs(obj),
         // TODO handle UsePreviousValue for updates
         ([ParameterKey, ParameterValue]) => {
-          return {ParameterKey, ParameterValue}})
+          return {ParameterKey, ParameterValue: ParameterValue.toString()}})
 
 async function showStackEvents(StackName: string, limit=10) {
   let evs = (await getAllStackEvents(StackName));
