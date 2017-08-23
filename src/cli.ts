@@ -3,6 +3,7 @@ import * as yargs from 'yargs';
 import * as cli from 'cli-color';
 
 import { logger } from './logger';
+import debug from './debug';
 
 type ExitCode = number;
 type Handler = (args:yargs.Arguments) => Promise<ExitCode>
@@ -16,7 +17,9 @@ const wrapMainHandler = (handler: Handler) =>
         if (error.message) {
           logger.error(error.message);
         }
-        logger.error(error);
+        if (debug()) {
+          logger.error(error);
+        }
         process.exit(1);
       });
   };
