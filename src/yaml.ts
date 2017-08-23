@@ -45,6 +45,7 @@ addCFNTagType('FindInMap', 'sequence');
 addCFNTagType('GetAtt', 'scalar');
 addCFNTagType('GetAtt', 'sequence');
 
+addCFNTagType('GetAZs', 'scalar');
 addCFNTagType('GetAZs', 'sequence');
 
 addCFNTagType('ImportValue', 'scalar');
