@@ -426,8 +426,16 @@ Promise<{TemplateBody?: string, TemplateURL?: string}> {
   if (_.isUndefined(location)) {
     return {};
   }
-  const shouldRender = (location.trim().indexOf('render:') === 0);
   const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
+  const shouldRender = (location.trim().indexOf('render:') === 0);
+  if (!shouldRender && importData.data.indexOf('$imports:') > -1) {
+    throw new Error(
+      `Your cloudformation Template from ${location} appears to`
+        + ' use iidy\'s yaml pre-processor syntax.\n'
+        + ' You need to prefix the template location with "render:".\n'
+        + ` e.g.   Template: "render:${location}"`
+    );
+  }
   if (!shouldRender && importData.importType === 's3') {
     return {TemplateURL: importData.resolvedLocation};
   } else {
