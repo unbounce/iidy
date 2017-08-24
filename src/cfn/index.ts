@@ -390,7 +390,9 @@ async function summarizeCompletedStackOperation(StackId: string)
 }
 
 function runCommandSet(commands: string[]) {
-  // TODO: merge this with the demo script functionality
+  // TODO: merge this with the demo script functionality see
+  // https://stackoverflow.com/a/37217166 for a means of doing light
+  // weight string templates of the input command
   for (const command of commands) {
     console.log('Running command:\n' + cli.blackBright(command))
     const result = child_process.spawnSync(command, [], {shell: true});
