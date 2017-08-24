@@ -59,7 +59,7 @@ when you run into errors with a CloudFormation stack:
 ```
 # Grab the appropriate binary from the releases page.
 # (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.3.3/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.4.0/iidy-macos.gz # or -linux.gz
 
 cd ~/Downloads                # or wherever Linux puts it
 gunzip iidy*.gz
@@ -366,6 +366,9 @@ commands in `package.json` for details about the build process.
 MIT.
 
 ## Changelog
+
+* v1.4.0 get-stack-instances command, improved error reporting --
+  August 24, 2017
 
 * v1.3.3 Bug fixes and input validation -- August 22, 2017
 
