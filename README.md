@@ -1,5 +1,8 @@
 # iidy (Is it done yet?) -- a CloudFormation CLI tool
 
+(Note: this is written assuming an Unbounce developer is the reader and we
+currently use Ansible.)
+
 `iidy` improves the developer experience with CloudFormation.
 
 * It provides immediate, readable feedback about what CloudFormation
@@ -49,70 +52,6 @@ https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
 Here's a comparison between developer experience of `iidy` and `Ansible`
 when you run into errors with a CloudFormation stack:
 [![asciicast](https://asciinema.org/a/jExZ5S8Pk4KzlJiufGoll0rXs.png)](https://asciinema.org/a/jExZ5S8Pk4KzlJiufGoll0rXs?t=45)
-
-## iidy at Unbounce
-
-`iidy` is a replacement for our use of Ansible as a wrapper around
-CloudFormation. It talks to the CloudFormation API directly and
-provides good user feedback while waiting for stack operations to
-complete. It also uses AWS ParameterStore to replace our use of
-Ansible Vault for encrypting secrets and ARNs. Ansible still has a
-role in server bootstrapping, which is not a concern of `iidy`.
-
-Over time, it will become the sole tool we use for talking to the
-CloudFormation API while creating or updating stacks.
-
-Migration from Ansible (+ Vault) or Troposphere to `iidy` will be
-**mandatory** once the tool has been through some further testing.
-However, you won't have to do the work yourself. All dev squads will
-be required to accept pull requests that implement this change. These
-pull requests will not change the details of your stacks once
-provisioned - i.e. they will be low risk and impact tooling only. I
-aim to have all production services migrated by the end of Sept 2017.
-Ansible usage by Core is not included in this scope. Why and why now?
-
-1) Ansible is an unnecessary layer above CloudFormation that has a bad
-UX for this use-case (see above).
-
-2) We want to retire Ansible Vault as our use of it has some security
-issues.
-
-3) Our developers have not had a good onboarding experience learning
-Ansible and CloudFormation at the same time. It has scared people away
-from a good tool - CloudFormation - and given them the impression it
-is more complex than it truely is.
-
-4) We do not have the bandwidth to support multiple tools. Unlike
-previous introductions of new tools, we are cleaning house of the old
-tools before moving on.
-
-5) This is a step to some broader changes to the way we
-provision infrastructure. It will simplify the path towards a) a
-secure production account with no `#superuser` required for
-deployments, b) proper separation between `staging` and `production`,
-c) some architectural normalization that Roman and others are working
-on. More information will be coming on these topics later.
-
-Use of the yaml pre-processor is **completely optional**. If you use it,
-please share your experiences with me.
-
-How does this relate to `Simple Infrastructure`? It's orthogonal and
-complimentary. They solve different problems and can be used together.
-Like all existing production stacks, `Simple Infrastructure` should be
-updated to use this rather than Ansible. I am working on a pull
-request.
-
-Who supports and maintains it? Tavis. I will be providing extensive
-examples, documentation, and training. Pull requests and feature
-requests are welcome.
-
-Isn't this an example of NIH syndrome? Roman and I built a prototype
-of this back in Dec. 2015. We searched for good alternatives then and
-found none. I researched roughly a dozen other tools prior to
-restarting work on this. Unfortunately, there are non that a) are well
-documented and supported, b) have a good UX / developer experience, c)
-are integrated with ParameterStore, d) expose the full CloudFormation
-api, and most importantly e) are simple and unopinionated.
 
 ## Installation
 
@@ -423,6 +362,9 @@ commands in `package.json` for details about the build process.
 
 ...
 
+## License
+MIT.
+
 ## Changelog
 
 * v1.3.3 Bug fixes and input validation -- August 22, 2017
@@ -447,4 +389,9 @@ commands in `package.json` for details about the build process.
 
 ## Roadmap
 
-...
+In priority order:
+
+* More examples and documentation.
+
+* Unit tests of the pre-processor code. I've been relying on types and
+  functional tests to date.
