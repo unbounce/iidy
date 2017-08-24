@@ -84,24 +84,28 @@ npm install -g .
 ### Help
 ```
 $ iidy help
-iidy (Is it done yet?) -- a tool for working with CloudFormation and yaml templates
+iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
-Stack Commands:
-  create-stack <argsfile>                                create a cloudformation stack
-  update-stack <argsfile>                                update a cloudformation stack
-  create-changeset <changesetName> <argsfile>            create a cfn changeset
-  create-stack-via-changeset <changesetName> <argsfile>  create a new stack via a cfn changeset
-  exec-changeset <changesetName> <argsfile>              execute a cfn changeset
-  estimate-cost <argsfile>                               estimate stack costs based on stack-args.yaml
-  watch-stack <stackname>                                watch a stack that is already being created or updated
-  describe-stack <stackname>                             describe a stack
+Commands:
+  create-stack  <argsfile>                               create a cfn stack based on stack-args.yaml
+  update-stack  <argsfile>                               update a cfn stack based on stack-args.yaml
+  estimate-cost <argsfile>                               estimate aws costs based on stack-args.yaml
+
+  create-changeset           <changesetName> <argsfile>  create a cfn changeset based on stack-args.yaml
+  exec-changeset             <changesetName> <argsfile>  execute a cfn changeset based on stack-args.yaml
+  create-stack-via-changeset <changesetName> <argsfile>  create a cfn changeset to create a new stack
+
+  describe-stack     <stackname>                         describe a stack
+  watch-stack        <stackname>                         watch a stack that is already being created or updated
+  delete-stack       <stackname>                         delete a stack (after confirmation)
   get-stack-template <stackname>                         download the template of a live stack
-  delete-stack <stackname>                               delete a stack (after confirmation)
-  list-stacks                                            list the stacks within a region
+  get-stack-instances <stackname>                        list the ec2 instances of a live stack
+  list-stacks                                            list all stacks within a region
 
 Additional Commands:
-  render <template>                                      pre-process and render cloudformation yaml templates
-  completion                                             generate bash completion script
+  render <template>                                      pre-process and render cloudformation yaml template
+  demo <demoscript>                                      run a demo script
+  completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
 AWS Options
   --region   AWS region
