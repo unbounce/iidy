@@ -25,8 +25,18 @@ import * as yaml from './yaml';
 import { logger } from './logger';
 
 
-handlebars.registerHelper('json', (context: any) => JSON.stringify(context));
-handlebars.registerHelper('yaml', (context: any) => yaml.dump(context));
+handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
+handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
+handlebars.registerHelper('base64', (context: any) => new Buffer(context).toString('base64'));
+
+function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
+  try {
+    return handlebars.compile(templateString, {noEscape: true})(env);
+  } catch (e) {
+    throw new Error(
+      `Error in string template at ${errorContext}:\nError: ${e.message}\nTemplate: ${templateString}`)
+  }
+}
 
 export type SHA256Digest = string;
 
@@ -350,7 +360,7 @@ async function loadImports(
     for (const asKey in doc.$imports) {
       let loc = doc.$imports[asKey];
       if (loc.search(/{{(.*?)}}/) > -1) {
-        loc = handlebars.compile(loc, {noEscape: true})(doc.$envValues);
+        loc = interpolateHandlebarsString(loc, doc.$envValues, `${baseLocation}: ${asKey}`);
       }
 
       logger.debug('loading import:', loc, asKey);
@@ -454,7 +464,7 @@ const visitArray = (node: any[], path: string, env: Env): any =>
 
 function visitStringNode(node: string, path: string, env: Env): any {
   if (node.search(/{{(.*?)}}/) > -1) {
-    return handlebars.compile(node, {noEscape: true})(env.$envValues);
+    return interpolateHandlebarsString(node, env.$envValues, path);
   } else {
     return node;
   }
