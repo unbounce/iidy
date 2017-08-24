@@ -937,6 +937,44 @@ export async function describeStackMain(argv: Arguments): Promise<number> {
   return 0;
 }
 
+export async function getStackInstancesMain(argv: Arguments): Promise<number> {
+  await configureAWS(argv.profile, argv.region);
+  const StackName = argv.stackname;
+  const region = getCurrentAWSRegion();
+
+  const ec2 = new aws.EC2();
+  const instances = await ec2.describeInstances(
+    {Filters:[{Name:'tag:aws:cloudformation:stack-name',
+               Values:[StackName]}]})
+    .promise();
+
+  for (const reservation of instances.Reservations || []) {
+    for (const instance of reservation.Instances || []) {
+      if (argv.short) {
+        console.log(instance.PublicDnsName ? instance.PublicDnsName : instance.PrivateIpAddress);
+      } else {
+        const state = instance.State ? instance.State.Name : 'unknown';
+        const placement = instance.Placement ? instance.Placement.AvailabilityZone : '';
+        console.log(sprintf(
+          '%-42s %-15s %s %-11s %s %s %s',
+          instance.PublicDnsName,
+          instance.PrivateIpAddress,
+          instance.InstanceId,
+          instance.InstanceType,
+          state,
+          placement,
+          formatTimestamp(renderTimestamp(instance.LaunchTime as Date))
+        ));
+      }
+    }
+  }
+
+  console.log(
+    cli.blackBright(
+      `https://console.aws.amazon.com/ec2/v2/home?region=${region}#Instances:tag:aws:cloudformation:stack-name=${StackName};sort=desc:launchTime`));
+  return 0;
+}
+
 export async function getStackTemplateMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region);
 

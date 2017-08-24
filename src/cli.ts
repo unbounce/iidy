@@ -32,6 +32,7 @@ interface Commands {
   watchStackMain: Handler
   describeStackMain: Handler
   getStackTemplateMain: Handler
+  getStackInstancesMain: Handler
   deleteStackMain: Handler
 
   estimateCost: Handler
@@ -84,6 +85,7 @@ const lazy: Commands = {
   watchStackMain: lazyLoad('watchStackMain'),
   describeStackMain: lazyLoad('describeStackMain'),
   getStackTemplateMain: lazyLoad('getStackTemplateMain'),
+  getStackInstancesMain: lazyLoad('getStackInstancesMain'),
   deleteStackMain: lazyLoad('deleteStackMain'),
 
   createUpdateChangesetMain: lazyLoad('createUpdateChangesetMain'),
@@ -143,7 +145,7 @@ export async function main() {
       wrapMainHandler(commands.estimateCost))
 
     .command('\t', '') // fake command to add a line-break to the help output
-  
+
     .command(
       'create-changeset           <changesetName> <argsfile>',
       description('create a cfn changeset based on stack-args.yaml'),
@@ -225,6 +227,17 @@ export async function main() {
           description: 'Template stage to show'})
         .usage('Usage: iidy get-stack-template <stackname>'),
       wrapMainHandler(commands.getStackTemplateMain))
+
+    .command(
+      'get-stack-instances <stackname>',
+      description('list the ec2 instances of a live stack'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('short', {
+          type: 'boolean', default: false,
+          description: 'Show only instance dns names'})
+        .usage('Usage: iidy get-stack-instances <stackname>'),
+      wrapMainHandler(commands.getStackInstancesMain))
 
     .command(
       'list-stacks',
