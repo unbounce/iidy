@@ -6,23 +6,28 @@
   "types": "lib/index",
   "bin": "bin/iidy",
   "scripts": {
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "build": "tsc -p .",
     "watch": "tsc --watch",
     "lint": "tslint -p . src/*ts src/**/*ts",
-    "pkg-binaries": "pkg --out-path dist -t node7-macos,node7-linux package.json",
+    "pkg-binaries": "pkg --out-path dist -t node8-macos,node8-linux package.json",
     "test": "make test"
   },
   "author": "Tavis Rudd <tavis@unbounce.com>",
+  "repository": "https://github.com/unbounce/iidy",
   "license": "MIT",
+  "engines": {
+    "node": ">=7.6.0",
+    "npm": ">=4.0"
+  },
   "dependencies": {
-    "aws-sdk": "^2.82.0",
+    "aws-sdk": "^2.104.0",
     "bluebird": "^3.5.0",
     "cli-color": "^1.2.0",
     "dateformat": "^2.0.0",
     "handlebars": "^4.0.10",
-    "inquirer": "^3.2.1",
-    "js-yaml": "^3.8.3",
+    "inquirer": "^3.2.2",
+    "js-yaml": "^3.9.1",
     "lodash": "^4.17.4",
     "ntp-client": "^0.5.3",
     "openpgp": "^2.5.8",
@@ -57,8 +62,8 @@
     "@types/winston": "^2.3.3",
     "@types/wrap-ansi": "^2.0.14",
     "@types/yargs": "^8.0.1",
+    "pkg": "^4.2.4",
     "tslint": "^5.4.3",
-    "typescript": "^2.4.2",
-    "pkg": "^4.2.2"
+    "typescript": "^2.4.2"
   }
 }
