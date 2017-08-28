@@ -1,0 +1,10 @@
+FROM node:7-alpine
+
+WORKDIR /tmp/iidy
+
+COPY . .
+
+RUN yarn && ln -s /tmp/iidy/bin/iidy /usr/bin/
+
+ENTRYPOINT ["/usr/bin/iidy"]
+

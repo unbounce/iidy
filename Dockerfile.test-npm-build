@@ -1,0 +1,10 @@
+FROM node:7-alpine
+
+WORKDIR /tmp/iidy
+
+COPY . .
+
+RUN npm install . && npm run build && ln -s /tmp/iidy/bin/iidy /usr/bin/
+
+ENTRYPOINT ["/usr/bin/iidy"]
+
