@@ -2,7 +2,7 @@ import * as process from 'process';
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
 
-import { logger } from './logger';
+import { logger, setLogLevel } from './logger';
 import debug from './debug';
 
 type ExitCode = number;
@@ -11,8 +11,12 @@ type Handler = (args:yargs.Arguments) => Promise<ExitCode>
 const wrapMainHandler = (handler: Handler) =>
   // move the configureaws step into here
   function (args: yargs.Arguments) {
+    if (args.debug) {
+      process.env.DEBUG = 'true';
+      setLogLevel('debug');
+    }
     handler(args)
-      .then(exitCode => process.exit(exitCode))
+      .then(process.exit)
       .catch(error => {
         if (error.message) {
           logger.error(error.message);
@@ -278,6 +282,10 @@ export async function main() {
       type: 'string', default: null,
       group: 'AWS Options',
       description: 'AWS profile'})
+
+    .option('debug', {
+      type: 'boolean', default: false,
+      description: 'Log debug information to stderr.'})
 
     .demandCommand(1)
     .usage(usage)

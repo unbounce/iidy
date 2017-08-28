@@ -1,4 +1,4 @@
 function debug(): boolean {
-  return typeof process.env.DEBUG === 'string' || process.env.LOG_LEVEL === 'DEBUG';
+  return process.env.LOG_LEVEL === 'DEBUG' || process.env.DEBUG !== undefined;
 }
 export default debug;
