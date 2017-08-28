@@ -11,7 +11,9 @@ export class Tag {
   }
   
   update(data: any): Tag {
-    return new this.ctor(data); // fugly but can't call new.target from here
+    // fugly but can't call new.target from here. This is equivalent
+    // to this.constructor in plain js.
+    return new this.ctor(data);
   }
 }
 
