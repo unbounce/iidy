@@ -72,11 +72,12 @@ mv iidy* /usr/local/bin/iidy   # or somewhere more appropriate
   install.
 
 ```
-# You need Node 6 or above installed.
+# You need Node 7+ and npm 4+ installed.
 git clone git@github.com:unbounce/iidy.git
 cd iidy
-npm install . # to compile our source first
-npm install -g .
+npm install . && npm run build # to compile our source first
+ln -s $(pwd)/bin/iidy /usr/local/bin/
+# or npm install -g .
 ```
 
 ## Usage
