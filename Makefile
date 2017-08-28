@@ -11,11 +11,12 @@ EXAMPLE_FILES = $(shell find examples/ -type f)
 PREREQS_STATEFILE = .make/done_prereqs
 DEPS_STATEFILE = .make/done_deps
 TESTS_STATEFILE = .make/done_tests
+DOCKER_STATEFILE = .make/done_docker
 BUILD_ARTIFACTS = dist/iidy-macos dist/iidy-linux
 
 ##########################################################################################
 ## Top level targets. Our public api. See Plumbing section for the actual work
-.PHONY : prereqs deps build test clean fullclean release
+.PHONY : prereqs deps build docker_build test clean fullclean release
 
 .DEFAULT_GOAL := build
 
@@ -25,9 +26,11 @@ deps : $(DEPS_STATEFILE)
 
 build : $(BUILD_ARTIFACTS)
 
+docker_build : $(DOCKER_STATEFILE)
+
 test : $(TESTS_STATEFILE)
 
-# TODO figure out where to publish the binaries to
+# TODO script version bump & upload of the binaries
 #release: check_working_dir_is_clean clean deps build test
 
 clean :
@@ -75,6 +78,23 @@ endif
 	docker build -t iidy-test dist/docker
 	docker run --rm -it -v ~/.aws/:/root/.aws/ iidy-test make test
 	touch $(TESTS_STATEFILE)
+
+$(DOCKER_STATEFILE): $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
+	@rm -rf /tmp/iidy
+	@git clone . /tmp/iidy
+
+	docker build -t iidy -f /tmp/iidy/Dockerfile /tmp/iidy
+	docker run -it --rm iidy help > /dev/null
+
+	docker build -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
+	docker run -it --rm iidy-yarn help > /dev/null
+	docker rmi iidy-yarn
+
+	docker build -t iidy-npm -f /tmp/iidy/Dockerfile.test-npm-build /tmp/iidy
+	docker run -it --rm iidy-npm help  > /dev/null
+	docker rmi iidy-npm
+
+	@rm -rf /tmp/iidy
 
 
 check_working_dir_is_clean :
