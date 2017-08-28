@@ -14,7 +14,7 @@ TESTS_STATEFILE = .make/done_tests
 BUILD_ARTIFACTS = dist/iidy-macos dist/iidy-linux
 
 ##########################################################################################
-## Top level targets. Our public api
+## Top level targets. Our public api. See Plumbing section for the actual work
 .PHONY : prereqs deps build test clean fullclean release
 
 .DEFAULT_GOAL := build
@@ -24,7 +24,6 @@ prereqs : $(PREREQS_STATEFILE)
 deps : $(DEPS_STATEFILE)
 
 build : $(BUILD_ARTIFACTS)
-
 
 test : $(TESTS_STATEFILE)
 
@@ -62,6 +61,12 @@ $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 
 # TODO expand this
 $(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
+# initial sanity checks:
+	bin/iidy help | grep argsfile > /dev/null
+ifeq ($(shell uname),Darwin)
+	dist/iidy-macos help | grep argsfile > /dev/null
+endif
+# functional tests:
 	mkdir -p dist/docker/
 	cp dist/iidy-linux dist/docker/iidy
 	cp Dockerfile.test dist/docker/Dockerfile
@@ -71,11 +76,6 @@ $(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	docker run --rm -it -v ~/.aws/:/root/.aws/ iidy-test make test
 	touch $(TESTS_STATEFILE)
 
-# ifeq ($(shell uname),Darwin)
-# 	dist/iidy-macos help
-# else
-# 	dist/iidy-linux help
-# endif
 
 check_working_dir_is_clean :
 	git diff --quiet --ignore-submodules HEAD
