@@ -234,7 +234,7 @@ async function showStackEvents(StackName: string, limit=10) {
 }
 
 async function getAllStackEvents(StackName: string) {
-  const cfn = new aws.CloudFormation();
+  const cfn = new aws.CloudFormation({maxRetries: 12}); // higher than our default of 10
   let res = await cfn.describeStackEvents({StackName}).promise();
   let events = def([], res.StackEvents);
   while ( ! _.isUndefined(res.NextToken)) {

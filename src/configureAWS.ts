@@ -29,7 +29,8 @@ async function configureAWS(profile?: string, region?: AWSRegion) {
   }
   aws.config.update({maxRetries: 10}); // default is undefined -> defaultRetryCount=3
   // the sdk will handle exponential backoff internally.
-  // 0m, 50ms, 100ms, 200ms, 400ms, 800ms, 1600ms, 3200ms, 6400ms, 12800ms
+  // 1=100ms, 2=200ms, 3=400ms, 4=800ms, 5=1600ms,
+  // 6=3200ms, 7=6400ms, 8=12800ms, 9=25600ms, 10=51200ms, 11=102400ms, 12=204800ms
 }
 
 export default configureAWS;
