@@ -27,6 +27,9 @@ async function configureAWS(profile?: string, region?: AWSRegion) {
     logger.debug(`Setting AWS region: ${region}.`);
     aws.config.update({region});
   }
+  aws.config.update({maxRetries: 10}); // default is undefined -> defaultRetryCount=3
+  // the sdk will handle exponential backoff internally.
+  // 0m, 50ms, 100ms, 200ms, 400ms, 800ms, 1600ms, 3200ms, 6400ms, 12800ms
 }
 
 export default configureAWS;
