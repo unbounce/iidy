@@ -16,27 +16,29 @@ BUILD_ARTIFACTS = dist/iidy-macos dist/iidy-linux
 
 ##########################################################################################
 ## Top level targets. Our public api. See Plumbing section for the actual work
-.PHONY : prereqs deps build docker_build test clean fullclean release
+.PHONY : prereqs deps build docker_build test clean fullclean release help
 
-.DEFAULT_GOAL := build
+help: ## Display this message
+	@grep -E '^[a-zA-Z_-]+ *:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+.DEFAULT_GOAL := help
 
-prereqs : $(PREREQS_STATEFILE)
+prereqs : $(PREREQS_STATEFILE)    ## Check for system level prerequisites
 
-deps : $(DEPS_STATEFILE)
+deps : $(DEPS_STATEFILE)          ## Install library deps (e.g. npm install)
 
-build : $(BUILD_ARTIFACTS)
+build : $(BUILD_ARTIFACTS)        ## Build static binaries
 
-docker_build : $(DOCKER_STATEFILE)
+docker_build : $(DOCKER_STATEFILE) ## Build and test docker images
 
-test : $(TESTS_STATEFILE)
+test : $(TESTS_STATEFILE)	  ## Run functional tests
 
 # TODO script version bump & upload of the binaries
 #release: check_working_dir_is_clean clean deps build test
 
-clean :
+clean :			          ## Clean the dist/ directory (binaries, etc.)
 	rm -rf dist/*
 
-fullclean : clean
+fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
 
 
