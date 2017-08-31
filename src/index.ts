@@ -339,7 +339,10 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     doc = data;
     return {importType, resolvedLocation, data, doc}
   case "file":
-    resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation), location);
+    if (_.some(_.filter(importTypes, 'file')), (typ:string) => baseLocation.startsWith(`${typ}:`)) {
+      logger.debug(`non file: import on baseLocation=${baseLocation} for location=${location}`)
+    }
+    resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation.replace('file:','')), location.replace('file:', ''));
     data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
     return {importType, resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
   }
