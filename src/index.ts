@@ -241,7 +241,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
   switch (importType) {
   case "ssm":
     const ssm = new aws.SSM();
-    [,resolvedLocation, format] = location.split(':')
+    [, resolvedLocation, format] = location.split(':')
     const param =
       await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
     if (param.Parameter && param.Parameter.Value) {
@@ -253,7 +253,10 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     }
   case "ssm-path":
     const ssm2 = new aws.SSM();
-    [,resolvedLocation, format] = location.split(':')
+    [, resolvedLocation, format] = location.split(':')
+    if ( ! resolvedLocation.endsWith('/')) {
+      resolvedLocation += '/'
+    }
     const params = await ssm2.getParametersByPath(
       {Path: resolvedLocation, WithDecryption:true}).promise()
     doc = _.fromPairs(_.map(params.Parameters, ({Name, Value})=>
