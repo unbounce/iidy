@@ -258,8 +258,12 @@ export async function main() {
         .demandCommand(0, 0)
         .usage('Usage: iidy render <input-template.yaml>')
         .option('outfile', {
-          type: 'string', default: '/dev/stdout',
+          type: 'string', default: 'stdout',
           description: 'yaml input template to preprocess'})
+        .option('overwrite', {
+          type: 'boolean', default: false,
+          description: 'Whether to overwrite an existing <outfile>.'
+        })
         .strict(),
       wrapMainHandler(commands.renderMain))
 

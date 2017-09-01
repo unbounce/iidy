@@ -743,8 +743,14 @@ export async function renderMain(argv: Arguments): Promise<number> {
   const outputString = yaml.dump(outputDoc);
   if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
     console.log(outputString);
+  } else if (_.includes(['/dev/stderr', 'stderr'], argv.outfile)) {
+    process.stderr.write(outputString);
+    process.stderr.write('\n');
   } else {
-    // TODO file exists check and --overwrite
+    if (fs.existsSync(argv.outfile) && ! argv.overwrite) {
+      logger.error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
+      return 1;
+    }
     fs.writeFileSync(argv.outfile, outputString);
   }
   return 0;
