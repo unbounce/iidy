@@ -85,57 +85,37 @@ addCFNTagType('Or', 'sequence');
 
 // custom
 
-export class $include extends Tag {
-  update(data: any): $include {return new $include(data);}
+function addCustomTag(name: string | string[], kls: any, resolve?: Resolver){
+  const names = _.isArray(name) ? name : [name];
+  for (const nm of names) {
+    customTags[nm] = kls
+    // add all even if primitive types even if only a subset is valid as
+    // the error reporting is better handled elsewhere.
+    addCFNTagType(nm, 'scalar', resolve);
+    addCFNTagType(nm, 'sequence', resolve);
+    addCFNTagType(nm, 'mapping', resolve);
+  }
 }
-customTags.$include = $include;
-customTags.$ = $include;
-addCFNTagType('$include', 'scalar');
-addCFNTagType('$', 'scalar');
 
-export class $escape extends Tag {
-  update(data: any): $escape {return new $escape(data);}
-}
-customTags.$escape = $escape;
-addCFNTagType('$escape', 'scalar');
-addCFNTagType('$escape', 'sequence');
+export class $include extends Tag {}
+addCustomTag(['$include', '$'], $include); // scalar
 
-export class $string extends Tag {
-  update(data: any): $string {return new $string(data);}
-}
-customTags.$string = $string;
-addCFNTagType('$string', 'scalar');
-addCFNTagType('$string', 'sequence');
-addCFNTagType('$string', 'mapping');
+export class $escape extends Tag {}
+addCustomTag('$escape', $escape); // any
 
-export class $expand extends Tag {
-  update(data: any): $expand {return new $expand(data);}
-}
-customTags.$expand = $expand;
-addCFNTagType('$expand', 'mapping');
-// scalar and sequence are invalid uses but there error is better reported elsewhere
-addCFNTagType('$expand', 'scalar');
-addCFNTagType('$expand', 'sequence');
+export class $string extends Tag {}
+addCustomTag('$string', $string); // any
 
-export class $let extends Tag {
-  update(data: any): $let {return new $let(data);}
-}
-customTags.$let = $let;
-addCFNTagType('$let', 'mapping');
-// scalar and sequence are invalid uses but there error is better reported elsewhere
-addCFNTagType('$let', 'scalar');
-addCFNTagType('$let', 'sequence');
+export class $expand extends Tag {}
+addCustomTag('$expand', $expand); // mapping
 
-export class $parseYaml extends Tag {
-  update(data: any): $parseYaml {return new $parseYaml(data);}
-}
-customTags.$parseYaml = $parseYaml;
-addCFNTagType('$parseYaml', 'scalar');
-// mapping and sequence are invalid uses but there error is better reported elsewhere
-addCFNTagType('$parseYaml', 'mapping');
-addCFNTagType('$parseYaml', 'sequence');
+export class $let extends Tag {}
+addCustomTag('$let', $let); // mapping
 
+export class $parseYaml extends Tag {}
+addCustomTag('$parseYaml', $parseYaml); // scalar string
 
+////////////////////////////////////////////////////////////////////////////////
 const schema = jsyaml.Schema.create(schemaTypes);
 
 export const loadString = (content: string | Buffer, filename: string) : any =>
