@@ -83,7 +83,8 @@ addCFNTagType('Not', 'sequence');
 addCFNTagType('Or', 'sequence');
 
 
-// custom
+////////////////////////////////////////////////////////////////////////////////
+// custom !$tag support
 
 function addCustomTag(name: string | string[], kls: any, resolve?: Resolver){
   const names = _.isArray(name) ? name : [name];
@@ -97,6 +98,9 @@ function addCustomTag(name: string | string[], kls: any, resolve?: Resolver){
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// basic interpolation related custom tags
+
 export class $include extends Tag {}
 addCustomTag(['$include', '$'], $include); // scalar
 
@@ -106,14 +110,35 @@ addCustomTag('$escape', $escape); // any
 export class $string extends Tag {}
 addCustomTag('$string', $string); // any
 
-export class $expand extends Tag {}
-addCustomTag('$expand', $expand); // mapping
+export class $parseYaml extends Tag {}
+addCustomTag('$parseYaml', $parseYaml); // scalar string
+
+////////////////////////////////////////////////////////////////////////////////
+// variable definition and template expansion custom tags
 
 export class $let extends Tag {}
 addCustomTag('$let', $let); // mapping
 
-export class $parseYaml extends Tag {}
-addCustomTag('$parseYaml', $parseYaml); // scalar string
+export class $expand extends Tag {}
+addCustomTag('$expand', $expand); // mapping
+
+////////////////////////////////////////////////////////////////////////////////
+// looping and data restructuring custom tags
+
+export class $map extends Tag {}
+addCustomTag('$map', $map); // mapping
+
+export class $mapListToHash extends Tag {}
+addCustomTag('$mapListToHash', $mapListToHash); // mapping
+
+export class $flatten extends Tag {}
+addCustomTag('$flatten', $flatten); // sequence
+
+export class $concatMap extends Tag {}
+addCustomTag('$concatMap', $concatMap); // mapping
+
+export class $fromPairs extends Tag {}
+addCustomTag('$fromPairs', $fromPairs); // mapping
 
 ////////////////////////////////////////////////////////////////////////////////
 const schema = jsyaml.Schema.create(schemaTypes);

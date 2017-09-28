@@ -162,6 +162,9 @@ const _isPlainMap = (node: any): boolean =>
 
 const _flatten = <T>(arrs: T[]) => [].concat.apply([], arrs);
 
+const _liftKVPairs = (objects: {key: string, value: any}[]) =>
+  _.fromPairs(_.map(objects, ({key, value}) => [key, value]))
+
 const mkSubEnv = (env: Env, $envValues: any, frame: MaybeStackFrame): Env => {
   const stackFrame = {location: frame.location || env.Stack[env.Stack.length-1].location, // tslint:disable-line
                       path: frame.path};
@@ -615,7 +618,7 @@ function visit$Expand(node: yaml.$expand, path: string, env: Env): any {
 }
 
 function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
-  // TODO map, flatten, conditions, hoist
+  // TODO conditions, hoist
   if (node instanceof yaml.$include) {
     if (node.data.indexOf('.') > -1) {
       const [key, ...selector] = node.data.split('.');
@@ -648,8 +651,39 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
       _.merge({}, env.$envValues, visitNode(_.omit(node.data, ['in']), path, env)),
       {path});
     return visitNode(node.data.in, path, subEnv);
+  } else if (node instanceof yaml.$map) {
+    // TODO validate node.data's shape or even better do this during parsing
+    //    template: any, items: [...]
+    const template = node.data.template;
+    // TODO handle nested maps
+    const varName = node.data.var || 'item';
+    const mapped = _.map(node.data.items, (item0: any, idx: number) => {
+      // TODO improve stackFrame details
+      const subPath = appendPath(path, idx.toString());
+      const item = visitNode(item0, subPath, env); // visit pre expansion
+      const subEnv = mkSubEnv(
+        env, _.merge({[varName]:item, [varName+'Idx']:idx}, env.$envValues), {path: subPath});
+      return visitNode(template, subPath, subEnv);
+    }) ;
+    return visitNode(mapped, path, env); // TODO do we need to visit again like this?
+  } else if (node instanceof yaml.$flatten) {
+    if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
+      throw new Error(`Invalid argument to $flatten at "${path}".`
+                      + " Must be array of arrays.");
+    }
+    return visitNode(_flatten(node.data), path, env);
+  } else if (node instanceof yaml.$concatMap) {
+    return _flatten(visitNode(new yaml.$map(node.data), path, env));
+  } else if (node instanceof yaml.$mapListToHash) {
+    const input = new yaml.$map(node.data);
+    return _liftKVPairs(visitNode(input, path, env));
+  } else if (node instanceof yaml.$fromPairs) {
+    // TODO validate node.data's shape or even better do this during parsing
+    //   [{key:string, value:any}]
+    return visitNode(_liftKVPairs(node.data), path, env);
   } else if (node instanceof yaml.Ref) {
     // TODO test to verify that this works on top level templates that have no .Prefix
+    // TODO handle other tags such as !GetAtt
     return new yaml.customTags.Ref(`${env.$envValues.Prefix || ''}${node.data}`);
   } else {
     return node.update(visitNode(node.data, path, env));
@@ -778,4 +812,3 @@ export async function renderMain(argv: Arguments): Promise<number> {
   }
   return 0;
 };
-
