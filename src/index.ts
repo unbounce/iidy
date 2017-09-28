@@ -335,6 +335,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     data = result.stdout.toString().trim().split(' ')[0]
     return {importType, resolvedLocation, data, doc: data}
   case "literal":
+    logger.warning(`literal: $imports are deprecated. Replace ${location} in ${baseLocation} with '$defs'.'`)
     resolvedLocation = location.split(':')[1]
     data = resolvedLocation;
     doc = data;
@@ -531,24 +532,28 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
           _.forEach(template.$params, (param)=> {
             const paramValue = mergedParams[param.Name];
             if (_.isUndefined(paramValue)) {
-              logger.error(`Missing required parameter ${param.Name} in ${name}`);
+              throw new Error(`Missing required parameter ${param.Name} in ${name}`);
             } else if (param.Schema) {
               if (! _.isObject(param.Schema)) {
                 throw new Error(`Invalid schema "${param.Name}" in ${name}.`)
               }
               const validationResult = tv4.validateResult(paramValue, param.Schema)
               if (! validationResult.valid) {
-                logger.error(`Parameter validation error for "${param.Name}" in ${name}.`);
+                const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
+                logger.error(errmsg);
                 logger.error(`  ${env.Stack[env.Stack.length-1].location || ''}`)
                 logger.error(validationResult.error.message);
                 logger.error('Here is the parameter JSON Schema:\n'+yaml.dump(param.Schema));
+                throw new Error(errmsg);
               }
             } else if (param.AllowedValues) {
                 // cfn style validation
               if (!_.includes(param.AllowedValues, paramValue)) {
-                logger.error(`Parameter validation error for "${param.Name}" in ${name}.`);
+                const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
+                logger.error(errmsg);
                 logger.error(`  ${env.Stack[env.Stack.length-1].location || ''}`)
                 logger.error(`${paramValue} not in Allowed Values: ${yaml.dump(param.AllowedValues)}`);
+                throw new Error(errmsg);
               }
             } else if (param.AllowedPattern) {
               // TODO test
