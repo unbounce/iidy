@@ -1,7 +1,9 @@
 #!/usr/bin/env iidy demo
 $imports:
   nameSuffix: random:dashed-name
-  StackName: "literal:iidy-demo-{{ nameSuffix }}"
+
+$defs:
+  StackName: "iidy-demo-{{ nameSuffix }}"
 
 files:
   cfn-template.yaml: |-
@@ -28,13 +30,13 @@ files:
   stack-args.yaml: |-
     StackName: "{{ StackName }}"  # auto generated name
     Template: ./cfn-template.yaml
-    
+
     Profile: sandbox
     Region: us-west-2
-    
+
     Parameters:
       Name: world
-    
+
     Tags:
       owner: your-name
       project: iidy-demo

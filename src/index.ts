@@ -75,6 +75,7 @@ export type $param = {
 // TODO find a better name for this Interface
 export interface ExtendedCfnDoc extends CfnDoc {
   $imports?: {[key: string]: any},
+  $defs?: {[key: string]: any},
   $params?: Array<$param>,
   $location: string,
   $envValues?: $EnvValues
@@ -354,14 +355,13 @@ async function loadImports(
   importsAccum: ImportRecord[]
 ): Promise<void> {
   // recursively load the entire set of imports
+  doc.$envValues = {};
   if (doc.$imports) {
 
     if ( ! _.isPlainObject(doc.$imports)) {
       throw Error(
         `Invalid imports in ${baseLocation}:\n "${JSON.stringify(doc.$imports)}". \n Should be mapping.`);
     }
-
-    doc.$envValues = {};
 
     for (const asKey in doc.$imports) {
       let loc = doc.$imports[asKey];
@@ -391,22 +391,37 @@ async function loadImports(
           importData.doc, importData.resolvedLocation, importsAccum)
       }
     }
-    if (doc.$params) {
-      // guard against name clashes with the imports
-      for (const {Name} of doc.$params) {
-        if (_.includes(_.keys(doc.$envValues), Name)) {
-          throw new Error(
-            `Colliding name "${Name}" in $params & $imports of ${baseLocation}`)
-        }
+  }
+  if (doc.$defs) {
+    for (const key in doc.$defs) {
+      if (_.includes(_.keys(doc.$envValues), key)) {
+        throw new Error(
+          `"${key}" in $defs collides with the same name in $imports of ${baseLocation}`)
+      }
+      let val = doc.$defs[key];
+      if (typeof val === 'string' && val.search(/{{(.*?)}}/) > -1) {
+        val = interpolateHandlebarsString(val, doc.$envValues, `${baseLocation}: ${key}`);
+      }
+
+      doc.$envValues[key] = val;
+    }
+  }
+  if (doc.$params) {
+    // guard against name clashes
+    for (const {Name} of doc.$params) {
+      if (_.includes(_.keys(doc.$envValues), Name)) {
+        throw new Error(
+          `"${Name}" in $params collides with "${Name}" in $imports or $defs of ${baseLocation}`)
       }
     }
-
   }
+
+
 };
 
 function lookupInEnv(key: string, path: string, env: Env) {
   if (typeof key !== 'string') { // tslint:disable-line
-    // this is called with the .data attribute of custom yaml tags which might not be 
+    // this is called with the .data attribute of custom yaml tags which might not be
     // strings.
     throw new Error(`Invalid lookup key ${JSON.stringify(key)} at ${path}`)
   }
@@ -589,6 +604,7 @@ function visit$Expand(node: yaml.$expand, path: string, env: Env): any {
     // TODO expand template.$params defaults
     const subEnv = mkSubEnv(env, _.merge({}, params, env.$envValues), {path});
     delete template.$params;
+    // TODO might also need to delete template.$imports, template.$envValues, and template.$defs
     return visitNode(template, path, subEnv);
   }
 }
@@ -727,6 +743,7 @@ export async function transform(root0: ExtendedCfnDoc, rootDocLocation: ImportLo
 
   // TODO merge/flatten singleton dependencies like shared custom resources
   delete output.$imports;
+  delete output.$defs;
   delete output.$envValues;
   return output;
 };

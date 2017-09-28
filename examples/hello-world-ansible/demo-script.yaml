@@ -1,7 +1,9 @@
 #!/usr/bin/env iidy demo
 $imports:
   nameSuffix: random:dashed-name
-  StackName: "literal:iidy-ansible-comparison-{{ nameSuffix }}"
+
+$defs:
+  StackName: "iidy-ansible-comparison-{{ nameSuffix }}"
 
 files:
   cfn-template.yaml: |-
