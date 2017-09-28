@@ -26,12 +26,15 @@ function mkTagClass(tag_name: string) {
 const schemaTypes: jsyaml.Type[] = [];
 export const customTags: {[key: string]: typeof Tag} = {};
 
-function addCFNTagType(tag_name: string, kind: YamlKind) {
+type Resolver = any;
+
+function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
   const kls = _.has(customTags, tag_name) ? customTags[tag_name] : mkTagClass(tag_name);
   customTags[tag_name] = kls;
   schemaTypes.push(new jsyaml.Type('!' + tag_name, {
     kind: kind,
     instanceOf: kls,
+    resolve: resolve,
     construct: (data: any) => new kls(data),
     represent: (node: Tag) => node.data
   }));
