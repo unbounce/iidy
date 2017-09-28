@@ -51,15 +51,15 @@ addCFNTagType('GetAtt', 'scalar');
 addCFNTagType('GetAtt', 'sequence');
 
 addCFNTagType('GetAZs', 'scalar');
+addCFNTagType('GetAZs', 'mapping');
 addCFNTagType('GetAZs', 'sequence');
 
 addCFNTagType('ImportValue', 'scalar');
+addCFNTagType('ImportValue', 'mapping');
 
 addCFNTagType('Join', 'sequence');
 
-export class Ref extends Tag {
-  update(data: any): Ref {return new Ref(data);}
-}
+export class Ref extends Tag {}
 customTags.Ref = Ref;
 
 addCFNTagType('Ref', 'scalar');
