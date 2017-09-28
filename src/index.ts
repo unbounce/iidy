@@ -645,7 +645,7 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
   } else if (node instanceof yaml.$let) {
     const subEnv = mkSubEnv(
       env,
-      _.merge({}, visitNode(_.omit(node.data, ['in']), path, env), env.$envValues),
+      _.merge({}, env.$envValues, visitNode(_.omit(node.data, ['in']), path, env)),
       {path});
     return visitNode(node.data.in, path, subEnv);
   } else if (node instanceof yaml.Ref) {
