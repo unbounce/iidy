@@ -679,7 +679,8 @@ function visitNode(node: any, path: string, env: Env): any {
 };
 
 
-export async function transform(root: ExtendedCfnDoc, rootDocLocation: ImportLocation): Promise<CfnDoc> {
+export async function transform(root0: ExtendedCfnDoc, rootDocLocation: ImportLocation): Promise<CfnDoc> {
+  const root = _.clone(root0);
   const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports);
