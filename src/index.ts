@@ -31,10 +31,11 @@ handlebars.registerHelper('base64', (context: any) => new Buffer(context).toStri
 
 function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
   try {
-    return handlebars.compile(templateString, {noEscape: true})(env);
+    const template = handlebars.compile(templateString, {noEscape: true, strict: true});
+    return template(env);
   } catch (e) {
     throw new Error(
-      `Error in string template at ${errorContext}:\nError: ${e.message}\nTemplate: ${templateString}`)
+      `Error in string template at ${errorContext}:\n       ${e.message}\n       Template: ${templateString}`)
   }
 }
 
@@ -338,7 +339,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     data = result.stdout.toString().trim().split(' ')[0]
     return {importType, resolvedLocation, data, doc: data}
   case "literal":
-    logger.warning(`literal: $imports are deprecated. Replace ${location} in ${baseLocation} with '$defs'.'`)
+    logger.warn(`literal: $imports are deprecated. Replace ${location} in ${baseLocation} with '$defs'.`)
     resolvedLocation = location.split(':')[1]
     data = resolvedLocation;
     doc = data;
