@@ -174,7 +174,7 @@ const mkSubEnv = (env: Env, $envValues: any, frame: MaybeStackFrame): Env => {
           Stack: env.Stack.concat([stackFrame])};
 };
 
-function parseImportType(location: ImportLocation, baseLocation: ImportLocation): ImportType {
+export function parseImportType(location: ImportLocation, baseLocation: ImportLocation): ImportType {
   const hasExplicitType = location.indexOf(':') > -1;
   const importType = hasExplicitType
     ? location.toLowerCase().split(':')[0] as ImportType
@@ -357,7 +357,8 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
 async function loadImports(
   doc: ExtendedCfnDoc,
   baseLocation: ImportLocation,
-  importsAccum: ImportRecord[]
+  importsAccum: ImportRecord[],
+  importLoader=readFromImportLocation  // for mocking in tests
 ): Promise<void> {
   // recursively load the entire set of imports
   doc.$envValues = {};
@@ -375,7 +376,7 @@ async function loadImports(
       }
 
       logger.debug('loading import:', loc, asKey);
-      const importData = await readFromImportLocation(loc, baseLocation);
+      const importData = await importLoader(loc, baseLocation);
       if (_.isObject(importData.doc)) {
         importData.doc.$location = loc;
       }
@@ -391,9 +392,9 @@ async function loadImports(
         throw new Error(`Duplicate import name ${asKey} in ${baseLocation}`);
       }
       doc.$envValues[asKey] = importData.doc;
-      if (importData.doc.$imports) {
+      if (importData.doc.$imports || importData.doc.$defs) {
         await loadImports(
-          importData.doc, importData.resolvedLocation, importsAccum)
+          importData.doc, importData.resolvedLocation, importsAccum, importLoader)
       }
     }
   }
@@ -734,12 +735,12 @@ function visitNode(node: any, path: string, env: Env): any {
   return result;
 };
 
-
-export async function transform(root0: ExtendedCfnDoc, rootDocLocation: ImportLocation): Promise<CfnDoc> {
-  const root = _.clone(root0);
-  const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
-  const accumulatedImports: ImportRecord[] = [];
-  await loadImports(root, rootDocLocation, accumulatedImports);
+export function transformPostImports(
+  root: ExtendedCfnDoc,
+  rootDocLocation: ImportLocation,
+  accumulatedImports: ImportRecord[]
+)
+: CfnDoc {
   // TODO add the rootDoc to the Imports record
   const globalAccum: CfnDoc = {
     Metadata: {
@@ -752,6 +753,7 @@ export async function transform(root0: ExtendedCfnDoc, rootDocLocation: ImportLo
   };
 
   const seedOutput: CfnDoc  = {};
+  const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
   if (isCFNDoc) {
     _.extend(globalAccum,
              {Parameters: {},
@@ -786,6 +788,19 @@ export async function transform(root0: ExtendedCfnDoc, rootDocLocation: ImportLo
   delete output.$defs;
   delete output.$envValues;
   return output;
+};
+
+
+export async function transform(
+  root0: ExtendedCfnDoc,
+  rootDocLocation: ImportLocation,
+  importLoader=readFromImportLocation // for mocking in tests
+)
+: Promise<CfnDoc> {
+  const root = _.clone(root0);
+  const accumulatedImports: ImportRecord[] = [];
+  await loadImports(root, rootDocLocation, accumulatedImports, importLoader);
+  return transformPostImports(root, rootDocLocation, accumulatedImports);
 };
 
 

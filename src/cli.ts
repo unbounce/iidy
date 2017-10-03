@@ -5,10 +5,10 @@ import * as cli from 'cli-color';
 import { logger, setLogLevel } from './logger';
 import debug from './debug';
 
-type ExitCode = number;
-type Handler = (args:yargs.Arguments) => Promise<ExitCode>
+export type ExitCode = number;
+export type Handler = (args:yargs.Arguments) => Promise<ExitCode>
 
-const wrapMainHandler = (handler: Handler) =>
+const wrapCommandHandler = (handler: Handler) =>
   // move the configureaws step into here
   function (args: yargs.Arguments) {
     if (args.debug) {
@@ -29,7 +29,7 @@ const wrapMainHandler = (handler: Handler) =>
   };
 
 // lazy load the actual command fns to make bash command completion faster
-interface Commands {
+export interface Commands {
   createStackMain: Handler
   updateStackMain: Handler
   listStacksMain: Handler
@@ -39,7 +39,7 @@ interface Commands {
   getStackInstancesMain: Handler
   deleteStackMain: Handler
 
-  estimateCost: Handler
+  estimateCost: Handler // TODO fix inconsistent name
 
   createUpdateChangesetMain: Handler
   createCreationChangesetMain: Handler
@@ -107,15 +107,13 @@ const lazy: Commands = {
 
 };
 
-const commands: Commands = lazy;
-
-export async function main() {
+export function buildArgs(commands=lazy, wrapMainHandler=wrapCommandHandler) {
   const description = cli.xterm(250);
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
                  + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
 
-  // called for side-effect
-  const _args = yargs
+  return yargs
+    .env('IIDY')
     .command(
       'create-stack  <argsfile>',
       description('create a cfn stack based on stack-args.yaml'),
@@ -309,9 +307,12 @@ export async function main() {
     // })
 
     .strict()
-    .wrap(yargs.terminalWidth())
-    .argv; // to force parsing / handling
+    .wrap(yargs.terminalWidth());
+}
 
+export async function main(commands=lazy) {
+  // called for side-effect to force parsing / handling
+  buildArgs(commands).argv;
 }
 
 

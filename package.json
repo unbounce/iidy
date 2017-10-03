@@ -9,7 +9,7 @@
     "prepare": "npm run build",
     "build": "tsc -p .",
     "watch": "tsc --watch",
-    "dev-test-watch": "mocha-typescript-watch -p tsconfig.json lib/tests/*js",
+    "dev-test-watch": "mocha-typescript-watch -p tsconfig.json lib/tests/**/*js",
     "lint": "tslint -p . src/*ts src/**/*ts",
     "pkg-binaries": "pkg --out-path dist -t node8-macos,node8-linux package.json",
     "test": "make test"
@@ -66,6 +66,7 @@
     "@types/wrap-ansi": "^2.0.14",
     "@types/yargs": "^8.0.1",
     "chai": "^4.1.2",
+    "intercept-stdout": "^0.1.2",
     "mocha": "^3.5.3",
     "mocha-typescript": "^1.1.9",
     "pkg": "^4.2.4",
