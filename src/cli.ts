@@ -9,7 +9,6 @@ export type ExitCode = number;
 export type Handler = (args:yargs.Arguments) => Promise<ExitCode>
 
 const wrapCommandHandler = (handler: Handler) =>
-  // move the configureaws step into here
   function (args: yargs.Arguments) {
     if (args.debug) {
       process.env.DEBUG = 'true';
@@ -47,6 +46,7 @@ export interface Commands {
 
   renderMain: Handler,
   demoMain: Handler
+  // TODO add an activate stack command wrapper
 
 };
 
@@ -317,28 +317,5 @@ export async function main(commands=lazy) {
 
 
 if (module.parent === null) {
-  // TODO add an activate stack command wrapper
   main();
 };
-
-
-// const openpgp: any = require('openpgp')
-// import * as _ from 'lodash';
-//   const keypair = await openpgp.generateKey(
-//     {numBits:1024,
-//      userIds:[{name:'Jon Smith', email:'jon@example.com' }],
-//      //passphrase: 'test',
-//      unlocked: true
-//     });
-//   console.log(keypair.privateKeyArmored.length);
-//   //keypair.key.decrypt('test');
-//   const options = {data: 'hello', privateKeys: keypair.key, detached: true};
-//   const signed = await openpgp.sign(options);
-//   console.log(signed.signature);
-//   console.log('XXX', openpgp.cleartext.readArmored(signed.data))
-//   const verifyOptions = {
-//     signature: openpgp.signature.readArmored(signed.signature),
-//     message: openpgp.message.fromText('hello'),
-//     publicKeys:  openpgp.key.readArmored(keypair.publicKeyArmored).keys
-//   };
-//   console.log(await openpgp.verify(verifyOptions));

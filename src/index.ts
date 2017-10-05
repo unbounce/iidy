@@ -707,7 +707,6 @@ function visitNode(node: any, path: string, env: Env): any {
     } else if (_.isArray(node)) {
       return visitArray(node, path, env);
     } else if (_isPlainMap(node)) {
-      // TODO factor this out
       if (node.$params) {
         throw new Error(
           `Templates should be called via !$expand or as CFN resource types: ${path}\n ${yaml.dump(node)}`);
