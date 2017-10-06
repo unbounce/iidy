@@ -404,12 +404,7 @@ async function loadImports(
         throw new Error(
           `"${key}" in $defs collides with the same name in $imports of ${baseLocation}`)
       }
-      let val = doc.$defs[key];
-      if (typeof val === 'string' && val.search(/{{(.*?)}}/) > -1) {
-        val = interpolateHandlebarsString(val, doc.$envValues, `${baseLocation}: ${key}`);
-      }
-
-      doc.$envValues[key] = val;
+      doc.$envValues[key] = doc.$defs[key];
     }
   }
   if (doc.$params) {
@@ -692,6 +687,31 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
   }
 }
 
+function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): any {
+  // This node comes from a yaml or json document that was imported.
+  // We need to resolve/reify all !$ includes fully rather than
+  // letting them leak out of the documents $imports: scope and be
+  // resolved incorrectly if they're used in other scopes. If we
+  // didn't do this any values defined with $defs: in a document that
+  // is then imported into other documents would be unresolvable.
+
+  // To achieve this, before calling visitNode on the node
+  // itself we visit/resolve all entries in $envValues so the
+  // environment we use when visiting the node doesn't have
+  // unresolved references in it.
+
+  // TODO add tests to ensure we don't have $! leakage issues in the templates also.
+
+  const stackFrame = {location: node.$location, path: path}; // TODO improve for Root, ...
+  const subEnv0 = mkSubEnv(env, node.$envValues, {location: node.$location, path: path});
+  const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k,v])=> _.has(v, '$params'));
+  const nonTemplates = _.fromPairs(_.get(nodeTypes, false));
+  const templates = _.fromPairs(_.get(nodeTypes, true));
+  const processedEnvValues = _.merge({}, visitNode(nonTemplates, path, subEnv0), templates);
+  const subEnv = mkSubEnv(env, processedEnvValues, stackFrame);
+  return visitMapNode(node, path, subEnv);
+}
+
 function visitNode(node: any, path: string, env: Env): any {
   const currNode = path.split('.').pop();
   logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
@@ -711,13 +731,7 @@ function visitNode(node: any, path: string, env: Env): any {
         throw new Error(
           `Templates should be called via !$expand or as CFN resource types: ${path}\n ${yaml.dump(node)}`);
       } else if (node.$envValues) {
-        const Stack = path==='Root' ?
-          env.Stack :
-          env.Stack.concat([{location: node.$location, path: path}]);
-        return visitMapNode(node, path, {
-          GlobalAccumulator: env.GlobalAccumulator,
-          $envValues: node.$envValues,
-          Stack});
+        return visitImportedDoc(node, path, env);
       } else {
         return visitMapNode(node, path, env);
       }
