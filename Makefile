@@ -36,10 +36,12 @@ test : $(TESTS_STATEFILE)	  ## Run functional tests
 #release: check_working_dir_is_clean clean deps build test
 
 clean :			          ## Clean the dist/ directory (binaries, etc.)
-	rm -rf dist/*
+	rm -rf dist/* lib/*
 
 fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
+
+prepare_release: check_working_dir_is_clean test  ## Prepare a new public release. Requires clean git workdir
 
 
 ################################################################################
@@ -61,13 +63,12 @@ $(DEPS_STATEFILE) : $(PREREQS_STATEFILE) package.json
 
 $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 	npm run build
+	./node_modules/.bin/mocha -- lib/tests/
+	bin/iidy help | grep argsfile > /dev/null
 	npm run pkg-binaries
 
-
-# TODO expand this
 $(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 # initial sanity checks:
-	bin/iidy help | grep argsfile > /dev/null
 ifeq ($(shell uname),Darwin)
 	dist/iidy-macos help | grep argsfile > /dev/null
 endif
@@ -86,18 +87,21 @@ $(DOCKER_STATEFILE): $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	@git clone . /tmp/iidy
 
 	docker build -t iidy -f /tmp/iidy/Dockerfile /tmp/iidy
+	sleep 0.5
 	docker run -it --rm iidy help > /dev/null
 
 	docker build -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
+	sleep 0.5
 	docker run -it --rm iidy-yarn help > /dev/null
 	docker rmi iidy-yarn
 
 	docker build -t iidy-npm -f /tmp/iidy/Dockerfile.test-npm-build /tmp/iidy
+	sleep 0.5
 	docker run -it --rm iidy-npm help  > /dev/null
 	docker rmi iidy-npm
 
 	@rm -rf /tmp/iidy
 
-
 check_working_dir_is_clean :
 	git diff --quiet --ignore-submodules HEAD
+
