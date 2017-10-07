@@ -679,9 +679,15 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
     //   [{key:string, value:any}]
     return visitNode(_liftKVPairs(node.data), path, env);
   } else if (node instanceof yaml.Ref) {
-    // TODO test to verify that this works on top level templates that have no .Prefix
+    // TODO test to verify that this works on top level templates that
+    // have no .Prefix
     // TODO handle other tags such as !GetAtt
-    return new yaml.customTags.Ref(`${env.$envValues.Prefix || ''}${node.data}`);
+    if (_.isString(node.data) && node.data.startsWith('AWS:')) {
+      return node;
+    } else {
+      return new yaml.customTags.Ref(`${env.$envValues.Prefix || ''}${node.data}`);
+    }
+
   } else {
     return node.update(visitNode(node.data, path, env));
   }
