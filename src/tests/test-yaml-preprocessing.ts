@@ -5,6 +5,8 @@ import * as jsyaml from 'js-yaml';
 import * as pre from '../index';
 import * as yaml from '../yaml';
 
+// TODO test various bad paths & error handling
+
 import {
   transform,
   transformNoImport,
@@ -140,21 +142,43 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
   describe("!$fromPairs", () => {
 
-    it.skip("basic forms", async () => {
+    it("basic forms", async () => {
+      expect(await transform(`
+out: !$fromPairs
+  - key: a
+    value: 1
+  - key: b
+    value: 2
+  - key: c
+    value: 3
+`
+)).to.deep.equal(jsyaml.load(`
+out:
+  a: 1
+  b: 2
+  c: 3`));
 
     });
 
   });
 
   describe("!$flatten", () => {
+    // TODO rename to !$concat
+    it("basic forms", async () => {
 
-    it.skip("basic forms", async () => {
+      expect(await transform(`
+out: !$flatten
+  - [1,2,3]
+  - [4,5,6]
+`
+)).to.deep.equal(jsyaml.load(`out: [1,2,3,4,5,6]`));
 
     });
 
   });
 
   describe("!$map", () => {
+    const simpleMapRendered = {m: [{v:1},{v:2},{v:3}]};
     it("basic forms", async () => {
       expect(await transform(`
 m: !$map
@@ -162,7 +186,6 @@ m: !$map
   template: !$ item
 `)).to.deep.equal({m: [1,2,3]});
 
-      const simpleMapRendered = {m: [{v:1},{v:2},{v:3}]};
       expect(await transform(`
 m: !$map
   items: [1,2,3]
@@ -208,11 +231,58 @@ ports:
 
     });
 
+    it("var", async() => {
+      expect(await transform(`
+m: !$map
+  var: i
+  items:
+    - v: {sub: 1}
+    - v: {sub: 2}
+    - v: {sub: 3}
+  template:
+    v: !$ i.v.sub
+`)).to.deep.equal(simpleMapRendered);
+
+    });
   });
 
   describe("!$concatMap", () => {
 
-    it.skip("basic forms", async () => {
+    it("basic forms", async () => {
+
+      expect(await transform(`
+nested: !$concatMap
+  items: [80, 443]
+  var: port
+  template: !$map
+    var: cidr
+    items: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+    template:
+      CidrIp:   !$ cidr
+      FromPort: !$ port
+      ToPort:   !$ port
+`
+)).to.deep.equal(jsyaml.load(`
+nested:
+  - CidrIp: 10.0.0.0/8
+    FromPort: 80
+    ToPort: 80
+  - CidrIp: 172.16.0.0/12
+    FromPort: 80
+    ToPort: 80
+  - CidrIp: 192.168.0.0/16
+    FromPort: 80
+    ToPort: 80
+  - CidrIp: 10.0.0.0/8
+    FromPort: 443
+    ToPort: 443
+  - CidrIp: 172.16.0.0/12
+    FromPort: 443
+    ToPort: 443
+  - CidrIp: 192.168.0.0/16
+    FromPort: 443
+    ToPort: 443`));
+
 
     });
 
@@ -220,18 +290,41 @@ ports:
 
   describe("!$mapListToHash", () => {
 
-    it.skip("basic forms", async () => {
+    it("basic forms", async () => {
+expect(await transform(`
+out: !$mapListToHash
+  template:
+    key: !$ item.0
+    value: !$ item.1
+  items:
+    - ['a', "v1"]
+    - ['b', "v2"]`
+)).to.deep.equal(jsyaml.load(`
+out:
+  a: v1
+  b: v2`));
 
     });
+
+        it("var", async () => {
+expect(await transform(`
+out: !$mapListToHash
+  var: i
+  template:
+    key: !$ i.0
+    value: !$ i.1
+  items:
+    - ['a', "v1"]
+    - ['b', "v2"]`
+)).to.deep.equal(jsyaml.load(`
+out:
+  a: v1
+  b: v2`));
+
+    });
+
 
   });
 
 
 });
-
-// this syntax requires "experimentalDecorators": true in tsconfig.json
-// @suite class TestTwo {
-//   @test method() {
-//     throw new Error;
-//   }
-// }
