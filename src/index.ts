@@ -532,7 +532,7 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
           // ! 1 find any missing params with no defaults
           // 2 check against AllowedValues and AllowedPattern
           // 3 check min/max Value / Length
-          const mergedParams = _.merge({}, $paramDefaults, providedParams);
+          const mergedParams = _.assign({}, $paramDefaults, providedParams);
           _.forEach(template.$params, (param) => {
             const paramValue = mergedParams[param.Name];
             if (_.isUndefined(paramValue)) {
