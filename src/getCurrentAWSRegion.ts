@@ -1,6 +1,6 @@
 import * as aws from 'aws-sdk'
 
-import { AWSRegion } from './aws-regions';
+import {AWSRegion} from './aws-regions';
 
 function getCurrentAWSRegion(): AWSRegion {
   // MUST be called after configureAWS()

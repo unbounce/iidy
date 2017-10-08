@@ -8,12 +8,13 @@ import * as tmp from 'tmp';
 import * as cli from 'cli-color';
 
 import timeout from './timeout';
-import { transform } from './index';
+import {transform} from './index';
 import * as yaml from './yaml';
 
 type Banner = {
   type: 'banner',
-  banner: string}
+  banner: string
+}
 
 type DemoCommand
   = {type: 'shell', script: string}
@@ -45,13 +46,13 @@ class DemoRunner {
   tmpdir: tmp.SynchrounousResult;
   bashEnv: typeof process.env;
 
-  constructor(demoscript: string, timescaling=1) {
+  constructor(demoscript: string, timescaling = 1) {
     this.demoscript = demoscript;
     this.bashEnv = _.merge({}, process.env);
     this.timescaling = timescaling;
   }
 
-  async run(): Promise<number>{
+  async run(): Promise<number> {
     const demoFile = this.demoscript;
     const script0 = yaml.loadString(fs.readFileSync(demoFile), demoFile);
     const script: any = await transform(script0, demoFile); // tslint:disable-line
@@ -64,7 +65,7 @@ class DemoRunner {
       throw e;
     } finally {
       // TODO check result
-      child_process.execSync(`rm -r "${this.tmpdir.name}"`, {cwd: this.tmpdir.name });
+      child_process.execSync(`rm -r "${this.tmpdir.name}"`, {cwd: this.tmpdir.name});
     }
     return 0;
   }
@@ -85,10 +86,12 @@ class DemoRunner {
   _execBashCommand(command: string) {
     const res = child_process.spawnSync(
       command,
-      {shell: '/bin/bash',
-       cwd: this.tmpdir.name,
-       env: this.bashEnv,
-       stdio: [0,1,2] });
+      {
+        shell: '/bin/bash',
+        cwd: this.tmpdir.name,
+        env: this.bashEnv,
+        stdio: [0, 1, 2]
+      });
     if (res.status !== 0) {
       // TODO improve this
       throw new Error(`command failed: ${command}. exitcode=${res.status}`);
@@ -103,7 +106,7 @@ class DemoRunner {
     console.log(bannerFormat(' '.repeat(tty.columns)));
     for (const ln of command.banner.split('\n')) {
       const pad = (tty.columns - ln.length);
-      console.log(bannerFormat(cli.bold(cli.yellow(' '.repeat(2) + ln + ' '.repeat(pad-2)))));
+      console.log(bannerFormat(cli.bold(cli.yellow(' '.repeat(2) + ln + ' '.repeat(pad - 2)))));
     }
     console.log(bannerFormat(' '.repeat(tty.columns)));
     console.log();
@@ -123,23 +126,23 @@ class DemoRunner {
   async _runCommands(commands: DemoCommand[]) {
     for (const command of commands) {
       // TODO logger
-      switch(command.type) {
-      case 'setenv':
-        _.extend(this.bashEnv, command.env);
-        break;
-      case 'shell':
-        await this._printComm(command.script);
-        this._execBashCommand(command.script);
-        break;
-      case 'silent':
-        this._execBashCommand(command.script);
-        break;
-      case 'sleep':
-        await timeout(command.seconds * 1000 * this.timescaling);
-        break;
-      case 'banner':
-        this._displayBanner(command);
-        break;
+      switch (command.type) {
+        case 'setenv':
+          _.extend(this.bashEnv, command.env);
+          break;
+        case 'shell':
+          await this._printComm(command.script);
+          this._execBashCommand(command.script);
+          break;
+        case 'silent':
+          this._execBashCommand(command.script);
+          break;
+        case 'sleep':
+          await timeout(command.seconds * 1000 * this.timescaling);
+          break;
+        case 'banner':
+          this._displayBanner(command);
+          break;
       }
     }
   }

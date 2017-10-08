@@ -11,9 +11,9 @@ if (debug()) {
 }
 
 const consoleLogger = new winston.transports.Console({
-      colorize: true,
-      level: LOG_LEVEL,
-      prettyPrint: true
+  colorize: true,
+  level: LOG_LEVEL,
+  prettyPrint: true
 });
 
 export function setLogLevel(level: string) {

@@ -22,7 +22,7 @@ import * as request from 'request-promise-native';
 import * as tv4 from 'tv4';
 
 import * as yaml from './yaml';
-import { logger } from './logger';
+import {logger} from './logger';
 
 
 handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
@@ -126,9 +126,9 @@ const gitValues = ["branch", "describe", "sha"];
 
 function gitValue(valueType: GitValue): string {
   const command = {
-    branch:'git rev-parse --abbrev-ref HEAD',
-    describe:'git describe --dirty',
-    sha:'git rev-parse HEAD'
+    branch: 'git rev-parse --abbrev-ref HEAD',
+    describe: 'git describe --dirty',
+    sha: 'git rev-parse HEAD'
   }[valueType];
 
   const result = child_process
@@ -144,14 +144,14 @@ const sha256Digest = (content: string | Buffer): SHA256Digest =>
   crypto.createHash('sha256').update(content.toString()).digest('hex');
 
 function resolveHome(path: string) {
-    if (path[0] === '~') {
-        return pathmod.join(process.env.HOME as string, path.slice(1));
-    } else {
-      return path;
-    }
+  if (path[0] === '~') {
+    return pathmod.join(process.env.HOME as string, path.slice(1));
+  } else {
+    return path;
+  }
 }
 
-const normalizePath = (...pathSegments: string[]) : string =>
+const normalizePath = (...pathSegments: string[]): string =>
   pathmod.resolve.apply(pathmod, _.map(pathSegments, (path) => resolveHome(path.trim())));
 
 const _isPlainMap = (node: any): boolean =>
@@ -167,11 +167,15 @@ const _liftKVPairs = (objects: {key: string, value: any}[]) =>
   _.fromPairs(_.map(objects, ({key, value}) => [key, value]))
 
 const mkSubEnv = (env: Env, $envValues: any, frame: MaybeStackFrame): Env => {
-  const stackFrame = {location: frame.location || env.Stack[env.Stack.length-1].location, // tslint:disable-line
-                      path: frame.path};
-  return {GlobalAccumulator: env.GlobalAccumulator,
-          $envValues,
-          Stack: env.Stack.concat([stackFrame])};
+  const stackFrame = {
+    location: frame.location || env.Stack[env.Stack.length - 1].location, // tslint:disable-line
+    path: frame.path
+  };
+  return {
+    GlobalAccumulator: env.GlobalAccumulator,
+    $envValues,
+    Stack: env.Stack.concat([stackFrame])
+  };
 };
 
 export function parseImportType(location: ImportLocation, baseLocation: ImportLocation): ImportType {
@@ -183,8 +187,8 @@ export function parseImportType(location: ImportLocation, baseLocation: ImportLo
     ? baseLocation.toLowerCase().split(':')[0] as ImportType
     : "file";
 
-  if (_.includes(['s3','http'], baseImportType)) {
-    if (! hasExplicitType) {
+  if (_.includes(['s3', 'http'], baseImportType)) {
+    if (!hasExplicitType) {
       return baseImportType;
     } else if (_.includes(localOnlyImportTypes, importType)) {
       // security cross-check
@@ -208,7 +212,7 @@ function resolveDocFromImportData(data: string, location: ImportLocation): any {
     ext = pathmod.extname(location);
   }
 
-  if (_.includes(['.yaml','.yml'], ext)) {
+  if (_.includes(['.yaml', '.yml'], ext)) {
     return yaml.loadString(data, location)
   } else if (ext === '.json') {
     return JSON.parse(data);
@@ -218,7 +222,7 @@ function resolveDocFromImportData(data: string, location: ImportLocation): any {
 }
 
 export async function readFromImportLocation(location: ImportLocation, baseLocation: ImportLocation)
-: Promise<ImportData> {
+  : Promise<ImportData> {
   const importType = parseImportType(location, baseLocation);
   let resolvedLocation: ImportLocation, data: string, doc: any;
 
@@ -244,113 +248,113 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
   }
 
   switch (importType) {
-  case "ssm":
-    const ssm = new aws.SSM();
-    [, resolvedLocation, format] = location.split(':')
-    const param =
-      await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
-    if (param.Parameter && param.Parameter.Value) {
-      data = parseData(param.Parameter.Value, format);
-      return {importType, resolvedLocation, data, doc: data}
-    } else {
-      throw new Error(
-        `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
-    }
-  case "ssm-path":
-    const ssm2 = new aws.SSM();
-    [, resolvedLocation, format] = location.split(':')
-    if ( ! resolvedLocation.endsWith('/')) {
-      resolvedLocation += '/'
-    }
-    const params = await ssm2.getParametersByPath(
-      {Path: resolvedLocation, WithDecryption:true}).promise()
-    doc = _.fromPairs(_.map(params.Parameters, ({Name, Value})=>
-                            [(Name as string).replace(resolvedLocation,''),
-                             parseData(Value as string, format)]))
-    return {importType, resolvedLocation, data: JSON.stringify(doc), doc}
-  case "s3":
-    const s3 = new aws.S3();
-    if (location.indexOf('s3:') === 0) {
-      resolvedLocation = location;
-    } else {
-      resolvedLocation = 's3:/' + pathmod.join(pathmod.dirname(baseLocation.replace('s3:/', '')), location)
-    }
-    const uri = url.parse(resolvedLocation)
-
-    if (uri.host && uri.path) {
-      const s3response = await s3.getObject({
-        Bucket: uri.host,
-        Key: uri.path.slice(1)  // doesn't like leading /
-      }).promise()
-      if (s3response.Body) {
-        data = s3response.Body.toString();
-        doc = resolveDocFromImportData(data, resolvedLocation);
-        return {importType, resolvedLocation, data, doc}
+    case "ssm":
+      const ssm = new aws.SSM();
+      [, resolvedLocation, format] = location.split(':')
+      const param =
+        await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
+      if (param.Parameter && param.Parameter.Value) {
+        data = parseData(param.Parameter.Value, format);
+        return {importType, resolvedLocation, data, doc: data}
       } else {
-        throw new Error(`Invalid s3 response from ${location} under ${baseLocation}`);
+        throw new Error(
+          `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
       }
-    }
-    throw new Error(`Invalid s3 uri ${location} under ${baseLocation}`);
-  case "http":
-    resolvedLocation = location
-    data = await request.get(location)
-    doc = resolveDocFromImportData(data, resolvedLocation)
-    return {importType, resolvedLocation, data, doc}
-  case "env":
-    let defVal;
-    [, resolvedLocation, defVal] = location.split(':')
-    data = _.get(process.env, resolvedLocation, defVal)
-    if (_.isUndefined(data)) {
-      throw new Error(`Env-var ${resolvedLocation} not found from ${baseLocation}`)
-    }
-    return {importType, resolvedLocation, data, doc: data};
-  case "git":
-    resolvedLocation = location.split(':')[1]
-    if (_.includes(gitValues, resolvedLocation)) {
-      data = gitValue(resolvedLocation as GitValue);
+    case "ssm-path":
+      const ssm2 = new aws.SSM();
+      [, resolvedLocation, format] = location.split(':')
+      if (!resolvedLocation.endsWith('/')) {
+        resolvedLocation += '/'
+      }
+      const params = await ssm2.getParametersByPath(
+        {Path: resolvedLocation, WithDecryption: true}).promise()
+      doc = _.fromPairs(_.map(params.Parameters, ({Name, Value}) =>
+        [(Name as string).replace(resolvedLocation, ''),
+        parseData(Value as string, format)]))
+      return {importType, resolvedLocation, data: JSON.stringify(doc), doc}
+    case "s3":
+      const s3 = new aws.S3();
+      if (location.indexOf('s3:') === 0) {
+        resolvedLocation = location;
+      } else {
+        resolvedLocation = 's3:/' + pathmod.join(pathmod.dirname(baseLocation.replace('s3:/', '')), location)
+      }
+      const uri = url.parse(resolvedLocation)
+
+      if (uri.host && uri.path) {
+        const s3response = await s3.getObject({
+          Bucket: uri.host,
+          Key: uri.path.slice(1)  // doesn't like leading /
+        }).promise()
+        if (s3response.Body) {
+          data = s3response.Body.toString();
+          doc = resolveDocFromImportData(data, resolvedLocation);
+          return {importType, resolvedLocation, data, doc}
+        } else {
+          throw new Error(`Invalid s3 response from ${location} under ${baseLocation}`);
+        }
+      }
+      throw new Error(`Invalid s3 uri ${location} under ${baseLocation}`);
+    case "http":
+      resolvedLocation = location
+      data = await request.get(location)
+      doc = resolveDocFromImportData(data, resolvedLocation)
+      return {importType, resolvedLocation, data, doc}
+    case "env":
+      let defVal;
+      [, resolvedLocation, defVal] = location.split(':')
+      data = _.get(process.env, resolvedLocation, defVal)
+      if (_.isUndefined(data)) {
+        throw new Error(`Env-var ${resolvedLocation} not found from ${baseLocation}`)
+      }
       return {importType, resolvedLocation, data, doc: data};
-    } else {
-      throw new Error(`Invalid git command: ${location}`);
-    }
-  case "random":
-    resolvedLocation = location.split(':')[1]
-    if (resolvedLocation === 'dashed-name') {
-      data = nameGenerator().dashed;
-    } else if (resolvedLocation === 'name') {
-      data = nameGenerator().dashed.replace('-','');
-    } else if (resolvedLocation === 'int') {
-      const max = 1000, min = 1;
-      data = (Math.floor(Math.random() * (max - min)) + min).toString();
-    } else {
-      throw new Error(`Invalid random type in ${location} at ${baseLocation}`);
-    }
-    return {importType, resolvedLocation, data, doc: data};
-  case "filehash":
-    resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
-    if (! fs.existsSync(resolvedLocation)) {
-      throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
-    }
-    const isDir = fs.lstatSync(resolvedLocation).isDirectory();
-    const shasumCommand = 'shasum -p -a 256';
-    const hashCommand = isDir
-      ? `find ${resolvedLocation} -type f -print0 | xargs -0 ${shasumCommand} | ${shasumCommand}`
-      : `${shasumCommand} ${resolvedLocation}`;
-    const result = child_process.spawnSync(hashCommand, [], {shell:true});
-    data = result.stdout.toString().trim().split(' ')[0]
-    return {importType, resolvedLocation, data, doc: data}
-  case "literal":
-    logger.warn(`literal: $imports are deprecated. Replace ${location} in ${baseLocation} with '$defs'.`)
-    resolvedLocation = location.split(':')[1]
-    data = resolvedLocation;
-    doc = data;
-    return {importType, resolvedLocation, data, doc}
-  case "file":
-    if (_.some(_.filter(importTypes, 'file')), (typ:string) => baseLocation.startsWith(`${typ}:`)) {
-      logger.debug(`non file: import on baseLocation=${baseLocation} for location=${location}`)
-    }
-    resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation.replace('file:','')), location.replace('file:', ''));
-    data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
-    return {importType, resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
+    case "git":
+      resolvedLocation = location.split(':')[1]
+      if (_.includes(gitValues, resolvedLocation)) {
+        data = gitValue(resolvedLocation as GitValue);
+        return {importType, resolvedLocation, data, doc: data};
+      } else {
+        throw new Error(`Invalid git command: ${location}`);
+      }
+    case "random":
+      resolvedLocation = location.split(':')[1]
+      if (resolvedLocation === 'dashed-name') {
+        data = nameGenerator().dashed;
+      } else if (resolvedLocation === 'name') {
+        data = nameGenerator().dashed.replace('-', '');
+      } else if (resolvedLocation === 'int') {
+        const max = 1000, min = 1;
+        data = (Math.floor(Math.random() * (max - min)) + min).toString();
+      } else {
+        throw new Error(`Invalid random type in ${location} at ${baseLocation}`);
+      }
+      return {importType, resolvedLocation, data, doc: data};
+    case "filehash":
+      resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
+      if (!fs.existsSync(resolvedLocation)) {
+        throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
+      }
+      const isDir = fs.lstatSync(resolvedLocation).isDirectory();
+      const shasumCommand = 'shasum -p -a 256';
+      const hashCommand = isDir
+        ? `find ${resolvedLocation} -type f -print0 | xargs -0 ${shasumCommand} | ${shasumCommand}`
+        : `${shasumCommand} ${resolvedLocation}`;
+      const result = child_process.spawnSync(hashCommand, [], {shell: true});
+      data = result.stdout.toString().trim().split(' ')[0]
+      return {importType, resolvedLocation, data, doc: data}
+    case "literal":
+      logger.warn(`literal: $imports are deprecated. Replace ${location} in ${baseLocation} with '$defs'.`)
+      resolvedLocation = location.split(':')[1]
+      data = resolvedLocation;
+      doc = data;
+      return {importType, resolvedLocation, data, doc}
+    case "file":
+      if (_.some(_.filter(importTypes, 'file')), (typ: string) => baseLocation.startsWith(`${typ}:`)) {
+        logger.debug(`non file: import on baseLocation=${baseLocation} for location=${location}`)
+      }
+      resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation.replace('file:', '')), location.replace('file:', ''));
+      data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
+      return {importType, resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
   }
 }
 
@@ -358,13 +362,13 @@ async function loadImports(
   doc: ExtendedCfnDoc,
   baseLocation: ImportLocation,
   importsAccum: ImportRecord[],
-  importLoader=readFromImportLocation  // for mocking in tests
+  importLoader = readFromImportLocation  // for mocking in tests
 ): Promise<void> {
   // recursively load the entire set of imports
   doc.$envValues = {};
   if (doc.$imports) {
 
-    if ( ! _.isPlainObject(doc.$imports)) {
+    if (!_.isPlainObject(doc.$imports)) {
       throw Error(
         `Invalid imports in ${baseLocation}:\n "${JSON.stringify(doc.$imports)}". \n Should be mapping.`);
     }
@@ -428,7 +432,7 @@ function lookupInEnv(key: string, path: string, env: Env) {
   }
   const res = env.$envValues[key];
   if (_.isUndefined(res)) {
-    logger.debug(`Could not find "${key}" at ${path}}`, env=env)
+    logger.debug(`Could not find "${key}" at ${path}}`, env = env)
     throw new Error(`Could not find "${key}" at ${path}}`);
   } else {
     return res;
@@ -450,7 +454,7 @@ function mapCustomResourceToGlobalSections(
         _.fromPairs(
           // TOOD is this the right place to be visiting the subsections
           _.map(_.toPairs(visitNode(resourceDoc[section], appendPath(path, section), env)),
-                ([k, v]) => [`${env.$envValues.Prefix}${k}`, v]))
+            ([k, v]) => [`${env.$envValues.Prefix}${k}`, v]))
       );
       return res;
     }
@@ -505,11 +509,11 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
           const resourceDoc = _.merge(
             {}, template,
             visitNode(resource.Overrides,
-                      appendPath(path, `${name}.Overrides`),
-                      // This is pre template expansion so the names
-                      // used by $include, etc. must be in scope of the current
-                      // environment, not in the template's env.
-                      env))
+              appendPath(path, `${name}.Overrides`),
+              // This is pre template expansion so the names
+              // used by $include, etc. must be in scope of the current
+              // environment, not in the template's env.
+              env))
 
           const $paramDefaultsEnv = mkSubEnv(
             env, _.merge({Prefix: prefix}, template.$envValues), stackFrame);
@@ -519,8 +523,8 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
               _.map(
                 template.$params,
                 (v) => [v.Name,
-                        visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
-              ([k, v]) => ! _.isUndefined(v)));
+                visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
+              ([k, v]) => !_.isUndefined(v)));
 
           const providedParams = visitNode(resource.Properties, appendPath(path, `${name}.Properties`), env);
           // TODO factor this out:
@@ -529,36 +533,36 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
           // 2 check against AllowedValues and AllowedPattern
           // 3 check min/max Value / Length
           const mergedParams = _.merge({}, $paramDefaults, providedParams);
-          _.forEach(template.$params, (param)=> {
+          _.forEach(template.$params, (param) => {
             const paramValue = mergedParams[param.Name];
             if (_.isUndefined(paramValue)) {
               throw new Error(`Missing required parameter ${param.Name} in ${name}`);
             } else if (param.Schema) {
-              if (! _.isObject(param.Schema)) {
+              if (!_.isObject(param.Schema)) {
                 throw new Error(`Invalid schema "${param.Name}" in ${name}.`)
               }
               const validationResult = tv4.validateResult(paramValue, param.Schema)
-              if (! validationResult.valid) {
+              if (!validationResult.valid) {
                 const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
                 logger.error(errmsg);
-                logger.error(`  ${env.Stack[env.Stack.length-1].location || ''}`)
+                logger.error(`  ${env.Stack[env.Stack.length - 1].location || ''}`)
                 logger.error(validationResult.error.message);
-                logger.error('Here is the parameter JSON Schema:\n'+yaml.dump(param.Schema));
+                logger.error('Here is the parameter JSON Schema:\n' + yaml.dump(param.Schema));
                 throw new Error(errmsg);
               }
             } else if (param.AllowedValues) {
-                // cfn style validation
+              // cfn style validation
               if (!_.includes(param.AllowedValues, paramValue)) {
                 const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
                 logger.error(errmsg);
-                logger.error(`  ${env.Stack[env.Stack.length-1].location || ''}`)
+                logger.error(`  ${env.Stack[env.Stack.length - 1].location || ''}`)
                 logger.error(`${paramValue} not in Allowed Values: ${yaml.dump(param.AllowedValues)}`);
                 throw new Error(errmsg);
               }
             } else if (param.AllowedPattern) {
               // TODO test
               const patternRegex = new RegExp(param.AllowedPattern);
-              if (! (typeof paramValue === 'string' && paramValue.match(patternRegex))) {
+              if (!(typeof paramValue === 'string' && paramValue.match(patternRegex))) {
                 throw new Error(`Invalid value "${param.Name}" in ${name}. AllowedPattern: ${param.AllowedPattern}.`)
               }
             }
@@ -569,8 +573,7 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
             env,
             _.merge(
               {Prefix: prefix},
-              $paramDefaults,
-              providedParams,
+              mergedParams,
               template.$envValues),
             stackFrame);
 
@@ -588,8 +591,8 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
           return _.map(_.toPairs(outputResources), ([resname, val]) => [`${subEnv.$envValues.Prefix}${resname}`, val])
 
         } else if (resource.Type &&
-                   (resource.Type.indexOf('AWS') === 0
-                    || resource.Type.indexOf('Custom') === 0)) {
+          (resource.Type.indexOf('AWS') === 0
+            || resource.Type.indexOf('Custom') === 0)) {
           return [[name, visitNode(resource, appendPath(path, name), env)]]
         } else {
           throw new Error(
@@ -599,7 +602,7 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
     ));
 
 function visit$Expand(node: yaml.$expand, path: string, env: Env): any {
-  if (! _.isEqual(_.sortBy(_.keys(node.data)), [ 'params', 'template' ])) {
+  if (!_.isEqual(_.sortBy(_.keys(node.data)), ['params', 'template'])) {
     // TODO use json schema instead
     throw new Error(`Invalid arguments to $expand: ${_.sortBy(_.keys(node.data))}`);
   } else {
@@ -619,7 +622,7 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
   if (node instanceof yaml.$include) {
     if (node.data.indexOf('.') > -1) {
       const [key, ...selector] = node.data.split('.');
-      if (! _.has(env.$envValues, key)) {
+      if (!_.has(env.$envValues, key)) {
         throw new Error(`Could not find "${key}" at ${path}`);
       }
       const lookupRes: any = _.get(env.$envValues[key], selector);
@@ -639,7 +642,7 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
     const stringSource = (_.isArray(node.data) && node.data.length === 1)
       ? node.data[0]
       : node.data;
-    return yaml.dump(visitNode(stringSource, path, env)) ;
+    return yaml.dump(visitNode(stringSource, path, env));
   } else if (node instanceof yaml.$parseYaml) {
     return visitNode(yaml.loadString(visitNode(node.data, path, env), path), path, env);
   } else if (node instanceof yaml.$let) {
@@ -659,14 +662,14 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
       const subPath = appendPath(path, idx.toString());
       const item = visitNode(item0, subPath, env); // visit pre expansion
       const subEnv = mkSubEnv(
-        env, _.merge({[varName]:item, [varName+'Idx']:idx}, env.$envValues), {path: subPath});
+        env, _.merge({[varName]: item, [varName + 'Idx']: idx}, env.$envValues), {path: subPath});
       return visitNode(template, subPath, subEnv);
-    }) ;
+    });
     return visitNode(mapped, path, env); // TODO do we need to visit again like this?
   } else if (node instanceof yaml.$flatten) {
     if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
       throw new Error(`Invalid argument to $flatten at "${path}".`
-                      + " Must be array of arrays.");
+        + " Must be array of arrays.");
     }
     return visitNode(_flatten(node.data), path, env);
   } else if (node instanceof yaml.$concatMap) {
@@ -710,7 +713,7 @@ function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): any {
 
   const stackFrame = {location: node.$location, path: path}; // TODO improve for Root, ...
   const subEnv0 = mkSubEnv(env, node.$envValues, {location: node.$location, path: path});
-  const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k,v])=> _.has(v, '$params'));
+  const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k, v]) => _.has(v, '$params'));
   const nonTemplates = _.fromPairs(_.get(nodeTypes, false));
   const templates = _.fromPairs(_.get(nodeTypes, true));
   const processedEnvValues = _.merge({}, visitNode(nonTemplates, path, subEnv0), templates);
@@ -759,7 +762,7 @@ export function transformPostImports(
   rootDocLocation: ImportLocation,
   accumulatedImports: ImportRecord[]
 )
-: CfnDoc {
+  : CfnDoc {
   // TODO add the rootDoc to the Imports record
   const globalAccum: CfnDoc = {
     Metadata: {
@@ -771,14 +774,16 @@ export function transformPostImports(
     }
   };
 
-  const seedOutput: CfnDoc  = {};
+  const seedOutput: CfnDoc = {};
   const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
   if (isCFNDoc) {
     _.extend(globalAccum,
-             {Parameters: {},
-              Conditions: {},
-              Mappings: {},
-              Outputs: {}});
+      {
+        Parameters: {},
+        Conditions: {},
+        Mappings: {},
+        Outputs: {}
+      });
     seedOutput.AWSTemplateFormatVersion = '2010-09-09';
   }
 
@@ -797,9 +802,10 @@ export function transformPostImports(
     _.forOwn(
       GlobalSections,
       (sectionName: GlobalSection) => {
-        if (! _.isEmpty(globalAccum[sectionName])) {
+        if (!_.isEmpty(globalAccum[sectionName])) {
           output[sectionName] = _.merge({}, output[sectionName], globalAccum[sectionName]);
-        }});
+        }
+      });
   }
 
   // TODO merge/flatten singleton dependencies like shared custom resources
@@ -813,9 +819,9 @@ export function transformPostImports(
 export async function transform(
   root0: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
-  importLoader=readFromImportLocation // for mocking in tests
+  importLoader = readFromImportLocation // for mocking in tests
 )
-: Promise<CfnDoc> {
+  : Promise<CfnDoc> {
   const root = _.clone(root0);
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports, importLoader);
@@ -823,7 +829,7 @@ export async function transform(
 };
 
 
-import { Arguments } from 'yargs';
+import {Arguments} from 'yargs';
 import configureAWS from './configureAWS';
 
 export async function renderMain(argv: Arguments): Promise<number> {
@@ -839,7 +845,7 @@ export async function renderMain(argv: Arguments): Promise<number> {
     process.stderr.write(outputString);
     process.stderr.write('\n');
   } else {
-    if (fs.existsSync(argv.outfile) && ! argv.overwrite) {
+    if (fs.existsSync(argv.outfile) && !argv.overwrite) {
       logger.error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
       return 1;
     }

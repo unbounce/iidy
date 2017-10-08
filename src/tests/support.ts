@@ -4,12 +4,12 @@ import * as pre from '../index';
 import * as yaml from '../yaml';
 import * as jsyaml from 'js-yaml';
 
-export async function transform(input0: any, inputLoader=pre.readFromImportLocation) {
+export async function transform(input0: any, inputLoader = pre.readFromImportLocation) {
   const input = _.isString(input0) ? yaml.loadString(input0, 'root') : input0;
   return pre.transform(input, "root", inputLoader);
 }
 
-export function transformNoImport(input0: any, accumulatedImports=[]) {
+export function transformNoImport(input0: any, accumulatedImports = []) {
   const input = _.isString(input0) ? yaml.loadString(input0, 'root') : input0;
   return pre.transformPostImports(input, "root", accumulatedImports);
 }

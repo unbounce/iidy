@@ -1,4 +1,4 @@
-import { assert, expect } from 'chai';
+import {expect} from 'chai';
 import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
 
@@ -15,9 +15,14 @@ import {
 } from './support';
 
 const waitConditionTemplate = {
-  Resources: {blah:
-              {Type:'AWS::CloudFormation::WaitConditionHandle',
-               Properties:{}}}};
+  Resources: {
+    blah:
+    {
+      Type: 'AWS::CloudFormation::WaitConditionHandle',
+      Properties: {}
+    }
+  }
+};
 
 function assertNo$GutsLeakage(output: pre.CfnDoc) {
   expect(output).not.to.have.property('$defs');
@@ -73,20 +78,25 @@ describe("Yaml pre-processing", () => {
   describe("$imports:", () => {
 
     it("importLoader mocking works", async () => {
-      const testDoc = {$imports: {a: 's3://mock/mock1'},
-                       literal: 1234,
-                       aref: new yaml.$include('a')};
+      const testDoc = {
+        $imports: {a: 's3://mock/mock1'},
+        literal: 1234,
+        aref: new yaml.$include('a')
+      };
       const expected = {aref: 'mock', literal: 1234};
       const mockLoader = mkMockImportLoader(
-        {'s3://mock/mock1': {data: 'mock'},
-         's3://mock/mock2': {data: '', doc: testDoc}
+        {
+          's3://mock/mock1': {data: 'mock'},
+          's3://mock/mock2': {data: '', doc: testDoc}
         });
       expect(await transform(testDoc, mockLoader))
         .to.deep.equal(expected);
 
-      expect(await transform({$imports: {nested: 's3://mock/mock2'},
-                              literal: new yaml.$include('nested.literal')},
-                             mockLoader))
+      expect(await transform({
+        $imports: {nested: 's3://mock/mock2'},
+        literal: new yaml.$include('nested.literal')
+      },
+        mockLoader))
         .to.deep.equal({literal: 1234});
 
       expect(await transform(
@@ -110,8 +120,10 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
       expect(await transform({$defs: {a: {b: 'c'}}, out: "{{a.b}}"}))
         .to.deep.equal({out: 'c'});
 
-      expect(await transform({$defs: {a: new yaml.$include('b'), b: 'xref'},
-                              out: new yaml.$include('a')}))
+      expect(await transform({
+        $defs: {a: new yaml.$include('b'), b: 'xref'},
+        out: new yaml.$include('a')
+      }))
         .to.deep.equal({out: 'xref'});
     });
   });
@@ -131,9 +143,13 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
     it.skip("xrefs", async () => {
       expect(await transform(
-        {out: $let({a: new yaml.$include('b'),
-                    b: 'xref',
-                    in: {inner: new yaml.$include('a')}})}))
+        {
+          out: $let({
+            a: new yaml.$include('b'),
+            b: 'xref',
+            in: {inner: new yaml.$include('a')}
+          })
+        }))
         .to.deep.equal({out: {inner: 'xref'}});
     });
 
@@ -152,7 +168,7 @@ out: !$fromPairs
   - key: c
     value: 3
 `
-)).to.deep.equal(jsyaml.load(`
+      )).to.deep.equal(jsyaml.load(`
 out:
   a: 1
   b: 2
@@ -171,20 +187,20 @@ out: !$flatten
   - [1,2,3]
   - [4,5,6]
 `
-)).to.deep.equal(jsyaml.load(`out: [1,2,3,4,5,6]`));
+      )).to.deep.equal(jsyaml.load(`out: [1,2,3,4,5,6]`));
 
     });
 
   });
 
   describe("!$map", () => {
-    const simpleMapRendered = {m: [{v:1},{v:2},{v:3}]};
+    const simpleMapRendered = {m: [{v: 1}, {v: 2}, {v: 3}]};
     it("basic forms", async () => {
       expect(await transform(`
 m: !$map
   items: [1,2,3]
   template: !$ item
-`)).to.deep.equal({m: [1,2,3]});
+`)).to.deep.equal({m: [1, 2, 3]});
 
       expect(await transform(`
 m: !$map
@@ -220,7 +236,7 @@ ports: !$map
     FromPort: !$ item
     ToPort: !$ item
   items: [80, 443]`
-)).to.deep.equal(jsyaml.load(`
+      )).to.deep.equal(jsyaml.load(`
 ports:
   - CidrIp: 0.0.0.0/0
     FromPort: 80
@@ -231,7 +247,7 @@ ports:
 
     });
 
-    it("var", async() => {
+    it("var", async () => {
       expect(await transform(`
 m: !$map
   var: i
@@ -262,7 +278,7 @@ nested: !$concatMap
       FromPort: !$ port
       ToPort:   !$ port
 `
-)).to.deep.equal(jsyaml.load(`
+      )).to.deep.equal(jsyaml.load(`
 nested:
   - CidrIp: 10.0.0.0/8
     FromPort: 80
@@ -291,7 +307,7 @@ nested:
   describe("!$mapListToHash", () => {
 
     it("basic forms", async () => {
-expect(await transform(`
+      expect(await transform(`
 out: !$mapListToHash
   template:
     key: !$ item.0
@@ -299,15 +315,15 @@ out: !$mapListToHash
   items:
     - ['a', "v1"]
     - ['b', "v2"]`
-)).to.deep.equal(jsyaml.load(`
+      )).to.deep.equal(jsyaml.load(`
 out:
   a: v1
   b: v2`));
 
     });
 
-        it("var", async () => {
-expect(await transform(`
+    it("var", async () => {
+      expect(await transform(`
 out: !$mapListToHash
   var: i
   template:
@@ -316,7 +332,7 @@ out: !$mapListToHash
   items:
     - ['a', "v1"]
     - ['b', "v2"]`
-)).to.deep.equal(jsyaml.load(`
+      )).to.deep.equal(jsyaml.load(`
 out:
   a: v1
   b: v2`));

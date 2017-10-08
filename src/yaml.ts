@@ -9,7 +9,7 @@ export class Tag {
   constructor(public data: any) {
     this.ctor = new.target;
   }
-  
+
   update(data: any): Tag {
     // fugly but can't call new.target from here. This is equivalent
     // to this.constructor in plain js.
@@ -86,7 +86,7 @@ addCFNTagType('Or', 'sequence');
 ////////////////////////////////////////////////////////////////////////////////
 // custom !$tag support
 
-function addCustomTag(name: string | string[], kls: any, resolve?: Resolver){
+function addCustomTag(name: string | string[], kls: any, resolve?: Resolver) {
   const names = _.isArray(name) ? name : [name];
   for (const nm of names) {
     customTags[nm] = kls
@@ -143,9 +143,9 @@ addCustomTag('$fromPairs', $fromPairs); // mapping
 ////////////////////////////////////////////////////////////////////////////////
 const schema = jsyaml.Schema.create(schemaTypes);
 
-export const loadString = (content: string | Buffer, filename: string) : any =>
+export const loadString = (content: string | Buffer, filename: string): any =>
   jsyaml.safeLoad(content.toString(), {schema: schema, filename: filename});
 
-export const dump = (doc: object) : string => 
+export const dump = (doc: object): string =>
   jsyaml.safeDump(doc, {schema: schema})
-  .replace(/!<!([^>]+?)>/g, '!$1');
+    .replace(/!<!([^>]+?)>/g, '!$1');
