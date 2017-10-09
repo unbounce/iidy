@@ -53,6 +53,8 @@ export interface CfnDoc {
   Transform?: object
 };
 
+export type AnyButUndefined = string | number | boolean | object | null | CfnDoc | ExtendedCfnDoc;
+
 export type ImportLocation = string; // | {From: string, As: string}
 
 export type ImportRecord = {
@@ -62,7 +64,7 @@ export type ImportRecord = {
   sha256Digest: SHA256Digest,
 };
 
-export type $EnvValues = {[key: string]: any} // TODO might need more general value type
+export type $EnvValues = {[key: string]: AnyButUndefined} // TODO might need more general value type
 
 export type $param = {
   Name: string,
@@ -75,8 +77,8 @@ export type $param = {
 
 // TODO find a better name for this Interface
 export interface ExtendedCfnDoc extends CfnDoc {
-  $imports?: {[key: string]: any},
-  $defs?: {[key: string]: any},
+  $imports?: {[key: string]: any}, // TODO AnyButUndefined
+  $defs?: {[key: string]: AnyButUndefined},
   $params?: Array<$param>,
   $location: string,
   $envValues?: $EnvValues
@@ -143,7 +145,7 @@ function gitValue(valueType: GitValue): string {
 const sha256Digest = (content: string | Buffer): SHA256Digest =>
   crypto.createHash('sha256').update(content.toString()).digest('hex');
 
-function resolveHome(path: string) {
+function resolveHome(path: string): string {
   if (path[0] === '~') {
     return pathmod.join(process.env.HOME as string, path.slice(1));
   } else {
@@ -154,19 +156,19 @@ function resolveHome(path: string) {
 const normalizePath = (...pathSegments: string[]): string =>
   pathmod.resolve.apply(pathmod, _.map(pathSegments, (path) => resolveHome(path.trim())));
 
-const _isPlainMap = (node: any): boolean =>
+const _isPlainMap = (node: any): node is object =>
   _.isObject(node) &&
   !node.is_yaml_tag &&
   !_.isDate(node) &&
   !_.isRegExp(node) &&
   !_.isFunction(node);
 
-const _flatten = <T>(arrs: T[]) => [].concat.apply([], arrs);
+const _flatten = <T>(arrs: T[][]): T[] => [].concat.apply([], arrs);
 
 const _liftKVPairs = (objects: {key: string, value: any}[]) =>
   _.fromPairs(_.map(objects, ({key, value}) => [key, value]))
 
-const mkSubEnv = (env: Env, $envValues: any, frame: MaybeStackFrame): Env => {
+const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env => {
   const stackFrame = {
     location: frame.location || env.Stack[env.Stack.length - 1].location, // tslint:disable-line
     path: frame.path
@@ -225,7 +227,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
   : Promise<ImportData> {
   const importType = parseImportType(location, baseLocation);
   let resolvedLocation: ImportLocation, data: string, doc: any;
-
+  // TODO refactor this function into smaller parts
   // TODO handle relative paths and non-file types
   let format: string;
   const tryParseJson = (s: string) => {
@@ -424,7 +426,7 @@ async function loadImports(
 
 };
 
-function lookupInEnv(key: string, path: string, env: Env) {
+function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
   if (typeof key !== 'string') { // tslint:disable-line
     // this is called with the .data attribute of custom yaml tags which might not be
     // strings.
@@ -439,7 +441,7 @@ function lookupInEnv(key: string, path: string, env: Env) {
   }
 }
 
-const appendPath = (rootPath: string, suffix: string) =>
+const appendPath = (rootPath: string, suffix: string): string =>
   rootPath ? rootPath + '.' + suffix : suffix;
 
 function mapCustomResourceToGlobalSections(
@@ -461,47 +463,13 @@ function mapCustomResourceToGlobalSections(
   });
 }
 
-const visitMapNode = (node: any, path: string, env: Env): any => {
-  // without $merge it would just be:
-  //return  _.mapValues(node, (v, k) => visitNode(v, appendPath(path, k), env));
-  const res: any = {};
-  for (const k in node) {
-    if (k.indexOf('$merge') === 0) {
-      const sub: any = visitNode(node[k], appendPath(path, k), env);
-      for (const k2 in sub) {
-        if (_.has(res, k2)) {
-          throw new Error(
-            `Key "${k2}" is already present and cannot be $merge'd into path "${path}"`);
-        }
-        res[k2] = sub[k2]; //visitNode(sub[k2], appendPath(path, k2), env);
-      }
-    } else if (_.includes(['$envValues', '$imports', '$params', '$location'], k)) {
-      // TODO test this part more thoroughly
-      continue;
-    } else {
-      res[k] = visitNode(node[k], appendPath(path, k), env);
-    }
-  }
-  return res;
-}
-
-const visitArray = (node: any[], path: string, env: Env): any =>
-  _.map(node, (v, i) => visitNode(v, appendPath(path, i.toString()), env));
-
-function visitStringNode(node: string, path: string, env: Env): any {
-  if (node.search(/{{(.*?)}}/) > -1) {
-    return interpolateHandlebarsString(node, env.$envValues, path);
-  } else {
-    return node;
-  }
-}
-
 // TODO tighten up the return type here: {[key: string]: any}
-const visitResourceNode = (node: object, path: string, env: Env): any =>
+const visitResourceNode = (node: object, path: string, env: Env): AnyButUndefined =>
   _.fromPairs(
     _flatten( // as we may output > 1 resource for each template
       _.map(_.toPairs(node), ([name, resource]) => {
-        const template: ExtendedCfnDoc = env.$envValues[resource.Type];
+        // TODO remove the need for this cast
+        const template: ExtendedCfnDoc = env.$envValues[resource.Type] as ExtendedCfnDoc;
         if (template) {
           // TODO s/NamePrefix/$namePrefix/
           const prefix = _.isUndefined(resource.NamePrefix) ? name : resource.NamePrefix;
@@ -601,13 +569,51 @@ const visitResourceNode = (node: object, path: string, env: Env): any =>
       })
     ));
 
-function visit$Expand(node: yaml.$expand, path: string, env: Env): any {
+////////////////////////////////////////////////////////////////////////////////
+
+
+function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefined {
+  if (node instanceof yaml.$include) {
+    return visit$include(node, path, env);
+  } else if (node instanceof yaml.$expand) {
+    return visit$expand(node, path, env);
+  } else if (node instanceof yaml.$escape) {
+    return visit$escape(node, path, env);
+  } else if (node instanceof yaml.$string) {
+    return visit$string(node, path, env);
+  } else if (node instanceof yaml.$parseYaml) {
+    return visit$parseYaml(node, path, env);
+  } else if (node instanceof yaml.$let) {
+    return visit$let(node, path, env);
+  } else if (node instanceof yaml.$map) {
+    return visit$map(node, path, env);
+  } else if (node instanceof yaml.$flatten) {
+    return visit$flatten(node, path, env);
+  } else if (node instanceof yaml.$concatMap) {
+    return visit$concatMap(node, path, env);
+  } else if (node instanceof yaml.$mapListToHash) {
+    return visit$mapListToHash(node, path, env);
+  } else if (node instanceof yaml.$fromPairs) {
+    return visit$fromPairs(node, path, env);
+  } else if (node instanceof yaml.Ref) {
+    return visitRefTag(node, path, env);
+  } else {
+    return node.update(visitNode(node.data, path, env));
+  }
+}
+
+function visit$escape(node: yaml.$escape, path: string, env: Env): AnyButUndefined {
+  return node.data;
+}
+
+function visit$expand(node: yaml.$expand, path: string, env: Env): AnyButUndefined {
   if (!_.isEqual(_.sortBy(_.keys(node.data)), ['params', 'template'])) {
     // TODO use json schema instead
     throw new Error(`Invalid arguments to $expand: ${_.sortBy(_.keys(node.data))}`);
   } else {
     const {template: templateName, params} = node.data;
-    const template = _.clone(lookupInEnv(templateName, path, env));
+    // TODO remove the need for this cast
+    const template: ExtendedCfnDoc = _.clone(lookupInEnv(templateName, path, env)) as ExtendedCfnDoc;
     // TODO validate the params
     // TODO expand template.$params defaults
     const subEnv = mkSubEnv(env, _.merge({}, params, env.$envValues), {path});
@@ -617,86 +623,125 @@ function visit$Expand(node: yaml.$expand, path: string, env: Env): any {
   }
 }
 
-function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): any {
-  // TODO conditions, hoist
-  if (node instanceof yaml.$include) {
-    if (node.data.indexOf('.') > -1) {
-      const [key, ...selector] = node.data.split('.');
-      if (!_.has(env.$envValues, key)) {
-        throw new Error(`Could not find "${key}" at ${path}`);
-      }
-      const lookupRes: any = _.get(env.$envValues[key], selector);
-      if (_.isUndefined(lookupRes)) {
-        throw new Error(`Could not find path ${selector} in ${key} at ${path}`);
-      } else {
-        return visitNode(lookupRes, path, env);
-      }
+function visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
+  if (node.data.indexOf('.') > -1) {
+    const [key, ...selector] = node.data.split('.');
+    if (!_.has(env.$envValues, key)) {
+      throw new Error(`Could not find "${key}" at ${path}`);
+    }
+    const lookupRes: any = _.get(env.$envValues[key], selector);
+    if (_.isUndefined(lookupRes)) {
+      throw new Error(`Could not find path ${selector} in ${key} at ${path}`);
     } else {
-      return visitNode(lookupInEnv(node.data, path, env), path, env);
+      return visitNode(lookupRes, path, env);
     }
-  } else if (node instanceof yaml.$expand) {
-    return visit$Expand(node, path, env);
-  } else if (node instanceof yaml.$escape) {
-    return node.data;
-  } else if (node instanceof yaml.$string) {
-    const stringSource = (_.isArray(node.data) && node.data.length === 1)
-      ? node.data[0]
-      : node.data;
-    return yaml.dump(visitNode(stringSource, path, env));
-  } else if (node instanceof yaml.$parseYaml) {
-    return visitNode(yaml.loadString(visitNode(node.data, path, env), path), path, env);
-  } else if (node instanceof yaml.$let) {
-    const subEnv = mkSubEnv(
-      env,
-      _.merge({}, env.$envValues, visitNode(_.omit(node.data, ['in']), path, env)),
-      {path});
-    return visitNode(node.data.in, path, subEnv);
-  } else if (node instanceof yaml.$map) {
-    // TODO validate node.data's shape or even better do this during parsing
-    //    template: any, items: [...]
-    const template = node.data.template;
-    // TODO handle nested maps
-    const varName = node.data.var || 'item';
-    const mapped = _.map(node.data.items, (item0: any, idx: number) => {
-      // TODO improve stackFrame details
-      const subPath = appendPath(path, idx.toString());
-      const item = visitNode(item0, subPath, env); // visit pre expansion
-      const subEnv = mkSubEnv(
-        env, _.merge({[varName]: item, [varName + 'Idx']: idx}, env.$envValues), {path: subPath});
-      return visitNode(template, subPath, subEnv);
-    });
-    return visitNode(mapped, path, env); // TODO do we need to visit again like this?
-  } else if (node instanceof yaml.$flatten) {
-    if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
-      throw new Error(`Invalid argument to $flatten at "${path}".`
-        + " Must be array of arrays.");
-    }
-    return visitNode(_flatten(node.data), path, env);
-  } else if (node instanceof yaml.$concatMap) {
-    return _flatten(visitNode(new yaml.$map(node.data), path, env));
-  } else if (node instanceof yaml.$mapListToHash) {
-    const input = new yaml.$map(node.data);
-    return _liftKVPairs(visitNode(input, path, env));
-  } else if (node instanceof yaml.$fromPairs) {
-    // TODO validate node.data's shape or even better do this during parsing
-    //   [{key:string, value:any}]
-    return visitNode(_liftKVPairs(node.data), path, env);
-  } else if (node instanceof yaml.Ref) {
-    // TODO test to verify that this works on top level templates that
-    // have no .Prefix
-    // TODO handle other tags such as !GetAtt
-    if (_.isString(node.data) && node.data.startsWith('AWS:')) {
-      return node;
-    } else {
-      return new yaml.customTags.Ref(`${env.$envValues.Prefix || ''}${node.data}`);
-    }
-
   } else {
-    return node.update(visitNode(node.data, path, env));
+    return visitNode(lookupInEnv(node.data, path, env), path, env);
   }
 }
 
-function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): any {
+function visit$let(node: yaml.$let, path: string, env: Env): AnyButUndefined {
+  const subEnv = mkSubEnv(
+    env,
+    _.merge({}, env.$envValues,
+      visitNode(_.omit(node.data, ['in']), path, env)),
+    {path});
+  return visitNode(node.data.in, path, subEnv);
+}
+
+function visit$map(node: yaml.$map, path: string, env: Env): AnyButUndefined {
+  // TODO validate node.data's shape or even better do this during parsing
+  //    template: any, items: [...]
+  const {template, items} = node.data
+  // TODO handle nested maps
+  const varName = node.data.var || 'item';
+  const mapped = _.map(node.data.items, (item0: any, idx: number) => {
+    // TODO improve stackFrame details
+    const subPath = appendPath(path, idx.toString());
+    const item = visitNode(item0, subPath, env); // visit pre expansion
+    const subEnv = mkSubEnv(
+      env, _.merge({[varName]: item, [varName + 'Idx']: idx}, env.$envValues), {path: subPath});
+    return visitNode(template, subPath, subEnv);
+  });
+  return visitNode(mapped, path, env); // TODO do we need to visit again like this?
+}
+
+function visit$string(node: yaml.$string, path: string, env: Env): string {
+  const stringSource = (_.isArray(node.data) && node.data.length === 1)
+    ? node.data[0]
+    : node.data;
+  return yaml.dump(visitNode(stringSource, path, env));
+}
+
+function visit$flatten(node: yaml.$flatten, path: string, env: Env): AnyButUndefined[] {
+
+  if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
+    throw new Error(`Invalid argument to $flatten at "${path}".`
+      + " Must be array of arrays.");
+  }
+  return visitNode(_flatten(node.data), path, env);
+}
+
+function visit$parseYaml(node: yaml.$parseYaml, path: string, env: Env): AnyButUndefined {
+  return visitNode(yaml.loadString(visitString(node.data, path, env), path), path, env);
+}
+
+function visit$concatMap(node: yaml.$concatMap, path: string, env: Env): AnyButUndefined {
+  return _flatten(visitNode(new yaml.$map(node.data), path, env));
+}
+
+function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButUndefined {
+  // TODO validate node.data's shape or even better do this during parsing
+  //   [{key:string, value:any}]
+  return visitNode(_liftKVPairs(node.data), path, env);
+}
+
+function visit$mapListToHash(node: yaml.$mapListToHash, path: string, env: Env): AnyButUndefined {
+  return _liftKVPairs(visitNode(new yaml.$map(node.data), path, env));
+}
+
+function visitRefTag(node: yaml.Ref, path: string, env: Env): AnyButUndefined {
+  // TODO test to verify that this works on top level templates that
+  // have no .Prefix
+  // TODO handle other tags such as !GetAtt
+  if (_.isString(node.data) && node.data.startsWith('AWS:')) {
+    return node;
+  } else {
+    return new yaml.customTags.Ref(`${env.$envValues.Prefix || ''}${node.data}`);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+function visitNode(node: any, path: string, env: Env): any {
+  const currNode = path.split('.').pop();
+  logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
+  const result = (() => {
+    if (currNode === 'Resources' && path.indexOf('Overrides') === -1) {
+      return visitResourceNode(node, path, env);
+    } else if (currNode === '$envValues') {
+      // filtered out in visitMapNode
+      throw new Error(`Shouldn't be able to reach here: ${path}`);
+    } else if (node instanceof yaml.Tag) {
+      return visitYamlTagNode(node, path, env);
+    } else if (_.isArray(node)) {
+      return visitArray(node, path, env);
+    } else if (_isPlainMap(node)) {
+      return visitPlainMap(node, path, env);
+    } else if (node instanceof Date) {
+      return visitDate(node, path, env);
+    } else if (typeof node === 'string') {
+      return visitString(node, path, env);
+    } else {
+      return node;
+    }
+  })();
+  logger.debug(`exiting ${path}:`, {result, node, env});;
+  return result;
+};
+
+function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): AnyButUndefined {
   // This node comes from a yaml or json document that was imported.
   // We need to resolve/reify all !$ includes fully rather than
   // letting them leak out of the documents $imports: scope and be
@@ -710,9 +755,10 @@ function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): any {
   // unresolved references in it.
 
   // TODO add tests to ensure we don't have $! leakage issues in the templates also.
+  // TODO tighten the output type
 
   const stackFrame = {location: node.$location, path: path}; // TODO improve for Root, ...
-  const subEnv0 = mkSubEnv(env, node.$envValues, {location: node.$location, path: path});
+  const subEnv0 = mkSubEnv(env, node.$envValues || {}, {location: node.$location, path: path});
   const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k, v]) => _.has(v, '$params'));
   const nonTemplates = _.fromPairs(_.get(nodeTypes, false));
   const templates = _.fromPairs(_.get(nodeTypes, true));
@@ -721,42 +767,68 @@ function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): any {
   return visitMapNode(node, path, subEnv);
 }
 
-function visitNode(node: any, path: string, env: Env): any {
+function visitDate(node: Date, path: string, env: Env): Date | string {
   const currNode = path.split('.').pop();
-  logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
-  const result = (() => {
-    // switch to a switch statement
-    if (currNode === 'Resources' && path.indexOf('Overrides') === -1) {
-      return visitResourceNode(node, path, env);
-    } else if (currNode === '$envValues') {
-      // filtered out in visitMapNode
-      throw new Error(`Shouldn't be able to reach here: ${path}`);
-    } else if (node instanceof yaml.Tag) {
-      return visitYamlTagNode(node, path, env);
-    } else if (_.isArray(node)) {
-      return visitArray(node, path, env);
-    } else if (_isPlainMap(node)) {
-      if (node.$params) {
-        throw new Error(
-          `Templates should be called via !$expand or as CFN resource types: ${path}\n ${yaml.dump(node)}`);
-      } else if (node.$envValues) {
-        return visitImportedDoc(node, path, env);
-      } else {
-        return visitMapNode(node, path, env);
-      }
-    } else if (node instanceof Date && _.includes(['Version', 'AWSTemplateFormatVersion'], currNode)) {
-      // common error in cfn / yaml
-      return node.toISOString().split('T')[0];
-    } else if (typeof node === 'string') {
-      return visitStringNode(node, path, env);
-    } else {
-      return node;
-    }
-  })();
-  logger.debug(`exiting ${path}:`, {result, node, env});;
-  return result;
-};
+  if (_.includes(['Version', 'AWSTemplateFormatVersion'], currNode)) {
+    // common error in cfn / yaml
+    return node.toISOString().split('T')[0];
+  } else {
+    return node;
+  }
+}
 
+const _isImportedDoc = (node: {}): node is ExtendedCfnDoc =>
+  _isPlainMap(node) && _.has(node, '$envValues')
+
+function visitPlainMap(node: {}, path: string, env: Env): AnyButUndefined {
+  // TODO tighten node type
+  if (_.has(node, '$params')) {
+    throw new Error(
+      `Templates should be called via !$expand or as CFN resource types: ${path}\n ${yaml.dump(node)}`);
+  } else if (_isImportedDoc(node)) {
+    return visitImportedDoc(node, path, env);
+  } else {
+    return visitMapNode(node, path, env);
+  }
+}
+
+
+const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
+  // without $merge it would just be:
+  //return  _.mapValues(node, (v, k) => visitNode(v, appendPath(path, k), env));
+  const res: any = {}; // TODO tighten type
+  for (const k in node) {
+    if (k.indexOf('$merge') === 0) {
+      const sub: any = visitNode(node[k], appendPath(path, k), env);
+      for (const k2 in sub) {
+        if (_.has(res, k2)) {
+          throw new Error(
+            `Key "${k2}" is already present and cannot be $merge'd into path "${path}"`);
+        }
+        res[k2] = sub[k2]; //visitNode(sub[k2], appendPath(path, k2), env);
+      }
+    } else if (_.includes(['$envValues', '$imports', '$params', '$location'], k)) {
+      // TODO test this part more thoroughly
+      continue;
+    } else {
+      res[k] = visitNode(node[k], appendPath(path, k), env);
+    }
+  }
+  return res;
+}
+
+const visitArray = (node: AnyButUndefined[], path: string, env: Env): AnyButUndefined[] =>
+  _.map(node, (v, i) => visitNode(v, appendPath(path, i.toString()), env));
+
+function visitString(node: string, path: string, env: Env): string {
+  if (node.search(/{{(.*?)}}/) > -1) {
+    return interpolateHandlebarsString(node, env.$envValues, path);
+  } else {
+    return node;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 export function transformPostImports(
   root: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
@@ -797,7 +869,7 @@ export function transformPostImports(
 
   if (isCFNDoc) {
 
-    // TODO check for seconary cfn docs, or stack dependencies
+    // TODO check for secondary cfn docs, or stack dependencies
 
     _.forOwn(
       GlobalSections,

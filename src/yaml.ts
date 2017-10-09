@@ -4,16 +4,21 @@ import * as jsyaml from 'js-yaml';
 
 type YamlKind = 'scalar' | 'mapping' | 'sequence';
 
-export class Tag {
+export class Tag<T = any> {
   ctor: any // see below re fugly
-  constructor(public data: any) {
+  constructor(private _data: any) {
     this.ctor = new.target;
   }
 
-  update(data: any): Tag {
+  update(data: T): this {
     // fugly but can't call new.target from here. This is equivalent
     // to this.constructor in plain js.
     return new this.ctor(data);
+  }
+  
+  get data(): T {
+    // post-parsing / validation we can narrow the type to T
+    return this._data
   }
 }
 
@@ -59,7 +64,7 @@ addCFNTagType('ImportValue', 'mapping');
 
 addCFNTagType('Join', 'sequence');
 
-export class Ref extends Tag {}
+export class Ref extends Tag<string> {}
 customTags.Ref = Ref;
 
 addCFNTagType('Ref', 'scalar');
@@ -101,7 +106,7 @@ function addCustomTag(name: string | string[], kls: any, resolve?: Resolver) {
 ////////////////////////////////////////////////////////////////////////////////
 // basic interpolation related custom tags
 
-export class $include extends Tag {}
+export class $include extends Tag<string> {}
 addCustomTag(['$include', '$'], $include); // scalar
 
 export class $escape extends Tag {}
@@ -110,13 +115,14 @@ addCustomTag('$escape', $escape); // any
 export class $string extends Tag {}
 addCustomTag('$string', $string); // any
 
-export class $parseYaml extends Tag {}
+export class $parseYaml extends Tag<string> {}
 addCustomTag('$parseYaml', $parseYaml); // scalar string
 
 ////////////////////////////////////////////////////////////////////////////////
 // variable definition and template expansion custom tags
 
-export class $let extends Tag {}
+export type $LetParams = {in: any, [key: string]: any};
+export class $let extends Tag<$LetParams> {}
 addCustomTag('$let', $let); // mapping
 
 export class $expand extends Tag {}
@@ -125,19 +131,20 @@ addCustomTag('$expand', $expand); // mapping
 ////////////////////////////////////////////////////////////////////////////////
 // looping and data restructuring custom tags
 
-export class $map extends Tag {}
+export type $MapParams = {template: any, items: any[], var?: string};
+export class $map extends Tag<$MapParams> {}
 addCustomTag('$map', $map); // mapping
 
 export class $mapListToHash extends Tag {}
 addCustomTag('$mapListToHash', $mapListToHash); // mapping
 
-export class $flatten extends Tag {}
+export class $flatten extends Tag<any[][]> {}
 addCustomTag('$flatten', $flatten); // sequence
 
 export class $concatMap extends Tag {}
 addCustomTag('$concatMap', $concatMap); // mapping
 
-export class $fromPairs extends Tag {}
+export class $fromPairs extends Tag<{key: string, value: any}[]> {}
 addCustomTag('$fromPairs', $fromPairs); // mapping
 
 ////////////////////////////////////////////////////////////////////////////////
