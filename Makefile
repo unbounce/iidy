@@ -14,12 +14,14 @@ TESTS_STATEFILE = .make/done_tests
 DOCKER_STATEFILE = .make/done_docker
 BUILD_ARTIFACTS = dist/iidy-macos dist/iidy-linux
 
+DOCKER_BUILD_ARGS = --force-rm
 ##########################################################################################
 ## Top level targets. Our public api. See Plumbing section for the actual work
 .PHONY : prereqs deps build docker_build test clean fullclean release help
 
 help: ## Display this message
-	@grep -E '^[a-zA-Z_-]+ *:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+ *:.*?## .*$$' $(MAKEFILE_LIST) \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .DEFAULT_GOAL := help
 
 prereqs : $(PREREQS_STATEFILE)    ## Check for system level prerequisites
@@ -41,7 +43,7 @@ clean :			          ## Clean the dist/ directory (binaries, etc.)
 fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
 
-prepare_release: check_working_dir_is_clean test  ## Prepare a new public release. Requires clean git workdir
+prepare_release : check_working_dir_is_clean test  ## Prepare a new public release. Requires clean git workdir
 
 
 ################################################################################
@@ -78,24 +80,24 @@ endif
 	cp Dockerfile.test dist/docker/Dockerfile
 	cp Makefile.test dist/docker/Makefile
 	cp -a examples dist/docker/
-	docker build -t iidy-test dist/docker
+	docker build $(DOCKER_BUILD_ARGS) -t iidy-test dist/docker
 	docker run --rm -it -v ~/.aws/:/root/.aws/ iidy-test make test
 	touch $(TESTS_STATEFILE)
 
-$(DOCKER_STATEFILE): $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
+$(DOCKER_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	@rm -rf /tmp/iidy
 	@git clone . /tmp/iidy
 
-	docker build -t iidy -f /tmp/iidy/Dockerfile /tmp/iidy
+	docker build $(DOCKER_BUILD_ARGS) -t iidy -f /tmp/iidy/Dockerfile /tmp/iidy
 	sleep 0.5
 	docker run -it --rm iidy help > /dev/null
 
-	docker build -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
+	docker build $(DOCKER_BUILD_ARGS) -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
 	sleep 0.5
 	docker run -it --rm iidy-yarn help > /dev/null
 	docker rmi iidy-yarn
 
-	docker build -t iidy-npm -f /tmp/iidy/Dockerfile.test-npm-build /tmp/iidy
+	docker build $(DOCKER_BUILD_ARGS) -t iidy-npm -f /tmp/iidy/Dockerfile.test-npm-build /tmp/iidy
 	sleep 0.5
 	docker run -it --rm iidy-npm help  > /dev/null
 	docker rmi iidy-npm
