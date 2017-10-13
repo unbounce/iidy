@@ -24,6 +24,12 @@ const waitConditionTemplate = {
   }
 };
 
+const mkTestEnv = ($envValues: pre.$EnvValues, GlobalAccumulator = {}) => ({
+  GlobalAccumulator,
+  $envValues,
+  Stack: []
+})
+
 function assertNo$GutsLeakage(output: pre.CfnDoc) {
   expect(output).not.to.have.property('$defs');
   expect(output).not.to.have.property('$imports');
@@ -128,6 +134,88 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
   });
 
+  describe("Custom Resource Templates", () => {
+    const testEnvInsideCustomResource = mkTestEnv({
+      Prefix: 'Test',
+      $globalRefs: {'Bar': true}
+    });
+
+    const testEnvOutsideCustomResource = mkTestEnv({});
+
+    it("!Sub ${} reference rewriting", async () => {
+      for (const {input, output} of [
+        {input: 'Foo', output: 'Foo'},
+        {input: 'Bar', output: 'Bar'},
+        {input: '${AWS::Region}', output: '${AWS::Region}'},
+        {input: '--${AWS::Region }--', output: '--${AWS::Region }--'},
+
+        {input: '${Foo}', output: '${TestFoo}'},
+        {input: '${ Foo }', output: '${TestFoo}'},
+        {input: '${ Foo.Arn }', output: '${TestFoo.Arn}'},
+
+        {input: 'before ${Foo} after', output: 'before ${TestFoo} after'},
+
+        {input: '${Bar}', output: '${Bar}'},
+        {input: 'before ${Bar} after', output: 'before ${Bar} after'},
+        {input: '${ Bar }', output: '${ Bar }'},
+        {input: '${ Bar.Arn }', output: '${ Bar.Arn }'},
+
+        {input: '${!Foo}', output: '${!Foo}'},
+        
+        {input: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Foo}:*',
+         output: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${TestFoo}:*'}
+
+      ]) {
+
+        expect(
+          pre.visitSubStringTemplate(input, 'test', testEnvInsideCustomResource))
+          .to.equal(output);
+
+        expect(
+          pre.visitSubStringTemplate(input, 'test', testEnvOutsideCustomResource))
+          .to.equal(input);
+
+      }
+
+    });
+
+    it("!Ref & !GetAtt reference rewriting", async () => {
+      for (const {input, output} of [
+        {input: 'Foo', output: 'TestFoo'},
+        {input: ' Foo ', output: 'TestFoo'},
+        {input: 'Foo.Arn', output: 'TestFoo.Arn'},
+        {input: 'Foo.Arn.Blah  ', output: 'TestFoo.Arn.Blah'},
+
+        {input: 'Bar', output: 'Bar'},
+        {input: 'Bar.Arn', output: 'Bar.Arn'},
+        {input: 'Bar.Blah.Arn', output: 'Bar.Blah.Arn'},
+        {input: ' Bar.Arn ', output: ' Bar.Arn '},
+
+      ]) {
+        expect(
+          pre.visitRef(
+            new yaml.Ref(input), 'test', testEnvInsideCustomResource))
+          .to.deep.equal(new yaml.Ref(output));
+
+        expect(
+          pre.visitGetAtt(
+            new yaml.GetAtt(input), 'test', testEnvInsideCustomResource))
+          .to.deep.equal(new yaml.GetAtt(output));
+
+        // no rewrite
+        expect(
+          pre.visitRef(
+            new yaml.Ref(input), 'test', testEnvOutsideCustomResource))
+          .to.deep.equal(new yaml.Ref(input));
+
+        expect(
+          pre.visitGetAtt(
+            new yaml.GetAtt(input), 'test', testEnvOutsideCustomResource))
+          .to.deep.equal(new yaml.GetAtt(input));
+      }
+
+    })
+  });
   describe("!$let", () => {
     it("basic usage of !$let & !$ works", async () => {
       expect(await transform({out: $let({a: 'b', in: "{{a}}"})}))

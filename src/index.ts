@@ -25,6 +25,9 @@ import * as yaml from './yaml';
 import {logger} from './logger';
 
 
+const HANDLEBARS_RE = /{{(.*?)}}/;
+const CFN_SUB_RE = /\${([^!].*?)}/g;
+
 handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
 handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
 handlebars.registerHelper('base64', (context: any) => new Buffer(context).toString('base64'));
@@ -531,6 +534,19 @@ const visitResourceNode = (node: object, path: string, env: Env): AnyButUndefine
               // environment, not in the template's env.
               env))
 
+          // flag any names in the Template that should not be
+          // prefixed by visitRef, etc.
+          const $globalRefs: {[key: string]: boolean} = {};
+          _.forOwn(_.merge({}, resourceDoc.Parameters,
+            resourceDoc.Resources,
+            resourceDoc.Mappings,
+            resourceDoc.Conditions),
+            (param, key) => {
+              if (param.$global) {
+                $globalRefs[key] = true;
+              }
+            });
+
           const $paramDefaultsEnv = mkSubEnv(
             env, _.merge({Prefix: prefix}, template.$envValues), stackFrame);
 
@@ -570,7 +586,15 @@ const visitResourceNode = (node: object, path: string, env: Env): AnyButUndefine
           // Could also add a special char prefix individual resource names and global sections to
           // override this name remapping.
           // This ties in with supporting singleton custom resources that should be shared amongst templates
-          return _.map(_.toPairs(outputResources), ([resname, val]) => [`${subEnv.$envValues.Prefix}${resname}`, val])
+          return _.map(_.toPairs(outputResources), ([resname, val]) => {
+            const isGlobal = _.has(val, '$global');
+            delete val.$global;
+            if (isGlobal) {
+              return [resname, val];
+            } else {
+              return [`${subEnv.$envValues.Prefix}${resname}`, val];
+            }
+          })
 
         } else if (resource.Type &&
           (resource.Type.indexOf('AWS') === 0
@@ -610,7 +634,11 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefin
   } else if (node instanceof yaml.$fromPairs) {
     return visit$fromPairs(node, path, env);
   } else if (node instanceof yaml.Ref) {
-    return visitRefTag(node, path, env);
+    return visitRef(node, path, env);
+  } else if (node instanceof yaml.GetAtt) {
+    return visitGetAtt(node, path, env);
+  } else if (node instanceof yaml.Sub) {
+    return visitSub(node, path, env);
   } else {
     return node.update(visitNode(node.data, path, env));
   }
@@ -705,8 +733,6 @@ function visit$concatMap(node: yaml.$concatMap, path: string, env: Env): AnyButU
 }
 
 function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButUndefined {
-  // TODO validate node.data's shape or even better do this during parsing
-  //   [{key:string, value:any}]
   return visitNode(_liftKVPairs(node.data), path, env);
 }
 
@@ -714,14 +740,51 @@ function visit$mapListToHash(node: yaml.$mapListToHash, path: string, env: Env):
   return _liftKVPairs(visitNode(new yaml.$map(node.data), path, env));
 }
 
-function visitRefTag(node: yaml.Ref, path: string, env: Env): AnyButUndefined {
-  // TODO test to verify that this works on top level templates that
-  // have no .Prefix
-  // TODO handle other tags such as !GetAtt
-  if (_.isString(node.data) && node.data.startsWith('AWS:')) {
-    return node;
+function shouldRewriteRef(ref: string, env: Env) {
+  const globalRefs = env.$envValues['$globalRefs'] || {};
+  const isGlobal = _.has(globalRefs, ref);
+  return env.$envValues.Prefix && !(isGlobal || ref.startsWith('AWS:'));
+}
+
+function maybeRewriteRef(ref: string, env: Env) {
+  if (shouldRewriteRef(ref.trim().split('.')[0], env)) {
+    return `${env.$envValues.Prefix || ''}${ref.trim()}`;
   } else {
-    return new yaml.customTags.Ref(`${env.$envValues.Prefix || ''}${node.data}`);
+    return ref;
+  }
+}
+
+export const visitRef = (node: yaml.Ref, path: string, env: Env): yaml.Ref =>
+  new yaml.Ref(maybeRewriteRef(node.data, env));
+
+export const visitGetAtt = (node: yaml.GetAtt, path: string, env: Env): yaml.GetAtt =>
+  new yaml.GetAtt(maybeRewriteRef(node.data, env));
+
+export function visitSubStringTemplate(template0: string, path: string, env: Env) {
+  let template = template0;
+  if (template.search(CFN_SUB_RE) > -1) {
+    template = template.replace(CFN_SUB_RE, (match, g1) => {
+      if (shouldRewriteRef(g1.trim().split('.')[0], env)) {
+        return `\${${maybeRewriteRef(g1, env)}}`
+      } else {
+        return match;
+      }
+    });
+  }
+  return template;
+}
+
+export function visitSub(node: yaml.Sub, path: string, env: Env): yaml.Sub {
+  if (_.isString(node.data)) {
+    return new yaml.Sub(visitSubStringTemplate(node.data, path, env));
+  } else {
+    const templateEnv = node.data[1];
+    const subEnv = mkSubEnv(
+      env, _.merge({$globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))},
+                   env.$envValues),
+      {path});
+    const template = visitSubStringTemplate(node.data[0], path, subEnv);
+    return new yaml.Sub([template, templateEnv]);
   }
 }
 
@@ -835,8 +898,8 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
 const visitArray = (node: AnyButUndefined[], path: string, env: Env): AnyButUndefined[] =>
   _.map(node, (v, i) => visitNode(v, appendPath(path, i.toString()), env));
 
-function visitString(node: string, path: string, env: Env): string {
-  if (node.search(/{{(.*?)}}/) > -1) {
+export function visitString(node: string, path: string, env: Env): string {
+  if (node.search(HANDLEBARS_RE) > -1) {
     return interpolateHandlebarsString(node, env.$envValues, path);
   } else {
     return node;
