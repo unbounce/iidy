@@ -46,12 +46,17 @@ function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
 }
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html
-
 addCFNTagType('Base64', 'scalar');
 addCFNTagType('Base64', 'mapping');
 
+
+// [ MapName, TopLevelKey, SecondLevelKey ]
+export class FindInMap extends Tag<string[]> {}
+customTags.FindInMap = FindInMap;
 addCFNTagType('FindInMap', 'sequence');
 
+export class GetAtt extends Tag<string> {}
+customTags.GetAtt = GetAtt;
 addCFNTagType('GetAtt', 'scalar');
 addCFNTagType('GetAtt', 'sequence');
 
@@ -59,6 +64,10 @@ addCFNTagType('GetAZs', 'scalar');
 addCFNTagType('GetAZs', 'mapping');
 addCFNTagType('GetAZs', 'sequence');
 
+
+// ImportValue will be either a literal string or a !Sub string
+export class ImportValue extends Tag<string | object> {}
+customTags.ImportValue = ImportValue;
 addCFNTagType('ImportValue', 'scalar');
 addCFNTagType('ImportValue', 'mapping');
 
@@ -66,7 +75,6 @@ addCFNTagType('Join', 'sequence');
 
 export class Ref extends Tag<string> {}
 customTags.Ref = Ref;
-
 addCFNTagType('Ref', 'scalar');
 addCFNTagType('Ref', 'sequence');
 
@@ -125,7 +133,7 @@ export type $LetParams = {in: any, [key: string]: any};
 export class $let extends Tag<$LetParams> {}
 addCustomTag('$let', $let); // mapping
 
-export class $expand extends Tag {}
+export class $expand extends Tag {} // TODO narrow type
 addCustomTag('$expand', $expand); // mapping
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,14 +143,14 @@ export type $MapParams = {template: any, items: any[], var?: string};
 export class $map extends Tag<$MapParams> {}
 addCustomTag('$map', $map); // mapping
 
-export class $mapListToHash extends Tag {}
+export class $concatMap extends Tag<$MapParams> {}
+addCustomTag('$concatMap', $concatMap); // mapping
+
+export class $mapListToHash extends Tag<$MapParams> {}
 addCustomTag('$mapListToHash', $mapListToHash); // mapping
 
 export class $flatten extends Tag<any[][]> {}
 addCustomTag('$flatten', $flatten); // sequence
-
-export class $concatMap extends Tag {}
-addCustomTag('$concatMap', $concatMap); // mapping
 
 export class $fromPairs extends Tag<{key: string, value: any}[]> {}
 addCustomTag('$fromPairs', $fromPairs); // mapping

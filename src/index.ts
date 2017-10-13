@@ -68,9 +68,9 @@ export type $EnvValues = {[key: string]: AnyButUndefined} // TODO might need mor
 
 export type $param = {
   Name: string,
-  Default?: any,
-  Type?: any,
-  Schema?: any,
+  Default?: AnyButUndefined,
+  Type?: string,
+  Schema?: object,
   AllowedValues?: any[],
   AllowedPattern?: string,
 };
@@ -79,10 +79,11 @@ export type $param = {
 export interface ExtendedCfnDoc extends CfnDoc {
   $imports?: {[key: string]: any}, // TODO AnyButUndefined
   $defs?: {[key: string]: AnyButUndefined},
-  $params?: Array<$param>,
+  $params?: $param[],
   $location: string,
   $envValues?: $EnvValues
 };
+const extendedCfnDocKeys = ['$imports', '$defs', '$params', '$location', '$envValues'];
 
 const GlobalSections = {
   Parameters: 'Parameters',
@@ -94,10 +95,10 @@ const GlobalSections = {
 };
 type GlobalSection = keyof typeof GlobalSections;
 
-type StackFrame = {location: string, path: string};
+export type StackFrame = {location: string, path: string};
 type MaybeStackFrame = {location?: string, path: string};
 
-type Env = {
+export type Env = {
   GlobalAccumulator: CfnDoc,
   $envValues: $EnvValues,
   Stack: StackFrame[]
@@ -445,10 +446,11 @@ const appendPath = (rootPath: string, suffix: string): string =>
   rootPath ? rootPath + '.' + suffix : suffix;
 
 function mapCustomResourceToGlobalSections(
-  resourceDoc: CfnDoc,
+  resourceDoc: ExtendedCfnDoc,
   path: string,
   env: Env
 ): void {
+
   _.forOwn(GlobalSections, (section: GlobalSection) => {
     if (resourceDoc[section]) {
       const res = _.merge(
@@ -456,11 +458,57 @@ function mapCustomResourceToGlobalSections(
         _.fromPairs(
           // TOOD is this the right place to be visiting the subsections
           _.map(_.toPairs(visitNode(resourceDoc[section], appendPath(path, section), env)),
-            ([k, v]) => [`${env.$envValues.Prefix}${k}`, v]))
+            ([k, v]) => {
+              const isGlobal = _.has(v, '$global');
+              delete v.$global;
+              if (isGlobal) {
+                // TODO validate that there is no clash with
+                // values already in env.GlobalAccumulator
+                return [k, v];
+              } else {
+                return [`${env.$envValues.Prefix}${k}`, v];
+              }
+            }))
       );
       return res;
     }
   });
+}
+
+
+function validateTemplateParameter(param: $param, mergedParams: any, name: string, env: Env) {
+  const paramValue = mergedParams[param.Name];
+  if (_.isUndefined(paramValue)) {
+    throw new Error(`Missing required parameter ${param.Name} in ${name}`);
+  } else if (param.Schema) {
+    if (!_.isObject(param.Schema)) {
+      throw new Error(`Invalid schema "${param.Name}" in ${name}.`)
+    }
+    const validationResult = tv4.validateResult(paramValue, param.Schema)
+    if (!validationResult.valid) {
+      const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
+      logger.error(errmsg);
+      logger.error(`  ${env.Stack[env.Stack.length - 1].location || ''}`)
+      logger.error(validationResult.error.message);
+      logger.error('Here is the parameter JSON Schema:\n' + yaml.dump(param.Schema));
+      throw new Error(errmsg);
+    }
+  } else if (param.AllowedValues) {
+    // cfn style validation
+    if (!_.includes(param.AllowedValues, paramValue)) {
+      const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
+      logger.error(errmsg);
+      logger.error(`  ${env.Stack[env.Stack.length - 1].location || ''}`)
+      logger.error(`${paramValue} not in Allowed Values: ${yaml.dump(param.AllowedValues)}`);
+      throw new Error(errmsg);
+    }
+  } else if (param.AllowedPattern) {
+    // TODO test
+    const patternRegex = new RegExp(param.AllowedPattern);
+    if (!(typeof paramValue === 'string' && paramValue.match(patternRegex))) {
+      throw new Error(`Invalid value "${param.Name}" in ${name}. AllowedPattern: ${param.AllowedPattern}.`)
+    }
+  }
 }
 
 // TODO tighten up the return type here: {[key: string]: any}
@@ -501,46 +549,12 @@ const visitResourceNode = (node: object, path: string, env: Env): AnyButUndefine
           // 2 check against AllowedValues and AllowedPattern
           // 3 check min/max Value / Length
           const mergedParams = _.assign({}, $paramDefaults, providedParams);
-          _.forEach(template.$params, (param) => {
-            const paramValue = mergedParams[param.Name];
-            if (_.isUndefined(paramValue)) {
-              throw new Error(`Missing required parameter ${param.Name} in ${name}`);
-            } else if (param.Schema) {
-              if (!_.isObject(param.Schema)) {
-                throw new Error(`Invalid schema "${param.Name}" in ${name}.`)
-              }
-              const validationResult = tv4.validateResult(paramValue, param.Schema)
-              if (!validationResult.valid) {
-                const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
-                logger.error(errmsg);
-                logger.error(`  ${env.Stack[env.Stack.length - 1].location || ''}`)
-                logger.error(validationResult.error.message);
-                logger.error('Here is the parameter JSON Schema:\n' + yaml.dump(param.Schema));
-                throw new Error(errmsg);
-              }
-            } else if (param.AllowedValues) {
-              // cfn style validation
-              if (!_.includes(param.AllowedValues, paramValue)) {
-                const errmsg = `Parameter validation error for "${param.Name}" in ${name}.`;
-                logger.error(errmsg);
-                logger.error(`  ${env.Stack[env.Stack.length - 1].location || ''}`)
-                logger.error(`${paramValue} not in Allowed Values: ${yaml.dump(param.AllowedValues)}`);
-                throw new Error(errmsg);
-              }
-            } else if (param.AllowedPattern) {
-              // TODO test
-              const patternRegex = new RegExp(param.AllowedPattern);
-              if (!(typeof paramValue === 'string' && paramValue.match(patternRegex))) {
-                throw new Error(`Invalid value "${param.Name}" in ${name}. AllowedPattern: ${param.AllowedPattern}.`)
-              }
-            }
-
-          })
+          _.forEach(template.$params, (param) => validateTemplateParameter(param, mergedParams, name, env));
 
           const subEnv = mkSubEnv(
             env,
             _.merge(
-              {Prefix: prefix},
+              {Prefix: prefix, $globalRefs},
               mergedParams,
               template.$envValues),
             stackFrame);
@@ -796,7 +810,7 @@ function visitPlainMap(node: {}, path: string, env: Env): AnyButUndefined {
 const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
   // without $merge it would just be:
   //return  _.mapValues(node, (v, k) => visitNode(v, appendPath(path, k), env));
-  const res: any = {}; // TODO tighten type
+  const res: {[key: string]: any} = {};
   for (const k in node) {
     if (k.indexOf('$merge') === 0) {
       const sub: any = visitNode(node[k], appendPath(path, k), env);
@@ -805,10 +819,11 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
           throw new Error(
             `Key "${k2}" is already present and cannot be $merge'd into path "${path}"`);
         }
-        res[k2] = sub[k2]; //visitNode(sub[k2], appendPath(path, k2), env);
+        res[k2] = sub[k2];
       }
-    } else if (_.includes(['$envValues', '$imports', '$params', '$location'], k)) {
-      // TODO test this part more thoroughly
+      // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions 
+      //} else if ( .. Fn:Ref, etc. ) {
+    } else if (_.includes(extendedCfnDocKeys, k)) {
       continue;
     } else {
       res[k] = visitNode(node[k], appendPath(path, k), env);
