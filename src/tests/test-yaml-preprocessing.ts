@@ -266,12 +266,12 @@ out:
 
   });
 
-  describe("!$flatten", () => {
+  describe("!$concat", () => {
     // TODO rename to !$concat
     it("basic forms", async () => {
 
       expect(await transform(`
-out: !$flatten
+out: !$concat
   - [1,2,3]
   - [4,5,6]
 `

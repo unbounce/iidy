@@ -625,8 +625,8 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefin
     return visit$let(node, path, env);
   } else if (node instanceof yaml.$map) {
     return visit$map(node, path, env);
-  } else if (node instanceof yaml.$flatten) {
-    return visit$flatten(node, path, env);
+  } else if (node instanceof yaml.$concat) {
+    return visit$concat(node, path, env);
   } else if (node instanceof yaml.$concatMap) {
     return visit$concatMap(node, path, env);
   } else if (node instanceof yaml.$mapListToHash) {
@@ -715,7 +715,7 @@ function visit$string(node: yaml.$string, path: string, env: Env): string {
   return yaml.dump(visitNode(stringSource, path, env));
 }
 
-function visit$flatten(node: yaml.$flatten, path: string, env: Env): AnyButUndefined[] {
+function visit$concat(node: yaml.$concat, path: string, env: Env): AnyButUndefined[] {
 
   if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
     throw new Error(`Invalid argument to $flatten at "${path}".`

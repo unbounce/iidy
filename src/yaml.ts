@@ -151,8 +151,8 @@ addCustomTag('$concatMap', $concatMap); // mapping
 export class $mapListToHash extends Tag<$MapParams> {}
 addCustomTag('$mapListToHash', $mapListToHash); // mapping
 
-export class $flatten extends Tag<any[][]> {}
-addCustomTag('$flatten', $flatten); // sequence
+export class $concat extends Tag<any[][]> {}
+addCustomTag('$concat', $concat); // sequence
 
 export class $fromPairs extends Tag<{key: string, value: any}[]> {}
 addCustomTag('$fromPairs', $fromPairs); // mapping
