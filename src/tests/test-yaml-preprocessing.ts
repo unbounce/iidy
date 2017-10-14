@@ -111,6 +111,45 @@ $imports: {nested: 's3://mock/mock2'}
 aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
     });
+
+    describe("import type parsing", () => {
+      it("from local baseLocation", () => {
+        for (const baseLocation of ['/', '/home/test', '.']) {
+          expect(pre.parseImportType('test.yaml', baseLocation)).to.equal('file');
+          expect(pre.parseImportType('/root/test.yaml', baseLocation)).to.equal('file');
+          expect(pre.parseImportType('sub/test.yaml', baseLocation)).to.equal('file');
+          expect(pre.parseImportType('sub/test.json', baseLocation)).to.equal('file');
+
+          expect(pre.parseImportType('s3://bucket/test.yaml', baseLocation)).to.equal('s3');
+
+          expect(pre.parseImportType('http://host.com/test.yaml', baseLocation)).to.equal('http');
+          expect(pre.parseImportType('https://host.com/test.yaml', baseLocation)).to.equal('http');
+
+
+          expect(pre.parseImportType('ssm:/foo', baseLocation)).to.equal('ssm');
+          expect(pre.parseImportType('ssm:foo', baseLocation)).to.equal('ssm');
+          expect(pre.parseImportType('ssm:/foo/bar', baseLocation)).to.equal('ssm');
+
+          expect(pre.parseImportType('ssm-path:/foo', baseLocation)).to.equal('ssm-path');
+          expect(pre.parseImportType('ssm-path:/', baseLocation)).to.equal('ssm-path');
+          // TODO validate that ssm-path begins with a /
+
+          expect(pre.parseImportType('random:dashed-name', baseLocation)).to.equal('random');
+          expect(pre.parseImportType('random:name', baseLocation)).to.equal('random');
+          expect(pre.parseImportType('random:int', baseLocation)).to.equal('random');
+
+          expect(pre.parseImportType('filehash:foo.yaml', baseLocation)).to.equal('filehash');
+
+          // TODO fail upon accidentally leaving the
+          // expect(pre.parseImportType('filehash', baseLocation)).to.equal('random');
+
+        }
+
+
+      });
+
+    });
+
   });
 
   describe("$defs:", () => {

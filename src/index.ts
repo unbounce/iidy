@@ -108,18 +108,18 @@ export type Env = {
 };
 
 export type ImportData = {
-  importType: ImportType
+  importType?: ImportType
   resolvedLocation: ImportLocation // relative-> absolute, etc.
   data: string
   doc?: any
 }
 
 export type ImportType =
-  "ssm" | "ssm-path" | "file" | "s3" | "http" | "env" | "git" | "random" | "filehash" | "literal";
+  "ssm" | "ssm-path" | "file" | "s3" | "http" | "env" | "git" | "random" | "filehash";
 // https://github.com/kimamula/ts-transformer-enumerate is an alternative to this
 // repetition. Could also use a keyboard macro.
 const importTypes: ImportType[] = [
-  "ssm", "ssm-path", "file", "s3", "http", "env", "git", "random", "filehash", "literal"];
+  "ssm", "ssm-path", "file", "s3", "http", "env", "git", "random", "filehash"];
 const localOnlyImportTypes: ImportType[] = ["file", "env"];
 
 // npm:version npm:project-name, etc. with equivs for lein/mvn
@@ -184,11 +184,18 @@ const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env
   };
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Import handling
+
 export function parseImportType(location: ImportLocation, baseLocation: ImportLocation): ImportType {
   const hasExplicitType = location.indexOf(':') > -1;
-  const importType = hasExplicitType
-    ? location.toLowerCase().split(':')[0] as ImportType
+  const importType0 = hasExplicitType
+    ? location.toLowerCase().split(':')[0].replace('https', 'http')
     : "file";
+  if (!_.includes(importTypes, importType0)) {
+    throw new Error(`Unknown import type ${location} in ${baseLocation}`);
+  }
+  const importType = importType0 as ImportType;
   const baseImportType = baseLocation.indexOf(':') > -1
     ? baseLocation.toLowerCase().split(':')[0] as ImportType
     : "file";
@@ -202,10 +209,8 @@ export function parseImportType(location: ImportLocation, baseLocation: ImportLo
     } else {
       return importType;
     }
-  } else if (_.includes(importTypes, importType)) {
-    return importType;
   } else {
-    throw new Error(`Unknown import type ${location} in ${baseLocation}`);
+    return importType;
   }
 }
 
@@ -227,141 +232,154 @@ function resolveDocFromImportData(data: string, location: ImportLocation): any {
   }
 }
 
+const parseDataFromParamStore = (payload: string, formatType?: string): any => {
+  // TODO merge this into resolveDocFromImportData
+  if (formatType === 'json') {
+    // TODO nicer error reporting
+    // `Invalid ssm parameter value ${s} import from ${location} in ${baseLocation}`
+    return JSON.parse(payload);
+  } else if (formatType === 'yaml') {
+    return yaml.loadString(payload, 'location');
+  } else {
+    return payload
+  }
+}
+
+export type ImportLoader = (location: ImportLocation, baseLocation: ImportLocation) => Promise<ImportData>;
+
+export const importLoaders: {[key in ImportType]: ImportLoader} = {
+
+  file: async (location, baseLocation) => {
+    if (_.some(_.filter(importTypes, 'file')), (typ: string) => baseLocation.startsWith(`${typ}:`)) {
+      logger.debug(`non file: import on baseLocation=${baseLocation} for location=${location}`)
+    }
+    const resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation.replace('file:', '')), location.replace('file:', ''));
+    const data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
+    return {resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
+  },
+
+  filehash: async (location, baseLocation) => {
+    // this assumes local files/dirs TODO validate that
+    const resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
+    if (!fs.existsSync(resolvedLocation)) {
+      throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
+    }
+    const isDir = fs.lstatSync(resolvedLocation).isDirectory();
+    const shasumCommand = 'shasum -p -a 256';
+    const hashCommand = isDir
+      ? `find ${resolvedLocation} -type f -print0 | xargs -0 ${shasumCommand} | ${shasumCommand}`
+      : `${shasumCommand} ${resolvedLocation}`;
+    const result = child_process.spawnSync(hashCommand, [], {shell: true});
+    const data = result.stdout.toString().trim().split(' ')[0];
+    return {resolvedLocation, data, doc: data};
+  },
+
+  s3: async (location, baseLocation) => {
+    let resolvedLocation: ImportLocation, format: string;
+    if (location.indexOf('s3:') === 0) {
+      resolvedLocation = location;
+    } else {
+      resolvedLocation = 's3:/' + pathmod.join(pathmod.dirname(baseLocation.replace('s3:/', '')), location)
+    }
+    const uri = url.parse(resolvedLocation);
+
+    if (uri.host && uri.path) {
+      const s3 = new aws.S3();
+      const s3response = await s3.getObject({
+        Bucket: uri.host,
+        Key: uri.path.slice(1)  // doesn't like leading /
+      }).promise()
+      if (s3response.Body) {
+        const data = s3response.Body.toString();
+        const doc = resolveDocFromImportData(data, resolvedLocation);
+        return {importType: 's3', resolvedLocation, data, doc};
+      } else {
+        throw new Error(`Invalid s3 response from ${location} under ${baseLocation}`);
+      }
+    }
+    throw new Error(`Invalid s3 uri ${location} under ${baseLocation}`);
+  },
+
+  http: async (location, baseLocation) => {
+    const resolvedLocation = location;
+    const data = await request.get(location);
+    const doc = resolveDocFromImportData(data, resolvedLocation);
+    return {resolvedLocation, data, doc};
+  },
+
+  env: async (location, baseLocation) => {
+    let resolvedLocation, defVal;
+    [, resolvedLocation, defVal] = location.split(':')
+    const data = _.get(process.env, resolvedLocation, defVal)
+    if (_.isUndefined(data)) {
+      throw new Error(`Env-var ${resolvedLocation} not found from ${baseLocation}`)
+    }
+    return {resolvedLocation, data, doc: data};
+  },
+
+  git: async (location, baseLocation) => {
+    const resolvedLocation = location.split(':')[1]
+    if (_.includes(gitValues, resolvedLocation)) {
+      const data = gitValue(resolvedLocation as GitValue);
+      return {resolvedLocation, data, doc: data};
+    } else {
+      throw new Error(`Invalid git command: ${location}`);
+    }
+  },
+
+  random: async (location, baseLocation) => {
+    const resolvedLocation = location.split(':')[1];
+    let data: string;
+    if (resolvedLocation === 'dashed-name') {
+      data = nameGenerator().dashed;
+    } else if (resolvedLocation === 'name') {
+      data = nameGenerator().dashed.replace('-', '');
+    } else if (resolvedLocation === 'int') {
+      const max = 1000, min = 1;
+      data = (Math.floor(Math.random() * (max - min)) + min).toString();
+    } else {
+      throw new Error(`Invalid random type in ${location} at ${baseLocation}`);
+    }
+    return {resolvedLocation, data, doc: data};
+  },
+
+  ssm: async (location, baseLocation) => {
+    let resolvedLocation: ImportLocation, format: string;
+    [, resolvedLocation, format] = location.split(':')
+    const ssm = new aws.SSM();
+    const param = await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
+    if (param.Parameter && param.Parameter.Value) {
+      const data = parseDataFromParamStore(param.Parameter.Value, format);
+      return {resolvedLocation, data, doc: data};
+    } else {
+      throw new Error(
+        `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
+    }
+  },
+
+  "ssm-path": async (location, baseLocation) => {
+    let resolvedLocation: ImportLocation, format: string;
+    [, resolvedLocation, format] = location.split(':')
+    if (!resolvedLocation.endsWith('/')) {
+      resolvedLocation += '/';
+    }
+    const ssm2 = new aws.SSM();
+    const params = await ssm2.getParametersByPath(
+      {Path: resolvedLocation, WithDecryption: true}).promise()
+    const doc = _.fromPairs(_.map(params.Parameters, ({Name, Value}) =>
+      [(Name as string).replace(resolvedLocation, ''),
+      parseDataFromParamStore(Value as string, format)]));
+    return {resolvedLocation, data: JSON.stringify(doc), doc};
+  }
+
+};
+
 export async function readFromImportLocation(location: ImportLocation, baseLocation: ImportLocation)
   : Promise<ImportData> {
-  const importType = parseImportType(location, baseLocation);
-  let resolvedLocation: ImportLocation, data: string, doc: any;
-  // TODO refactor this function into smaller parts
   // TODO handle relative paths and non-file types
-  let format: string;
-  const tryParseJson = (s: string) => {
-    try {
-      return JSON.parse(s);
-    } catch (e) {
-      throw new Error(
-        `Invalid ssm parameter value ${s} import from ${location} in ${baseLocation}`)
-    }
-  }
-
-  const parseData = (payload: string, formatType?: string) => {
-    if (formatType === 'json') {
-      return tryParseJson(payload);
-    } else if (formatType === 'yaml') {
-      return yaml.loadString(payload, 'location');
-    } else {
-      return payload
-    }
-  }
-
-  switch (importType) {
-    case "ssm":
-      const ssm = new aws.SSM();
-      [, resolvedLocation, format] = location.split(':')
-      const param =
-        await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
-      if (param.Parameter && param.Parameter.Value) {
-        data = parseData(param.Parameter.Value, format);
-        return {importType, resolvedLocation, data, doc: data}
-      } else {
-        throw new Error(
-          `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
-      }
-    case "ssm-path":
-      const ssm2 = new aws.SSM();
-      [, resolvedLocation, format] = location.split(':')
-      if (!resolvedLocation.endsWith('/')) {
-        resolvedLocation += '/'
-      }
-      const params = await ssm2.getParametersByPath(
-        {Path: resolvedLocation, WithDecryption: true}).promise()
-      doc = _.fromPairs(_.map(params.Parameters, ({Name, Value}) =>
-        [(Name as string).replace(resolvedLocation, ''),
-        parseData(Value as string, format)]))
-      return {importType, resolvedLocation, data: JSON.stringify(doc), doc}
-    case "s3":
-      const s3 = new aws.S3();
-      if (location.indexOf('s3:') === 0) {
-        resolvedLocation = location;
-      } else {
-        resolvedLocation = 's3:/' + pathmod.join(pathmod.dirname(baseLocation.replace('s3:/', '')), location)
-      }
-      const uri = url.parse(resolvedLocation)
-
-      if (uri.host && uri.path) {
-        const s3response = await s3.getObject({
-          Bucket: uri.host,
-          Key: uri.path.slice(1)  // doesn't like leading /
-        }).promise()
-        if (s3response.Body) {
-          data = s3response.Body.toString();
-          doc = resolveDocFromImportData(data, resolvedLocation);
-          return {importType, resolvedLocation, data, doc}
-        } else {
-          throw new Error(`Invalid s3 response from ${location} under ${baseLocation}`);
-        }
-      }
-      throw new Error(`Invalid s3 uri ${location} under ${baseLocation}`);
-    case "http":
-      resolvedLocation = location
-      data = await request.get(location)
-      doc = resolveDocFromImportData(data, resolvedLocation)
-      return {importType, resolvedLocation, data, doc}
-    case "env":
-      let defVal;
-      [, resolvedLocation, defVal] = location.split(':')
-      data = _.get(process.env, resolvedLocation, defVal)
-      if (_.isUndefined(data)) {
-        throw new Error(`Env-var ${resolvedLocation} not found from ${baseLocation}`)
-      }
-      return {importType, resolvedLocation, data, doc: data};
-    case "git":
-      resolvedLocation = location.split(':')[1]
-      if (_.includes(gitValues, resolvedLocation)) {
-        data = gitValue(resolvedLocation as GitValue);
-        return {importType, resolvedLocation, data, doc: data};
-      } else {
-        throw new Error(`Invalid git command: ${location}`);
-      }
-    case "random":
-      resolvedLocation = location.split(':')[1]
-      if (resolvedLocation === 'dashed-name') {
-        data = nameGenerator().dashed;
-      } else if (resolvedLocation === 'name') {
-        data = nameGenerator().dashed.replace('-', '');
-      } else if (resolvedLocation === 'int') {
-        const max = 1000, min = 1;
-        data = (Math.floor(Math.random() * (max - min)) + min).toString();
-      } else {
-        throw new Error(`Invalid random type in ${location} at ${baseLocation}`);
-      }
-      return {importType, resolvedLocation, data, doc: data};
-    case "filehash":
-      resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
-      if (!fs.existsSync(resolvedLocation)) {
-        throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
-      }
-      const isDir = fs.lstatSync(resolvedLocation).isDirectory();
-      const shasumCommand = 'shasum -p -a 256';
-      const hashCommand = isDir
-        ? `find ${resolvedLocation} -type f -print0 | xargs -0 ${shasumCommand} | ${shasumCommand}`
-        : `${shasumCommand} ${resolvedLocation}`;
-      const result = child_process.spawnSync(hashCommand, [], {shell: true});
-      data = result.stdout.toString().trim().split(' ')[0]
-      return {importType, resolvedLocation, data, doc: data}
-    case "literal":
-      logger.warn(`literal: $imports are deprecated. Replace ${location} in ${baseLocation} with '$defs'.`)
-      resolvedLocation = location.split(':')[1]
-      data = resolvedLocation;
-      doc = data;
-      return {importType, resolvedLocation, data, doc}
-    case "file":
-      if (_.some(_.filter(importTypes, 'file')), (typ: string) => baseLocation.startsWith(`${typ}:`)) {
-        logger.debug(`non file: import on baseLocation=${baseLocation} for location=${location}`)
-      }
-      resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation.replace('file:', '')), location.replace('file:', ''));
-      data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
-      return {importType, resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
-  }
+  const importType = parseImportType(location, baseLocation);
+  const importData: ImportData = await importLoaders[importType](location, baseLocation);
+  return _.merge({importType}, importData);
 }
 
 async function loadImports(
@@ -387,6 +405,7 @@ async function loadImports(
 
       logger.debug('loading import:', loc, asKey);
       const importData = await importLoader(loc, baseLocation);
+      logger.debug('loaded import:', loc, asKey, importData);
       if (_.isObject(importData.doc)) {
         importData.doc.$location = loc;
       }
@@ -429,6 +448,9 @@ async function loadImports(
 
 
 };
+// End: Import handling
+////////////////////////////////////////////////////////////////////////////////
+
 
 function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
   if (typeof key !== 'string') { // tslint:disable-line
@@ -781,7 +803,7 @@ export function visitSub(node: yaml.Sub, path: string, env: Env): yaml.Sub {
     const templateEnv = node.data[1];
     const subEnv = mkSubEnv(
       env, _.merge({$globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))},
-                   env.$envValues),
+        env.$envValues),
       {path});
     const template = visitSubStringTemplate(node.data[0], path, subEnv);
     return new yaml.Sub([template, templateEnv]);
@@ -884,7 +906,7 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
         }
         res[k2] = sub[k2];
       }
-      // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions 
+      // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions
       //} else if ( .. Fn:Ref, etc. ) {
     } else if (_.includes(extendedCfnDocKeys, k)) {
       continue;
