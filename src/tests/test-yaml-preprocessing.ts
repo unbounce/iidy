@@ -173,6 +173,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
   });
 
+
+  //////////////////////////////////////////////////////////////////////
   describe("Custom Resource Templates", () => {
     const testEnvInsideCustomResource = mkTestEnv({
       Prefix: 'Test',
@@ -200,9 +202,11 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
         {input: '${ Bar.Arn }', output: '${ Bar.Arn }'},
 
         {input: '${!Foo}', output: '${!Foo}'},
-        
-        {input: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Foo}:*',
-         output: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${TestFoo}:*'}
+
+        {
+          input: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Foo}:*',
+          output: 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${TestFoo}:*'
+        }
 
       ]) {
 
@@ -253,8 +257,35 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.equal(new yaml.GetAtt(input));
       }
 
-    })
+    });
+
+    it("Templates with no parameters", async () => {
+
+    });
+
+    it.skip("Templates with $params", async () => {
+
+    });
+
+    it.skip("$params validation", async () => {
+
+    });
+
+    it.skip("$params with defaults", async () => {
+
+    });
+
+    it.skip("Templates with $imports", async () => {
+
+    });
+
+    it.skip("Nested templates invocation", async () => {
+
+    });
+
   });
+  //////////////////////////////////////////////////////////////////////
+
   describe("!$let", () => {
     it("basic usage of !$let & !$ works", async () => {
       expect(await transform({out: $let({a: 'b', in: "{{a}}"})}))
