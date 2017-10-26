@@ -28,12 +28,9 @@ import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import configureAWS from '../configureAWS';
 import {AWSRegion} from '../aws-regions';
 import timeout from '../timeout';
+import def from '../default';
 
 import {readFromImportLocation, transform} from '../index';
-
-function def<T>(defaultVal: T, val?: T): T {
-  return (_.isUndefined(val) || val === null) ? defaultVal : val;
-}
 
 export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' | 'EXECUTE_CHANGESET' | 'ESTIMATE_COST';
 

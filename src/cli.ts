@@ -4,12 +4,20 @@ import * as cli from 'cli-color';
 
 import {logger, setLogLevel} from './logger';
 import debug from './debug';
+import {AWSRegion} from './aws-regions';
+import {buildParamCommands} from './params/cli'
+
+export interface GlobalArguments {
+  region?: AWSRegion;
+  profile?: string;
+  debug?: boolean;
+}
 
 export type ExitCode = number;
-export type Handler = (args: yargs.Arguments) => Promise<ExitCode>
+export type Handler = (args: GlobalArguments) => Promise<ExitCode>
 
-const wrapCommandHandler = (handler: Handler) =>
-  function(args: yargs.Arguments) {
+export const wrapCommandHandler = (handler: Handler) =>
+  function(args: GlobalArguments & yargs.Arguments) {
     if (args.debug) {
       process.env.DEBUG = 'true';
       setLogLevel('debug');
@@ -27,49 +35,36 @@ const wrapCommandHandler = (handler: Handler) =>
       });
   };
 
-// lazy load the actual command fns to make bash command completion faster
-export interface Commands {
-  createStackMain: Handler
-  updateStackMain: Handler
-  listStacksMain: Handler
-  watchStackMain: Handler
-  describeStackMain: Handler
-  getStackTemplateMain: Handler
-  getStackInstancesMain: Handler
-  deleteStackMain: Handler
+export interface CfnStackCommands {
+  createStackMain: Handler;
+  updateStackMain: Handler;
+  listStacksMain: Handler;
+  watchStackMain: Handler;
+  describeStackMain: Handler;
+  getStackTemplateMain: Handler;
+  getStackInstancesMain: Handler;
+  deleteStackMain: Handler;
 
-  estimateCost: Handler // TODO fix inconsistent name
+  estimateCost: Handler; // TODO fix inconsistent name
 
-  createUpdateChangesetMain: Handler
-  createCreationChangesetMain: Handler
-  executeChangesetMain: Handler
-
-  renderMain: Handler,
-  demoMain: Handler
+  createUpdateChangesetMain: Handler;
+  createCreationChangesetMain: Handler;
+  executeChangesetMain: Handler;
   // TODO add an activate stack command wrapper
+}
 
-};
+export interface MiscCommands {
+  renderMain: Handler;
+  demoMain: Handler;
+}
 
-// TODO: Investigate this again if we can use webpack to shrinkwrap
-// import * as index from './index';
-// const nonLazy: Commands = {
-//   createStackMain: index.createStackMain,
-//   updateStackMain: index.updateStackMain,
-//   listStacksMain: index.listStacksMain,
-//   watchStackMain: index.watchStackMain,
-//   describeStackMain: index.describeStackMain,
+export interface Commands extends CfnStackCommands, MiscCommands {};
 
-//   createUpdateChangesetMain: index.createUpdateChangesetMain,
-//   createCreationChangesetMain: index.createCreationChangesetMain,
-//   executeChangesetMain: index.executeChangesetMain,
+// We lazy load the actual command fns to make bash command completion
+// faster. See the git history of this file to see the non-lazy form.
+// Investigate this again if we can use babel/webpack to shrinkwrap
 
-//   renderMain: index.renderMain,
-
-//   estimateCost: index.estimateCost
-// }
-
-type LazyLoadModules = './cfn' | './index' | './demo'
-
+type LazyLoadModules = './cfn' | './index' | './demo';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -101,14 +96,14 @@ const lazy: Commands = {
   estimateCost: lazyLoad('estimateCost'),
 
   demoMain: lazyLoad('demoMain', './demo'),
-
   // TODO init-stack-args command to create a stack-args.yaml
   // TODO example command pull down an examples dir
 
 };
 
+export const description = cli.xterm(250);
+
 export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler) {
-  const description = cli.xterm(250);
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
     + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
 
@@ -261,9 +256,15 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
 
     .command('\t', '') // fake command to add a line-break to the help output
 
+    .command('param',
+             description('sub commands for working with AWS SSM Parameter Store'),
+             buildParamCommands)
+
+    .command('\t', '') // fake command to add a line-break to the help output
+
     .command(
     'render <template>',
-    description('pre-process and render cloudformation yaml template'),
+    description('pre-process and render yaml template'),
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy render <input-template.yaml>')
@@ -305,6 +306,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       type: 'boolean', default: false,
       description: 'Log debug information to stderr.'
     })
+    .command('\t', '') // fake command to add a line-break to the help output
 
     .demandCommand(1)
     .usage(usage)
