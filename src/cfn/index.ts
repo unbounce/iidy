@@ -482,6 +482,8 @@ async function summarizeStackProperties(StackName: string, region: string, showT
 
   printSectionEntry('Tags:', cli.blackBright(prettyFormatTags(stack.Tags)));
   printSectionEntry('DisableRollback:', cli.blackBright(stack.DisableRollback));
+  printSectionEntry('TerminationProtection:', cli.blackBright(stack.EnableTerminationProtection));
+
   //console.log('Stack OnFailure Mode:', cli.blackBright(OnFailure));
   if (showTimes) {
     printSectionEntry('Creation Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));
