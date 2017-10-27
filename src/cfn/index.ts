@@ -261,6 +261,7 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = 2) 
 
   let DONE = false;
   while (!DONE) {
+    // TODO merge in the events of nested stacks
     let evs = await getAllStackEvents(StackName);
     spinner.stop();
     evs = _.sortBy(evs, (ev) => ev.Timestamp);
