@@ -211,6 +211,11 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'string',
         description: 'Role to assume for delete operation'
       })
+      .option('retain-resources', {
+        type: 'string',
+        array: true,
+        description: 'For stacks in the DELETE_FAILED, list of logical resource ids to retain'
+      })
       .option('yes', {
         type: 'boolean', default: false,
         description: 'Confirm deletion of stack'

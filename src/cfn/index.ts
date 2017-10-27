@@ -1057,7 +1057,7 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
     const cfn = new aws.CloudFormation();
     // --retain-resources, --client-request-token
     const startTime = await getReliableStartTime();
-    await cfn.deleteStack({StackName, RoleARN: argv.roleArn}).promise();
+    await cfn.deleteStack({StackName, RoleARN: argv.roleArn, RetainResources: argv.retainResources}).promise();
     await watchStack(StackId, startTime);
     console.log();
     const {StackStatus} = await getStackDescription(StackId);
