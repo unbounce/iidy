@@ -46,6 +46,7 @@ export type StackArgs = {
   RoleARN?: string
   TimeoutInMinutes?: number
   OnFailure?: 'ROLLBACK' | 'DELETE' | 'DO_NOTHING'
+  EnableTerminationProtection?: boolean
   StackPolicy?: string,
   ResourceTypes?: string[],
 
@@ -474,7 +475,6 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   const changeSetsPromise = cfn.listChangeSets({StackName}).promise();
   const stack = await getStackDescription(StackName);
   const StackId = stack.StackId as string
-  // cfn.getStackPolicy({StackName})
   console.log(formatSectionHeading('Stack Details:'))
 
   printSectionEntry('Name:', cli.magenta(stack.StackName));
@@ -498,7 +498,12 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   }
   printSectionEntry('NotificationARNs:',
     cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
-  //printSectionEntry('Stack Policy Source:', cli.blackBright(StackPolicy));
+
+  const StackPolicy = await cfn.getStackPolicy({StackName}).promise();
+  if (StackPolicy) {
+    printSectionEntry('Stack Policy Source:', cli.blackBright(StackPolicy.StackPolicyBody));
+  }
+
   printSectionEntry('ARN:', cli.blackBright(stack.StackId));
   printSectionEntry(
     'Console URL:',
