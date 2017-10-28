@@ -421,7 +421,7 @@ async function loadCFNStackPolicy(location: string, baseLocation: string):
   } else {
     return {
       StackPolicyBody: shouldRender
-        ? yaml.dump(await transform(importData.doc, importData.resolvedLocation))
+        ? JSON.stringify(await transform(importData.doc, importData.resolvedLocation), null, ' ')
         : importData.data
     };
   }
