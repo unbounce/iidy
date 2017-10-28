@@ -506,10 +506,11 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   printSectionEntry('NotificationARNs:',
     cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
 
-  // TODO show this conditionally:
   const StackPolicy = await cfn.getStackPolicy({StackName}).promise();
-  if (StackPolicy) {
-    printSectionEntry('Stack Policy Source:', cli.blackBright(StackPolicy.StackPolicyBody));
+  if (StackPolicy.StackPolicyBody) {
+    // json roundtrip to remove whitespace
+    printSectionEntry('Stack Policy Source:',
+      cli.blackBright(JSON.stringify(JSON.parse(StackPolicy.StackPolicyBody!))));
   }
 
   printSectionEntry('ARN:', cli.blackBright(stack.StackId));
