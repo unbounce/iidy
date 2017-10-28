@@ -578,7 +578,7 @@ async function listStacks(showTags = false) {
     if (stack.EnableTerminationProtection || lifecyle === 'protected') {
       // NOTE stack.EnableTerminationProtection is undefined for the
       // time-being until an upstream bug is fix by AWS
-      lifecyleIcon = '🔒  ';
+      lifecyleIcon = '🔒 ';
     } else if (lifecyle === 'long') {
       lifecyleIcon = '∞ ';
     } else if (lifecyle === 'short') {
