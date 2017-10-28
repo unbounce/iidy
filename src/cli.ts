@@ -256,7 +256,12 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .command(
     'list-stacks',
     description('list all stacks within a region'),
-    (args) => args.demandCommand(0, 0),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('tags', {
+          type: 'boolean', default: false,
+          description: 'Show stack tags'
+        }),
     wrapMainHandler(commands.listStacksMain))
 
     .command('\t', '') // fake command to add a line-break to the help output

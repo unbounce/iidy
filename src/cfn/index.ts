@@ -93,9 +93,10 @@ const terminalStackStates = [
 
 
 const DEFAULT_STATUS_PADDING = 35;
+const MIN_STATUS_PADDING = 17;
 
 function colorizeResourceStatus(status: string, padding = DEFAULT_STATUS_PADDING): string {
-  padding = _.isNumber(padding) && padding > 20 ? padding : DEFAULT_STATUS_PADDING;
+  padding = (_.isNumber(padding) && padding >= MIN_STATUS_PADDING) ? padding : MIN_STATUS_PADDING;
   const padded = sprintf(`%-${padding}s`, status)
   const fail = cli.redBright;
   const progress = cli.yellow;
@@ -552,28 +553,52 @@ async function getAllStacks() {
   return stacks;
 }
 
-async function listStacks() {
+async function listStacks(showTags = false) {
   let stacks = await getAllStacks();
   stacks = _.sortBy(stacks, (st) => def(st.CreationTime, st.LastUpdatedTime))
   if (stacks.length === 0) {
     console.log('No stacks found');
     return 0;
   }
-  console.log(cli.blackBright('Creation/Update Time, Status, Name, Tags'))
+  console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
   const timePadding = (stacks[0].CreationTime.getDate() < (new Date).getDate())
     ? 24
     : 11;
-  const statusPadding = _.max(_.map(stacks, ev => ev.StackStatus.length))
+  const statusPadding = _.max(_.map(stacks, ev => ev.StackStatus.length));
 
   for (const stack of stacks) {
+    const tags = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
+    const lifecyle: string | undefined = tags.lifetime;
+    let lifecyleIcon: string = '';
+    if (stack.EnableTerminationProtection || lifecyle === 'protected') {
+      // NOTE stack.EnableTerminationProtection is undefined for the
+      // time-being until an upstream bug is fix by AWS
+      lifecyleIcon = '🔒  ';
+    } else if (lifecyle === 'long') {
+      lifecyleIcon = '∞ ';
+    } else if (lifecyle === 'short') {
+      lifecyleIcon = '♺ ';
+    }
+    let stackName: string;
+    if (stack.StackName.includes('production') || tags.environment === 'production') {
+      stackName = cli.red(stack.StackName);
+    } else if (stack.StackName.includes('integration') || tags.environment === 'integration') {
+      stackName = cli.xterm(75)(stack.StackName);
+    } else if (stack.StackName.includes('development') || tags.environment === 'development') {
+      stackName = cli.xterm(194)(stack.StackName);
+    } else {
+      stackName = stack.StackName;
+    }
     process.stdout.write(
       sprintf('%s %s %s %s\n',
         formatTimestamp(
           sprintf(`%${timePadding}s`,
             renderTimestamp(def(stack.CreationTime, stack.LastUpdatedTime)))),
         colorizeResourceStatus(stack.StackStatus, statusPadding),
-        stack.StackName,
-        cli.blackBright(prettyFormatTags(stack.Tags))))
+        cli.blackBright(lifecyleIcon) + stackName,
+        showTags ? cli.blackBright(prettyFormatTags(stack.Tags)) : ''
+      ))
+
     if (stack.StackStatus.indexOf('FAILED') > -1 && !_.isEmpty(stack.StackStatusReason)) {
       console.log('  ', cli.blackBright(stack.StackStatusReason))
     }
@@ -902,7 +927,7 @@ export async function createCreationChangesetMain(argv: Arguments): Promise<numb
 
 export async function listStacksMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region);
-  await listStacks();
+  await listStacks(argv.tags);
   return 0;
 }
 
