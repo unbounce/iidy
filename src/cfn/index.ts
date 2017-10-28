@@ -47,7 +47,7 @@ export type StackArgs = {
   TimeoutInMinutes?: number
   OnFailure?: 'ROLLBACK' | 'DELETE' | 'DO_NOTHING'
   EnableTerminationProtection?: boolean
-  StackPolicy?: string,
+  StackPolicy?: string | object,
   ResourceTypes?: string[],
 
   // for updates
@@ -410,21 +410,28 @@ function runCommandSet(commands: string[]) {
   }
 }
 
-async function loadCFNStackPolicy(location: string, baseLocation: string):
+async function loadCFNStackPolicy(policy: string | object | undefined, baseLocation: string):
   Promise<{StackPolicyBody?: string, StackPolicyURL?: string}> {
-  if (_.isUndefined(location)) {
+
+  if (_.isUndefined(policy)) {
     return {};
-  }
-  const shouldRender = (location.trim().indexOf('render:') === 0);
-  const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
-  if (!shouldRender && importData.importType === 's3') {
-    return {StackPolicyURL: importData.resolvedLocation};
+  } else if (_.isString(policy)) {
+    const location = policy;
+    const shouldRender = (location.trim().indexOf('render:') === 0);
+    const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
+    if (!shouldRender && importData.importType === 's3') {
+      return {StackPolicyURL: importData.resolvedLocation};
+    } else {
+      return {
+        StackPolicyBody: shouldRender
+          ? JSON.stringify(await transform(importData.doc, importData.resolvedLocation), null, ' ')
+          : importData.data
+      };
+    }
+  } else if (_.isObject(policy)) {
+    return {StackPolicyBody: JSON.stringify(policy)}
   } else {
-    return {
-      StackPolicyBody: shouldRender
-        ? JSON.stringify(await transform(importData.doc, importData.resolvedLocation), null, ' ')
-        : importData.data
-    };
+    return {}
   }
 }
 
@@ -663,7 +670,7 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
 
   // Template is optional for updates and update changesets
   const {TemplateBody, TemplateURL} = await loadCFNTemplate(stackArgs.Template, argsFilePath);
-  const {StackPolicyBody, StackPolicyURL} = await loadCFNStackPolicy(stackArgs.StackPolicy as string, argsFilePath);
+  const {StackPolicyBody, StackPolicyURL} = await loadCFNStackPolicy(stackArgs.StackPolicy, argsFilePath);
 
   // TODO: ClientRequestToken, DisableRollback
 
