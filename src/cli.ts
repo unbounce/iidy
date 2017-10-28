@@ -130,6 +130,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('stack-name', {
         type: 'string', default: null,
         description: 'override the StackName from --argsfile'
+      })
+      .option('stack-policy-during-update', {
+        type: 'string', default: null,
+        description: 'override original stack-policy for this update only'
       }),
     wrapMainHandler(commands.updateStackMain))
 
@@ -256,19 +260,19 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .command(
     'list-stacks',
     description('list all stacks within a region'),
-      (args) => args
-        .demandCommand(0, 0)
-        .option('tags', {
-          type: 'boolean', default: false,
-          description: 'Show stack tags'
-        }),
+    (args) => args
+      .demandCommand(0, 0)
+      .option('tags', {
+        type: 'boolean', default: false,
+        description: 'Show stack tags'
+      }),
     wrapMainHandler(commands.listStacksMain))
 
     .command('\t', '') // fake command to add a line-break to the help output
 
     .command('param',
-             description('sub commands for working with AWS SSM Parameter Store'),
-             buildParamCommands)
+    description('sub commands for working with AWS SSM Parameter Store'),
+    buildParamCommands)
 
     .command('\t', '') // fake command to add a line-break to the help output
 

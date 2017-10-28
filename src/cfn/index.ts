@@ -499,6 +499,7 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   printSectionEntry('NotificationARNs:',
     cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
 
+  // TODO show this conditionally:
   const StackPolicy = await cfn.getStackPolicy({StackName}).promise();
   if (StackPolicy) {
     printSectionEntry('Stack Policy Source:', cli.blackBright(StackPolicy.StackPolicyBody));
@@ -685,7 +686,6 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
 
 async function stackArgsToUpdateStackInput(stackArgs: StackArgs, argsFilePath: string, stackName?: string)
   : Promise<aws.CloudFormation.UpdateStackInput> {
-  // TODO: StackPolicyDuringUpdateBody, StackPolicyDuringUpdateURL
   const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, stackName);
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
@@ -842,7 +842,14 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
 
   async _run() {
     try {
-      const updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
+      let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
+      if (this.argv.stackPolicyDuringUpdate) {
+        const {
+          StackPolicyBody: StackPolicyDuringUpdateBody,
+          StackPolicyURL: StackPolicyDuringUpdateURL
+        } = await loadCFNStackPolicy(this.argv.stackPolicyDuringUpdate as string, pathmod.join(process.cwd(), 'dummyfile'));
+        updateStackInput = _.merge({StackPolicyDuringUpdateBody, StackPolicyDuringUpdateURL}, updateStackInput);
+      }
       await this._updateStackTerminationPolicy();
       const updateStackOutput = await this._cfn.updateStack(updateStackInput).promise();
       return this._watchAndSummarize(updateStackOutput.StackId as string);
