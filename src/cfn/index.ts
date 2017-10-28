@@ -752,6 +752,16 @@ abstract class AbstractCloudFormationStackCommand {
     this._cfn = new aws.CloudFormation()
   }
 
+  async _updateStackTerminationPolicy() {
+    if (_.isBoolean(this.stackArgs.EnableTerminationProtection)) {
+      const cfn = new aws.CloudFormation();
+      return cfn.updateTerminationProtection({
+        StackName: this.stackName,
+        EnableTerminationProtection: this.stackArgs.EnableTerminationProtection
+      }).promise();
+    }
+  }
+
   async _showCommandSummary() {
     const sts = new aws.STS();
     const iamIdentPromise = sts.getCallerIdentity().promise();
@@ -821,6 +831,7 @@ class CreateStack extends AbstractCloudFormationStackCommand {
     };
     const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
     const createStackOutput = await this._cfn.createStack(createStackInput).promise();
+    await this._updateStackTerminationPolicy();
     return this._watchAndSummarize(createStackOutput.StackId as string);
   }
 }
@@ -832,6 +843,7 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
   async _run() {
     try {
       const updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
+      await this._updateStackTerminationPolicy();
       const updateStackOutput = await this._cfn.updateStack(updateStackInput).promise();
       return this._watchAndSummarize(updateStackOutput.StackId as string);
     } catch (e) {
