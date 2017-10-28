@@ -476,8 +476,7 @@ async function getStackDescription(StackName: string): Promise<aws.CloudFormatio
 
 }
 
-async function summarizeStackProperties(StackName: string, region: string, showTimes = false)
-  : Promise<aws.CloudFormation.Stack> {
+async function summarizeStackProperties(StackName: string, region: string, showTimes = false): Promise<aws.CloudFormation.Stack> {
   const cfn = new aws.CloudFormation();
   const changeSetsPromise = cfn.listChangeSets({StackName}).promise();
   const stack = await getStackDescription(StackName);
@@ -859,6 +858,7 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
         updateStackInput = _.merge({StackPolicyDuringUpdateBody, StackPolicyDuringUpdateURL}, updateStackInput);
       }
       await this._updateStackTerminationPolicy();
+      // TODO consider conditionally calling setStackPolicy if the policy has changed
       const updateStackOutput = await this._cfn.updateStack(updateStackInput).promise();
       return this._watchAndSummarize(updateStackOutput.StackId as string);
     } catch (e) {
