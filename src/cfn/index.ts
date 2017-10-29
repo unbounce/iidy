@@ -574,6 +574,7 @@ async function getAllStacks() {
 }
 
 async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
+  const stacksPromise = getAllStacks();
   console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
   // TODO dry up the spinner code
   const tty: any = process.stdout; // tslint:disable-line
@@ -583,8 +584,7 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
     enabled: _.isNumber(tty.columns)
   });
   spinner.start();
-  let stacks = await getAllStacks();
-  stacks = _.sortBy(stacks, (st) => def(st.CreationTime, st.LastUpdatedTime))
+  const stacks = _.sortBy(await stacksPromise, (st) => def(st.CreationTime, st.LastUpdatedTime))
   spinner.stop();
   if (stacks.length === 0) {
     console.log('No stacks found');
