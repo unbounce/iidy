@@ -966,7 +966,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
       } else {
         spinner.start();
         spinner.text = cli.xterm(240)(
-          `${calcElapsedSeconds(startTime)} seconds elapsed total.`);
+          `${calcElapsedSeconds(startTime)} seconds elapsed.`);
         await timeout(pollInterval * 1000);
       }
     }
