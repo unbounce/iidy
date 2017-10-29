@@ -220,8 +220,8 @@ const objectToCFNParams =
         return {ParameterKey, ParameterValue: ParameterValue.toString()}
       })
 
-async function showStackEvents(StackName: string, limit = 10) {
-  let evs = (await getAllStackEvents(StackName));
+async function showStackEvents(StackName: string, limit = 10, eventsPromise?: Promise<aws.CloudFormation.StackEvent[]>) {
+  let evs = eventsPromise ? await eventsPromise : await getAllStackEvents(StackName);
   evs = _.sortBy(evs, (ev) => ev.Timestamp)
   const selectedEvs = evs.slice(Math.max(0, evs.length - limit), evs.length);
   const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
@@ -326,14 +326,14 @@ async function getAllStackExportsWithImports(StackId: string) {
 
 
 // TODO rename this
-async function summarizeCompletedStackOperation(StackId: string)
-  : Promise<aws.CloudFormation.Stack> {
+async function summarizeCompletedStackOperation(StackId: string, stackPromise?: Promise<aws.CloudFormation.Stack>): Promise<aws.CloudFormation.Stack> {
   // TODO handle this part for when OnFailure=DELETE and stack is gone ...
   //   this would be using a stackId instead
   const cfn = new aws.CloudFormation();
-  const exportsPromise = getAllStackExportsWithImports(StackId);
   const resourcesPromise = cfn.describeStackResources({StackName: StackId}).promise();
-  const stack = await getStackDescription(StackId);
+  const exportsPromise = getAllStackExportsWithImports(StackId);
+  const changeSetsPromise = cfn.listChangeSets({StackName: StackId}).promise();
+  const stack = await (stackPromise || getStackDescription(StackId));
 
   const resources = def([], (await resourcesPromise).StackResources);
   const MAX_PADDING = 60;
@@ -389,6 +389,27 @@ async function summarizeCompletedStackOperation(StackId: string)
   console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Current Stack Status:')),
     colorizeResourceStatus(stack.StackStatus),
     def('', stack.StackStatusReason))
+
+  // TODO pagination if lots of changesets:
+  const changeSets = def([], (await changeSetsPromise).Summaries);
+  if (changeSets.length > 0) {
+    console.log();
+    console.log(formatSectionHeading('Pending Changesets:'))
+    for (const cs of changeSets) {
+      printSectionEntry(
+        formatTimestamp(renderTimestamp(cs.CreationTime as Date)),
+        cli.magenta(cs.ChangeSetName) +
+        ' ' +
+        cs.Status +
+        ' ' +
+        def('', cs.StatusReason));
+      if (!_.isEmpty(cs.Description)) {
+        console.log('  ', cli.blackBright(cs.Description))
+      }
+      // TODO describe the change set ...
+    }
+    console.log()
+  }
 
   return stack;
 }
@@ -476,12 +497,14 @@ async function getStackDescription(StackName: string): Promise<aws.CloudFormatio
 
 }
 
-async function summarizeStackProperties(StackName: string, region: string, showTimes = false): Promise<aws.CloudFormation.Stack> {
-  const cfn = new aws.CloudFormation();
-  const changeSetsPromise = cfn.listChangeSets({StackName}).promise();
-  const stack = await getStackDescription(StackName);
-  const StackId = stack.StackId as string
+async function summarizeStackDefinition(StackName: string, region: string, showTimes = false, stackPromise?: Promise<aws.CloudFormation.Stack>): Promise<aws.CloudFormation.Stack> {
   console.log(formatSectionHeading('Stack Details:'))
+
+  stackPromise = (stackPromise ? stackPromise : getStackDescription(StackName));
+  const cfn = new aws.CloudFormation();
+  const stackPolicyPromise = cfn.getStackPolicy({StackName}).promise();
+  const stack = await stackPromise;
+  const StackId = stack.StackId as string
 
   printSectionEntry('Name:', cli.magenta(stack.StackName));
   printSectionEntry('Status', colorizeResourceStatus(stack.StackStatus));
@@ -505,7 +528,7 @@ async function summarizeStackProperties(StackName: string, region: string, showT
   printSectionEntry('NotificationARNs:',
     cli.blackBright(_.isEmpty(stack.NotificationARNs) ? 'None' : stack.NotificationARNs));
 
-  const StackPolicy = await cfn.getStackPolicy({StackName}).promise();
+  const StackPolicy = await stackPolicyPromise;
   if (StackPolicy.StackPolicyBody) {
     // json roundtrip to remove whitespace
     printSectionEntry('Stack Policy Source:',
@@ -518,22 +541,6 @@ async function summarizeStackProperties(StackName: string, region: string, showT
     cli.blackBright(`https://${region}.console.aws.amazon.com/cloudformation/home`
       + `?region=${region}#/stack/detail?stackId=${querystring.escape(StackId)}`))
 
-  const changeSets = def([], (await changeSetsPromise).Summaries);
-  if (changeSets.length > 0) {
-    console.log();
-    console.log(formatSectionHeading('Pending Changesets:'))
-    for (const cs of changeSets) {
-      // colorize status
-      console.log(formatTimestamp(renderTimestamp(cs.CreationTime as Date)),
-        cli.magenta(cs.ChangeSetName),
-        cs.ExecutionStatus,
-        def('', cs.StatusReason));
-      if (!_.isEmpty(cs.Description)) {
-        console.log('  ', cli.blackBright(cs.Description))
-      }
-      // TODO describe the change set ...
-    }
-  }
   return stack;
 }
 
@@ -567,16 +574,24 @@ async function getAllStacks() {
 }
 
 async function listStacks(showTags = false) {
+  console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
+  // TODO dry up the spinner code
+  const tty: any = process.stdout; // tslint:disable-line
+  const spinner = ora({
+    spinner: 'dots12',
+    text: '',
+    enabled: _.isNumber(tty.columns)
+  });
+  spinner.start();
   let stacks = await getAllStacks();
   stacks = _.sortBy(stacks, (st) => def(st.CreationTime, st.LastUpdatedTime))
+  spinner.stop();
   if (stacks.length === 0) {
     console.log('No stacks found');
     return 0;
   }
-  console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
-  const timePadding = (stacks[0].CreationTime.getDate() < (new Date).getDate())
-    ? 24
-    : 11;
+
+  const timePadding = 24;
   const statusPadding = _.max(_.map(stacks, ev => ev.StackStatus.length));
 
   for (const stack of stacks) {
@@ -803,12 +818,14 @@ abstract class AbstractCloudFormationStackCommand {
     // TODO previous related stack, long-lived dependency stack, etc.
 
     // we use StackId below rather than StackName to be resilient to deletions
-    await summarizeStackProperties(stackId, this.region, this._showTimesInSummary);
+    const stackPromise = getStackDescription(stackId);
+    const stackEventsPromise = getAllStackEvents(stackId);
+    await summarizeStackDefinition(stackId, this.region, this._showTimesInSummary, stackPromise);
 
     if (this._showPreviousEvents) {
       console.log();
       console.log(formatSectionHeading('Previous Stack Events (max 10):'))
-      await showStackEvents(stackId, 10);
+      await showStackEvents(stackId, 10, stackEventsPromise);
     }
 
     console.log();
@@ -890,8 +907,9 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
 
     const _changeSetResult = await this._cfn.createChangeSet(createChangeSetInput).promise();
-    // TODO replace this with my own tighter polling
-    await this._cfn.waitFor('changeSetCreateComplete', {ChangeSetName, StackName}).promise();
+
+    await this._waitForChangeSetCreateComplete();
+
     const changeSet = await this._cfn.describeChangeSet({ChangeSetName, StackName}).promise();
     if (changeSet.Status === 'FAILED') {
       logger.error(changeSet.StatusReason as string);
@@ -899,17 +917,55 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
       await this._cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
       throw new Error('ChangeSet failed to create');
     }
-    console.log(formatSectionHeading('Changeset:'));
-    console.log(yaml.dump(changeSet));
+    console.log(formatSectionHeading('Changes in changeset:'));
+    console.log();
+    console.log(yaml.dump(changeSet.Changes || []));
     // ... need to branch off here and watch the events on the changeset
     // https://...console.aws.amazon.com/cloudformation/home?region=..#/changeset/detail?changeSetId=..&stackId=..
-    console.log(cli.blackBright(
-      `https://${this.region}.console.aws.amazon.com/cloudformation/home?region=${this.region}#`
-      + `/changeset/detail?stackId=${querystring.escape(changeSet.StackId as string)}`
-      + `&changeSetId=${querystring.escape(changeSet.ChangeSetId as string)}`));
+
+    console.log('Console URL:',
+      cli.blackBright(
+        `https://${this.region}.console.aws.amazon.com/cloudformation/home?region=${this.region}#`
+        + `/changeset/detail?stackId=${querystring.escape(changeSet.StackId as string)}`
+        + `&changeSetId=${querystring.escape(changeSet.ChangeSetId as string)}`));
+
+    console.log();
+    showFinalComandSummary(true);
+    return 0;
+    //return this._watchAndSummarize(changeSet.StackId as string);
+  }
 
 
-    return this._watchAndSummarize(changeSet.StackId as string);
+
+  async _waitForChangeSetCreateComplete() {
+    const ChangeSetName = this.argv.changesetName; // TODO parameterize
+    const StackName = this.stackName;
+
+    const pollInterval = 2;     // seconds
+    const startTime = this._startTime;
+    const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
+
+    const tty: any = process.stdout; // tslint:disable-line
+    const spinner = ora({
+      spinner: 'dots12',
+      text: '',
+      enabled: _.isNumber(tty.columns)
+    });
+
+    while (true) {
+      const {Status, StatusReason} = await this._cfn.describeChangeSet({ChangeSetName, StackName}).promise();
+      spinner.stop();
+      if (Status === 'CREATE_COMPLETE') {
+        break;
+      } else if (Status === 'FAILED') {
+        throw new Error(`Failed to create changeset: ${StatusReason}`);
+      } else {
+        spinner.start();
+        spinner.text = cli.xterm(240)(
+          `${calcElapsedSeconds(startTime)} seconds elapsed total.`);
+        await timeout(pollInterval * 1000);
+      }
+    }
   }
 }
 
@@ -970,7 +1026,7 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
   const startTime = await getReliableStartTime();
 
   console.log();
-  const stack = await summarizeStackProperties(StackName, region, true);
+  const stack = await summarizeStackDefinition(StackName, region, true);
   const StackId = stack.StackId as string;
   console.log();
 
@@ -988,17 +1044,19 @@ export async function describeStackMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region);
   const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
+  const stackPromise = getStackDescription(StackName);
+  const stackEventsPromise = getAllStackEvents(StackName);
 
   console.log();
-  const stack = await summarizeStackProperties(StackName, region, true);
+  const stack = await summarizeStackDefinition(StackName, region, true, stackPromise);
   const StackId = stack.StackId as string;
   console.log();
 
   const eventCount = def(50, argv.events);
   console.log(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`))
-  await showStackEvents(StackName, eventCount);
+  await showStackEvents(StackName, eventCount, stackEventsPromise);
   console.log();
-  await summarizeCompletedStackOperation(StackId);
+  await summarizeCompletedStackOperation(StackId, stackPromise);
   return 0;
 }
 
@@ -1089,7 +1147,7 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   const StackName = argv.stackname;
 
   console.log();
-  const stack = await summarizeStackProperties(StackName, region, true);
+  const stack = await summarizeStackDefinition(StackName, region, true);
   const StackId = stack.StackId as string;
   console.log();
 
@@ -1113,7 +1171,7 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
   }
   if (confirmed) {
     const cfn = new aws.CloudFormation();
-    // --retain-resources, --client-request-token
+    // TODO --client-request-token
     const startTime = await getReliableStartTime();
     await cfn.deleteStack({StackName, RoleARN: argv.roleArn, RetainResources: argv.retainResources}).promise();
     await watchStack(StackId, startTime);
