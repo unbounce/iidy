@@ -5,6 +5,7 @@ node_modules/
 .make
 lib/cfn/*
 lib/tests/*
+lib/params/*
 lib/*js
 lib/*d.ts
 lib/*map
