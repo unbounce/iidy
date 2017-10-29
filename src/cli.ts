@@ -262,6 +262,11 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('list all stacks within a region'),
     (args) => args
       .demandCommand(0, 0)
+      .option('tag-filter', {
+        type: 'string', default: [],
+        array: true,
+        description: 'Filter by tags: key=value'
+      })
       .option('tags', {
         type: 'boolean', default: false,
         description: 'Show stack tags'

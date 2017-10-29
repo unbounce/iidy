@@ -573,7 +573,7 @@ async function getAllStacks() {
   return stacks;
 }
 
-async function listStacks(showTags = false) {
+async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
   console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
   // TODO dry up the spinner code
   const tty: any = process.stdout; // tslint:disable-line
@@ -596,6 +596,10 @@ async function listStacks(showTags = false) {
 
   for (const stack of stacks) {
     const tags = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
+    if (tagsFilter && !_.every(tagsFilter, ([k, v]) => tags[k] === v)) {
+      // TODO support more advanced tag filters like: not-set, any, or in-set
+      continue;
+    }
     const lifecyle: string | undefined = tags.lifetime;
     let lifecyleIcon: string = '';
     if (stack.EnableTerminationProtection || lifecyle === 'protected') {
@@ -1015,7 +1019,11 @@ export async function createCreationChangesetMain(argv: Arguments): Promise<numb
 
 export async function listStacksMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region);
-  await listStacks(argv.tags);
+  const tagsFilter: [string, string][] = _.map(argv.tagFilter, (tf: string) => {
+    const [key, ...value] = tf.split('=');
+    return [key, value.join('=')] as [string, string];
+  });
+  await listStacks(argv.tags, tagsFilter);
   return 0;
 }
 
