@@ -261,11 +261,16 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = 2) 
   const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
   let lastEvTimestamp: Date = new Date();    // might be off because of drift
 
+  spinner.start();
+  const spinnerInterval = setInterval(() => {
+    spinner.text = cli.xterm(240)(
+      `${calcElapsedSeconds(startTime)} seconds elapsed total.`
+      + ` ${calcElapsedSeconds(lastEvTimestamp)} since last event.`);
+  }, 1000);
   let DONE = false;
   while (!DONE) {
     // TODO merge in the events of nested stacks
     let evs = await getAllStackEvents(StackName);
-    spinner.stop();
     evs = _.sortBy(evs, (ev) => ev.Timestamp);
     const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
     for (let ev of evs) {
@@ -275,6 +280,7 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = 2) 
       }
       if (!seen[ev.EventId]) {
         logger.debug('displaying new event', ev = ev, startTime = startTime);
+        spinner.stop();
         displayStackEvent(ev, statusPadding);
         lastEvTimestamp = ev.Timestamp;
       }
@@ -289,12 +295,11 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = 2) 
     }
     if (!DONE) {
       spinner.start();
-      spinner.text = cli.xterm(240)(
-        `${calcElapsedSeconds(startTime)} seconds elapsed total.`
-        + ` ${calcElapsedSeconds(lastEvTimestamp)} since last event.`);
       await timeout(pollInterval * 1000);
     }
   }
+  spinner.stop();
+  clearInterval(spinnerInterval);
 }
 
 async function getAllStackExportsWithImports(StackId: string) {
@@ -945,7 +950,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const ChangeSetName = this.argv.changesetName; // TODO parameterize
     const StackName = this.stackName;
 
-    const pollInterval = 2;     // seconds
+    const pollInterval = 1;     // seconds
     const startTime = this._startTime;
     const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
 
