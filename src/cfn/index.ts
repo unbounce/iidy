@@ -16,6 +16,7 @@ import * as cli from 'cli-color';
 import * as wrapAnsi from 'wrap-ansi';
 import * as ora from 'ora';
 import * as inquirer from 'inquirer';
+import * as nameGenerator from 'project-name-generator';
 
 let getStrippedLength: (s: string) => number;
 // TODO declare module for this:
@@ -329,6 +330,34 @@ async function getAllStackExportsWithImports(StackId: string) {
   return exports;
 }
 
+async function showPendingChangesets(StackId: string, changeSetsPromise?: Promise<aws.CloudFormation.ListChangeSetsOutput>) {
+  const cfn = new aws.CloudFormation();
+  if (!changeSetsPromise) {
+    changeSetsPromise = cfn.listChangeSets({StackName: StackId}).promise();
+  }
+  // TODO pagination if lots of changesets:
+  let changeSets = def([], (await changeSetsPromise).Summaries);
+  changeSets = _.sortBy(changeSets, (cs) => cs.CreationTime);
+  if (changeSets.length > 0) {
+    console.log();
+    console.log(formatSectionHeading('Pending Changesets:'))
+    for (const cs of changeSets) {
+      printSectionEntry(
+        formatTimestamp(renderTimestamp(cs.CreationTime as Date)),
+        cli.magenta(cs.ChangeSetName) +
+        ' ' +
+        cs.Status +
+        ' ' +
+        def('', cs.StatusReason));
+      if (!_.isEmpty(cs.Description)) {
+        console.log('  Description:', cli.blackBright(cs.Description))
+        console.log()
+      }
+      summarizeChangeSet(await cfn.describeChangeSet({StackName: StackId, ChangeSetName: cs.ChangeSetName!}).promise());
+      console.log()
+    }
+  }
+}
 
 // TODO rename this
 async function summarizeCompletedStackOperation(StackId: string, stackPromise?: Promise<aws.CloudFormation.Stack>): Promise<aws.CloudFormation.Stack> {
@@ -395,27 +424,7 @@ async function summarizeCompletedStackOperation(StackId: string, stackPromise?: 
     colorizeResourceStatus(stack.StackStatus),
     def('', stack.StackStatusReason))
 
-  // TODO pagination if lots of changesets:
-  const changeSets = def([], (await changeSetsPromise).Summaries);
-  if (changeSets.length > 0) {
-    console.log();
-    console.log(formatSectionHeading('Pending Changesets:'))
-    for (const cs of changeSets) {
-      printSectionEntry(
-        formatTimestamp(renderTimestamp(cs.CreationTime as Date)),
-        cli.magenta(cs.ChangeSetName) +
-        ' ' +
-        cs.Status +
-        ' ' +
-        def('', cs.StatusReason));
-      if (!_.isEmpty(cs.Description)) {
-        console.log('  ', cli.blackBright(cs.Description))
-      }
-      // TODO describe the change set ...
-    }
-    console.log()
-  }
-
+  await showPendingChangesets(StackId, changeSetsPromise);
   return stack;
 }
 
@@ -589,7 +598,7 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
     enabled: _.isNumber(tty.columns)
   });
   spinner.start();
-  const stacks = _.sortBy(await stacksPromise, (st) => def(st.CreationTime, st.LastUpdatedTime))
+  const stacks = _.sortBy(await stacksPromise, (st) => def(st.CreationTime, st.LastUpdatedTime));
   spinner.stop();
   if (stacks.length === 0) {
     console.log('No stacks found');
@@ -898,20 +907,62 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
   }
 }
 
+function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutput) {
+  const indent = '   ';
+  for (const change of changeSet.Changes || []) {
+    if (change.ResourceChange) {
+      const resourceChange = change.ResourceChange;
+      switch (resourceChange.Action) {
+        case 'Add':
+          console.log(
+            sprintf('  %-17s %-30s %s',
+              cli.green('Add'),
+              resourceChange.LogicalResourceId,
+              cli.blackBright(resourceChange.ResourceType)));
+          break;
+        case 'Remove':
+          console.log(
+            sprintf('  %-17s %-30s %s',
+              cli.red('Remove'),
+              resourceChange.LogicalResourceId,
+              cli.blackBright(resourceChange.PhysicalResourceId)));
+          break;
+        case 'Modify':
+          if (resourceChange.Replacement === 'True') {
+            console.log(
+              sprintf('  %-17s %-30s %s',
+                cli.red('Replace'),
+                resourceChange.LogicalResourceId,
+                cli.blackBright(resourceChange.PhysicalResourceId)));
+          } else {
+            console.log(
+              sprintf('  %-17s %-30s %s',
+                cli.yellow('Modify'),
+                resourceChange.LogicalResourceId,
+                cli.blackBright(resourceChange.PhysicalResourceId)));
+          }
+          break;
+      }
+    }
+  }
+}
 
 class CreateChangeSet extends AbstractCloudFormationStackCommand {
   _cfnOperation: CfnOperation = 'CREATE_CHANGESET'
   _expectedFinalStackStatus = terminalStackStates
   _watchStackEvents = false
+  _changeSetName: string;
 
   async _run() {
     // TODO remove argv as an arg here. Too general
 
-    const ChangeSetName = this.argv.changesetName; // TODO parameterize
+    const ChangeSetName = this.argv.changesetName || nameGenerator().dashed; // TODO parameterize
+    this._changeSetName = ChangeSetName;
     const createChangeSetInput =
       await stackArgsToCreateChangeSetInput(ChangeSetName, this.stackArgs, this.argsfile, this.stackName);
     const StackName = createChangeSetInput.StackName;
     createChangeSetInput.ChangeSetType = this.argv.changesetType;
+    createChangeSetInput.Description = this.argv.description;
 
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
 
@@ -926,11 +977,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
       await this._cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
       throw new Error('ChangeSet failed to create');
     }
-    console.log(formatSectionHeading('Changes in changeset:'));
     console.log();
-    console.log(yaml.dump(changeSet.Changes || []));
-    // ... need to branch off here and watch the events on the changeset
-    // https://...console.aws.amazon.com/cloudformation/home?region=..#/changeset/detail?changeSetId=..&stackId=..
 
     console.log('Console URL:',
       cli.blackBright(
@@ -938,16 +985,13 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
         + `/changeset/detail?stackId=${querystring.escape(changeSet.StackId as string)}`
         + `&changeSetId=${querystring.escape(changeSet.ChangeSetId as string)}`));
 
-    console.log();
+    await showPendingChangesets(StackName);
+    // TODO diff createChangeSetInput.TemplateBody
     showFinalComandSummary(true);
     return 0;
-    //return this._watchAndSummarize(changeSet.StackId as string);
   }
 
-
-
   async _waitForChangeSetCreateComplete() {
-    const ChangeSetName = this.argv.changesetName; // TODO parameterize
     const StackName = this.stackName;
 
     const pollInterval = 1;     // seconds
@@ -962,7 +1006,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     });
 
     while (true) {
-      const {Status, StatusReason} = await this._cfn.describeChangeSet({ChangeSetName, StackName}).promise();
+      const {Status, StatusReason} = await this._cfn.describeChangeSet({ChangeSetName: this._changeSetName, StackName}).promise();
       spinner.stop();
       if (Status === 'CREATE_COMPLETE') {
         break;

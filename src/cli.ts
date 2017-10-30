@@ -154,10 +154,14 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .command('\t', '') // fake command to add a line-break to the help output
 
     .command(
-    'create-changeset           <changesetName> <argsfile>',
+    'create-changeset           <argsfile> [changesetName]',
     description('create a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
+      .option('description', {
+        type: 'string', default: undefined,
+        description: 'optional description of changeset'
+      })
       .option('stack-name', {
         type: 'string', default: null,
         description: 'override the StackName from --argsfile'
@@ -165,7 +169,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     wrapMainHandler(commands.createUpdateChangesetMain))
 
     .command(
-    'exec-changeset             <changesetName> <argsfile>',
+    'exec-changeset             <argsfile> <changesetName>',
     description('execute a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
@@ -176,10 +180,14 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     wrapMainHandler(commands.executeChangesetMain))
 
     .command(
-    'create-stack-via-changeset <changesetName> <argsfile>',
+    'create-stack-via-changeset <argsfile>',
     description('create a cfn changeset to create a new stack'),
     (args) => args
       .demandCommand(0, 0)
+      .option('changeset-name', {
+        type: 'string', default: 'initial',
+        description: 'name for initial changeset'
+      })
       .option('stack-name', {
         type: 'string', default: null,
         description: 'override the StackName from --argsfile'
