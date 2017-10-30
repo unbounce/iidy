@@ -55,6 +55,20 @@ when you run into errors with a CloudFormation stack:
 
 ## Installation
 
+### MacOS: Binary Install via Homebrew
+
+Use Unbounce's custom Homebrew Tap to install iidy.
+
+```
+brew tap unbounce/homebrew-taps
+brew update
+brew install iidy
+```
+
+Note that, due to the current filename scheme, you will need to call `iidy-macos` in your terminal.
+
+### Other distributions
+
 * Binary installation. This is the preferred method.
 ```
 # Grab the appropriate binary from the releases page.
