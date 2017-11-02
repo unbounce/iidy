@@ -51,6 +51,7 @@ export type StackArgs = {
   StackPolicy?: string | object,
   ResourceTypes?: string[],
 
+  ClientRequestToken?: string, //aws.CloudFormation.ClientToken,
   // for updates
   UsePreviousTemplate?: boolean,
 
@@ -654,7 +655,11 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
 
 export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
   // TODO json schema validation
-  return _loadStackArgs(argv.argsfile, argv.region, argv.profile, argv.environment);
+  const args = await _loadStackArgs(argv.argsfile, argv.region, argv.profile, argv.environment);
+  if (argv.clientRequestToken) {
+    args.ClientRequestToken = argv.clientRequestToken;
+  }
+  return args
 }
 
 export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
@@ -718,7 +723,8 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
   const {TemplateBody, TemplateURL} = await loadCFNTemplate(stackArgs.Template, argsFilePath);
   const {StackPolicyBody, StackPolicyURL} = await loadCFNStackPolicy(stackArgs.StackPolicy, argsFilePath);
 
-  // TODO: ClientRequestToken, DisableRollback
+  // TODO: DisableRollback
+  // specify either DisableRollback or OnFailure, but not both
 
   return {
     StackName: def(stackArgs.StackName, stackName),
@@ -733,7 +739,8 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
     TemplateBody,
     TemplateURL,
     StackPolicyBody,
-    StackPolicyURL
+    StackPolicyURL,
+    ClientRequestToken: stackArgs.ClientRequestToken
   };
 }
 
