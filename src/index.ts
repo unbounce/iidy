@@ -458,7 +458,20 @@ function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
     // strings.
     throw new Error(`Invalid lookup key ${JSON.stringify(key)} at ${path}`)
   }
-  const res = env.$envValues[key];
+
+  const subKeyMatch = key.match(/\[(.*)\] *$/);
+  let res: AnyButUndefined;
+  if (subKeyMatch) {
+    // this is something like !$ firstKey[subKey]
+    const subKey: string = lookupInEnv(subKeyMatch[1], path, env) as string;
+    const firstKey = key.slice(0, subKeyMatch.index);
+    const firstRes: any = lookupInEnv(firstKey, path, env);
+    res = firstRes[subKey];
+    // TODO test cases for this case
+    // TODO support `!$ firstKey[subKey].more` and `!$ firstKey[subKey][more]`
+  } else {
+    res = env.$envValues[key];
+  }
   if (_.isUndefined(res)) {
     logger.debug(`Could not find "${key}" at ${path}}`, env = env)
     throw new Error(`Could not find "${key}" at ${path}}`);
@@ -1009,6 +1022,9 @@ export async function renderMain(argv: Arguments): Promise<number> {
   const rootDocLocation = pathmod.resolve(argv.template);
   const content = fs.readFileSync(rootDocLocation);
   const input = yaml.loadString(content, rootDocLocation);
+  // if (argv.environment) {
+  //   input.$envValues = {environment: argv.environment};
+  // }
   const outputDoc = await transform(input, rootDocLocation);
   const outputString = yaml.dump(outputDoc);
   if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
