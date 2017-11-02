@@ -113,7 +113,7 @@ const environmentOpt: yargs.Options = {
 const stackNameOpt: yargs.Options = {
   type: 'string', default: null,
   alias: 's',
-  description: 'override the StackName from --argsfile'
+  description: 'override the StackName from <argsfile>'
 };
 
 export const description = cli.xterm(250);
