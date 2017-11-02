@@ -652,13 +652,12 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
 }
 
 
-
 export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
   // TODO json schema validation
-  return _loadStackArgs(argv.argsfile, argv.region, argv.profile);
+  return _loadStackArgs(argv.argsfile, argv.region, argv.profile, argv.environment);
 }
 
-export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string): Promise<StackArgs> {
+export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
   let argsdata: any; // tslint:disable-line
   if (!fs.existsSync(argsfile)) {
     throw new Error(`stack args file "${argsfile}" not found`);
@@ -673,20 +672,26 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
   // There is chicken-and-egg situation between use of imports for
   // profile or region and the call to configureAWS. We need to
   // enforce that they be plain strings with no pre-processor magic.
-  if (argsdata.Profile && !_.isString(argsdata.Profile)) {
-    throw new Error('The Profile setting in stack-args.yaml must be a plain string');
+  for (const key of ['Profile', 'Region']) {
+    if (_.isObject(argsdata[key])) {
+      if (environment && argsdata[key][environment]) {
+        argsdata[key] = argsdata[key][environment];
+        logger.debug(`resolving ${key}=${argsdata[key]} based on environment=${environment}`);
+      } else {
+        throw new Error(`environment "${environment}" not found in ${key} map: ${argsdata[key]}`);
+      }
+    } else if (argsdata[key] && !_.isString(argsdata[key])) {
+      throw new Error(`The ${key} setting in stack-args.yaml must be a plain string or an environment map of strings.`);
+    }
   }
-  if (argsdata.Region && !_.isString(argsdata.Region)) {
-    throw new Error('The Region setting in stack-args.yaml must be a plain string');
-  }
-
   // have to do it before the call to transform
   await configureAWS(profile || argsdata.Profile, region || argsdata.Region); // tslint:disable-line
-
 
   if (argsdata.CommandsBefore) {
     // TODO improve CLI output of this and think about adding
     // descriptive names to the commands
+
+    // TODO move this to a more sensible place if I can resolve the chicken and egg issue
 
     // TODO might want to inject ENV vars or handlebars into the
     // commands. Also the AWS_ENV
@@ -694,7 +699,15 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
     console.log('Executing CommandsBefore from argsfile');
     runCommandSet(argsdata.CommandsBefore);
   }
-  return await transform(argsdata, argsfile) as StackArgs;
+  if (environment) {
+    argsdata.$envValues = {environment};
+    if (!_.get(argsdata, ['Tags', 'environment'])) {
+      argsdata.Tags = _.merge({environment}, argsdata.Tags);
+    }
+  }
+  const stackArgs = await transform(argsdata, argsfile) as StackArgs;
+  logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgs);
+  return stackArgs;
   // ... do the normalization here
 };
 

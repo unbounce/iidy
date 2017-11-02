@@ -104,6 +104,18 @@ const lazy: Commands = {
 
 };
 
+const environmentOpt: yargs.Options = {
+  type: 'string', default: null,
+  alias: 'e',
+  description: 'used to load environment based settings: AWS Profile, Region, etc.'
+};
+
+const stackNameOpt: yargs.Options = {
+  type: 'string', default: null,
+  alias: 's',
+  description: 'override the StackName from --argsfile'
+};
+
 export const description = cli.xterm(250);
 
 export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler) {
@@ -118,10 +130,8 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy create-stack <stack-args.yaml>')
-      .option('stack-name', {
-        type: 'string', default: null,
-        description: 'override the StackName from --argsfile'
-      }),
+      .option('environment', environmentOpt)
+      .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.createStackMain))
 
     .command(
@@ -130,10 +140,8 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy update-stack <stack-args.yaml>')
-      .option('stack-name', {
-        type: 'string', default: null,
-        description: 'override the StackName from --argsfile'
-      })
+      .option('environment', environmentOpt)
+      .option('stack-name', stackNameOpt)
       .option('stack-policy-during-update', {
         type: 'string', default: null,
         description: 'override original stack-policy for this update only'
@@ -145,10 +153,8 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('estimate aws costs based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
-      .option('stack-name', {
-        type: 'string', default: null,
-        description: 'override the StackName from --argsfile'
-      }),
+      .option('environment', environmentOpt)
+      .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.estimateCost))
 
     .command('\t', '') // fake command to add a line-break to the help output
@@ -158,14 +164,12 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('create a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
+      .option('environment', environmentOpt)
       .option('description', {
         type: 'string', default: undefined,
         description: 'optional description of changeset'
       })
-      .option('stack-name', {
-        type: 'string', default: null,
-        description: 'override the StackName from --argsfile'
-      }),
+      .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.createUpdateChangesetMain))
 
     .command(
@@ -173,10 +177,8 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('execute a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
-      .option('stack-name', {
-        type: 'string', default: null,
-        description: 'override the StackName from --argsfile'
-      }),
+      .option('environment', environmentOpt)
+      .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.executeChangesetMain))
 
     .command(
@@ -184,14 +186,12 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('create a cfn changeset to create a new stack'),
     (args) => args
       .demandCommand(0, 0)
+      .option('environment', environmentOpt)
       .option('changeset-name', {
         type: 'string', default: 'initial',
         description: 'name for initial changeset'
       })
-      .option('stack-name', {
-        type: 'string', default: null,
-        description: 'override the StackName from --argsfile'
-      }),
+      .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.createCreationChangesetMain))
 
     .command('\t', '') // fake command to add a line-break to the help output
@@ -321,15 +321,20 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .strict(),
     wrapMainHandler(commands.demoMain))
 
+    .option('client-request-token', {
+      type: 'string', default: null,
+      group: 'AWS Options',
+      description: 'a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.'
+    })
     .option('region', {
       type: 'string', default: null,
       group: 'AWS Options',
-      description: 'AWS region'
+      description: 'AWS region. Can also be set via --environment & stack-args.yaml:Region.'
     })
     .option('profile', {
       type: 'string', default: null,
       group: 'AWS Options',
-      description: 'AWS profile'
+      description: 'AWS profile. Can also be set via --environment & stack-args.yaml:Profile.'
     })
 
     .option('debug', {

@@ -389,7 +389,7 @@ async function loadImports(
   importLoader = readFromImportLocation  // for mocking in tests
 ): Promise<void> {
   // recursively load the entire set of imports
-  doc.$envValues = {};
+  doc.$envValues = doc.$envValues || {};
   if (doc.$imports) {
 
     if (!_.isPlainObject(doc.$imports)) {
