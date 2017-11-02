@@ -47,6 +47,7 @@ export type StackArgs = {
   RoleARN?: string
   TimeoutInMinutes?: number
   OnFailure?: 'ROLLBACK' | 'DELETE' | 'DO_NOTHING'
+  DisableRollback?: boolean
   EnableTerminationProtection?: boolean
   StackPolicy?: string | object,
   ResourceTypes?: string[],
@@ -725,13 +726,14 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
 
   // TODO: DisableRollback
   // specify either DisableRollback or OnFailure, but not both
+  const OnFailure = def('ROLLBACK', stackArgs.OnFailure)
 
   return {
     StackName: def(stackArgs.StackName, stackName),
     Capabilities: stackArgs.Capabilities,
     NotificationARNs: stackArgs.NotificationARNs,
     RoleARN: stackArgs.RoleARN,
-    OnFailure: def('ROLLBACK', stackArgs.OnFailure),
+    OnFailure,
     TimeoutInMinutes: stackArgs.TimeoutInMinutes,
     ResourceTypes: stackArgs.ResourceTypes,
     Parameters: objectToCFNParams(def({}, stackArgs.Parameters)),
