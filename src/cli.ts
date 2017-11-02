@@ -130,7 +130,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy create-stack <stack-args.yaml>')
-      .option('environment', environmentOpt)
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.createStackMain))
 
@@ -140,7 +139,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy update-stack <stack-args.yaml>')
-      .option('environment', environmentOpt)
       .option('stack-name', stackNameOpt)
       .option('stack-policy-during-update', {
         type: 'string', default: null,
@@ -153,7 +151,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('estimate aws costs based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
-      .option('environment', environmentOpt)
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.estimateCost))
 
@@ -164,7 +161,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('create a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
-      .option('environment', environmentOpt)
       .option('description', {
         type: 'string', default: undefined,
         description: 'optional description of changeset'
@@ -177,7 +173,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('execute a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
-      .option('environment', environmentOpt)
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.executeChangesetMain))
 
@@ -186,7 +181,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('create a cfn changeset to create a new stack'),
     (args) => args
       .demandCommand(0, 0)
-      .option('environment', environmentOpt)
       .option('changeset-name', {
         type: 'string', default: 'initial',
         description: 'name for initial changeset'
@@ -321,6 +315,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .strict(),
     wrapMainHandler(commands.demoMain))
 
+    .option('environment', environmentOpt)
     .option('client-request-token', {
       type: 'string', default: null,
       group: 'AWS Options',
