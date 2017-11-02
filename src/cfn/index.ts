@@ -765,8 +765,11 @@ async function stackArgsToCreateChangeSetInput(
   delete input0.OnFailure;
   delete input0.StackPolicyBody;
   delete input0.StackPolicyURL;
+  const ClientToken = input0.ClientRequestToken; // damn CFN has inconsistent naming here
+  delete input0.ClientRequestToken;
   const input = input0 as aws.CloudFormation.CreateChangeSetInput;
   input.ChangeSetName = changeSetName;
+  input.ClientToken = ClientToken;
   return input;
 }
 
@@ -1050,7 +1053,10 @@ class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
   _expectedFinalStackStatus = ['UPDATE_COMPLETE', 'CREATE_COMPLETE']
 
   async _run() {
-    await this._cfn.executeChangeSet({ChangeSetName: this.argv.changesetName, StackName: this.stackName}).promise();
+    await this._cfn.executeChangeSet(
+      {ChangeSetName: this.argv.changesetName,
+       ClientRequestToken: this.argv.clientRequestToken,
+       StackName: this.stackName}).promise();
     return this._watchAndSummarize(this.stackName);
   }
 }
