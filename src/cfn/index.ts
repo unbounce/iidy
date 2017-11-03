@@ -236,13 +236,37 @@ async function showStackEvents(StackName: string, limit = 10, eventsPromise?: Pr
   }
 }
 
-async function getAllStackEvents(StackName: string) {
+const eventIsFromSubstack = (ev: aws.CloudFormation.StackEvent): boolean =>
+  ev.PhysicalResourceId != '' &&
+  (ev.ResourceType === 'AWS::CloudFormation::Stack') &&
+  ev.StackId != ev.PhysicalResourceId
+
+const getSubStacksFromEvents = (events: aws.CloudFormation.StackEvents): Set<string> => {
+  const subStackIds = new Set();
+  events.forEach((ev) => {
+    if (eventIsFromSubstack(ev)) {
+      subStackIds.add(ev.PhysicalResourceId as string);
+    }
+  });
+  return subStackIds;
+};
+
+async function getAllStackEvents(StackName: string, includeSubStacks = true, subStacksToIgnore?: Set<string>) {
   const cfn = new aws.CloudFormation({maxRetries: 12}); // higher than our default of 10
   let res = await cfn.describeStackEvents({StackName}).promise();
   let events = def([], res.StackEvents);
   while (!_.isUndefined(res.NextToken)) {
     res = await cfn.describeStackEvents({StackName, NextToken: res.NextToken}).promise();
     events = events.concat(def([], res.StackEvents));
+  }
+  events = _.sortBy(events, (ev) => ev.Timestamp);
+  if (includeSubStacks) {
+    const subStackIds = getSubStacksFromEvents(events);
+    for (const subStackId of subStackIds) {
+      if (!subStacksToIgnore || !subStacksToIgnore.has(subStackId)) {
+        events = events.concat(await getAllStackEvents(subStackId));
+      }
+    }
   }
   return events;
 }
@@ -270,31 +294,44 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = 2) 
       `${calcElapsedSeconds(startTime)} seconds elapsed total.`
       + ` ${calcElapsedSeconds(lastEvTimestamp)} since last event.`);
   }, 1000);
+
+  const subStacksToIgnore = new Set();
   let DONE = false;
   while (!DONE) {
-    // TODO merge in the events of nested stacks
-    let evs = await getAllStackEvents(StackName);
-    evs = _.sortBy(evs, (ev) => ev.Timestamp);
+    let evs = await getAllStackEvents(StackName, true, subStacksToIgnore);
     const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
-    for (let ev of evs) {
+    for (const ev of evs) {
+      if (eventIsFromSubstack(ev) && !seen[ev.EventId]) {
+        if (_.includes(terminalStackStates, ev.ResourceStatus) && ev.Timestamp > startTime) {
+          subStacksToIgnore.add(ev.PhysicalResourceId);
+        } else {
+          subStacksToIgnore.delete(ev.PhysicalResourceId);
+        }
+      }
       if (ev.Timestamp < startTime) {
-        logger.debug('filtering event from past', ev = ev, startTime = startTime);
+        logger.debug('filtering event from past', {ev, startTime});
         seen[ev.EventId] = true
       }
       if (!seen[ev.EventId]) {
-        logger.debug('displaying new event', ev = ev, startTime = startTime);
+        logger.debug('displaying new event', {ev, startTime});
         spinner.stop();
         displayStackEvent(ev, statusPadding);
         lastEvTimestamp = ev.Timestamp;
       }
-      seen[ev.EventId] = true
       if (ev.ResourceType === 'AWS::CloudFormation::Stack') {
-        if (_.includes(terminalStackStates, ev.ResourceStatus) && ev.Timestamp > startTime) {
+        if (!eventIsFromSubstack(ev) &&
+          (_.includes([ev.StackId, ev.StackName], StackName)) &&
+          _.includes(terminalStackStates, ev.ResourceStatus) &&
+          ev.Timestamp > startTime
+        ) {
+          spinner.stop();
           console.log(
             cli.blackBright(` ${calcElapsedSeconds(startTime)} seconds elapsed total.`));
           DONE = true;
         }
       }
+
+      seen[ev.EventId] = true
     }
     if (!DONE) {
       spinner.start();
