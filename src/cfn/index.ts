@@ -743,10 +743,13 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
     runCommandSet(argsdata.CommandsBefore);
   }
   if (environment) {
-    argsdata.$envValues = {environment};
+    argsdata.$envValues = _.merge({}, argsdata.$envValues, {environment});
     if (!_.get(argsdata, ['Tags', 'environment'])) {
       argsdata.Tags = _.merge({environment}, argsdata.Tags);
     }
+  }
+  if (getCurrentAWSRegion()) {
+    argsdata.$envValues = _.merge({}, argsdata.$envValues, {region: getCurrentAWSRegion()});
   }
   const stackArgs = await transform(argsdata, argsfile) as StackArgs;
   logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgs);
