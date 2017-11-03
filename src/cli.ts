@@ -106,19 +106,20 @@ const lazy: Commands = {
 
 };
 
+export const description = cli.xterm(250);
+
 const environmentOpt: yargs.Options = {
   type: 'string', default: null,
   alias: 'e',
-  description: 'used to load environment based settings: AWS Profile, Region, etc.'
+  description: description('used to load environment based settings: AWS Profile, Region, etc.')
 };
 
 const stackNameOpt: yargs.Options = {
   type: 'string', default: null,
   alias: 's',
-  description: 'override the StackName from <argsfile>'
+  description: description('override the StackName from <argsfile>')
 };
 
-export const description = cli.xterm(250);
 
 export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler) {
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
@@ -321,31 +322,31 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .option('client-request-token', {
       type: 'string', default: null,
       group: 'AWS Options',
-      description: 'a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.'
+      description: description('a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.')
     })
     .option('region', {
       type: 'string', default: null,
       group: 'AWS Options',
-      description: 'AWS region. Can also be set via --environment & stack-args.yaml:Region.'
+      description: description('AWS region. Can also be set via --environment & stack-args.yaml:Region.')
     })
     .option('profile', {
       type: 'string', default: null,
       group: 'AWS Options',
-      description: 'AWS profile. Can also be set via --environment & stack-args.yaml:Profile.'
+      description: description('AWS profile. Can also be set via --environment & stack-args.yaml:Profile.')
     })
 
     .option('debug', {
       type: 'boolean', default: false,
-      description: 'Log debug information to stderr.'
+      description: description('log debug information to stderr.')
     })
     .command('\t', '') // fake command to add a line-break to the help output
 
     .demandCommand(1)
     .usage(usage)
+    .version(() => require('../package').version)
     .alias('v', 'version')
-    .version(function() {return require('../package').version;})
-    .describe('v', 'show version information')
-    .help()
+    .describe('version', description('show version information'))
+    .help('help', description('show help'))
     .alias('h', 'help')
     .completion('completion', description('generate bash completion script. To use: "source <(iidy completion)"'))
     .recommendCommands()
