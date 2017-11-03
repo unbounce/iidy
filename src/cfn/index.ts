@@ -1091,9 +1091,11 @@ class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
 
   async _run() {
     await this._cfn.executeChangeSet(
-      {ChangeSetName: this.argv.changesetName,
-       ClientRequestToken: this.argv.clientRequestToken,
-       StackName: this.stackName}).promise();
+      {
+        ChangeSetName: this.argv.changesetName,
+        ClientRequestToken: this.argv.clientRequestToken,
+        StackName: this.stackName
+      }).promise();
     return this._watchAndSummarize(this.stackName);
   }
 }
