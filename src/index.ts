@@ -1000,7 +1000,6 @@ export function transformPostImports(
   return output;
 };
 
-
 export async function transform(
   root0: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
@@ -1011,33 +1010,4 @@ export async function transform(
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports, importLoader);
   return transformPostImports(root, rootDocLocation, accumulatedImports);
-};
-
-
-import {Arguments} from 'yargs';
-import configureAWS from './configureAWS';
-
-export async function renderMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region)
-  const rootDocLocation = pathmod.resolve(argv.template);
-  const content = fs.readFileSync(rootDocLocation);
-  const input = yaml.loadString(content, rootDocLocation);
-  // if (argv.environment) {
-  //   input.$envValues = {environment: argv.environment};
-  // }
-  const outputDoc = await transform(input, rootDocLocation);
-  const outputString = yaml.dump(outputDoc);
-  if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
-    console.log(outputString);
-  } else if (_.includes(['/dev/stderr', 'stderr'], argv.outfile)) {
-    process.stderr.write(outputString);
-    process.stderr.write('\n');
-  } else {
-    if (fs.existsSync(argv.outfile) && !argv.overwrite) {
-      logger.error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
-      return 1;
-    }
-    fs.writeFileSync(argv.outfile, outputString);
-  }
-  return 0;
 };

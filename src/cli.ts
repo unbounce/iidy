@@ -67,7 +67,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './index' | './demo';
+type LazyLoadModules = './cfn' | './index' | './demo' | './render';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -77,6 +77,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./cfn')[fnname](args);
     } else if (modName === './demo') {
       return require('./demo')[fnname](args);
+    } else if (modName === './render') {
+      return require('./render')[fnname](args);
     }
   }
 
@@ -94,7 +96,7 @@ const lazy: Commands = {
   createCreationChangesetMain: lazyLoad('createCreationChangesetMain'),
   executeChangesetMain: lazyLoad('executeChangesetMain'),
 
-  renderMain: lazyLoad('renderMain', './index'),
+  renderMain: lazyLoad('renderMain', './render'),
 
   estimateCost: lazyLoad('estimateCost'),
 
