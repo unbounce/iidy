@@ -115,11 +115,11 @@ export type ImportData = {
 }
 
 export type ImportType =
-  "ssm" | "ssm-path" | "file" | "s3" | "http" | "env" | "git" | "random" | "filehash";
+  "file" | "env" | "git" | "random" | "filehash" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
 // https://github.com/kimamula/ts-transformer-enumerate is an alternative to this
 // repetition. Could also use a keyboard macro.
 const importTypes: ImportType[] = [
-  "ssm", "ssm-path", "file", "s3", "http", "env", "git", "random", "filehash"];
+  "file", "env", "git", "random", "filehash", "cfn", "ssm", "ssm-path", "s3", "http"];
 const localOnlyImportTypes: ImportType[] = ["file", "env"];
 
 // npm:version npm:project-name, etc. with equivs for lein/mvn
@@ -298,6 +298,50 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
       }
     }
     throw new Error(`Invalid s3 uri ${location} under ${baseLocation}`);
+  },
+
+  cfn: async (location, baseLocation) => {
+    let resolvedLocation, StackName, field, fieldKey;
+    let data: any, doc: any;
+    [, field, resolvedLocation] = location.split(':');
+    [StackName, fieldKey] = resolvedLocation.split('/');
+    const cfn = new aws.CloudFormation();
+    const {Stacks} = await cfn.describeStacks({StackName}).promise();
+    if (Stacks && Stacks[0]) {
+      const stack = Stacks[0];
+      switch (field) {
+        case 'output':
+          const outputs = _.fromPairs(_.map(stack.Outputs, (output) => [output.OutputKey, output.OutputValue]));
+          data = fieldKey ? _.get(outputs, fieldKey) : outputs;
+          doc = data;
+          break;
+        case 'parameter':
+          const params = _.fromPairs(_.map(stack.Parameters, (p) => [p.ParameterKey, p.ParameterValue]));
+          data = fieldKey ? _.get(params, fieldKey) : params;
+          doc = data;
+          break;
+        case 'tag':
+          const tags = _.fromPairs(_.map(stack.Tags, (t) => [t.Key, t.Value]));
+          data = fieldKey ? _.get(tags, fieldKey) : tags;
+          doc = data;
+          break;
+        case 'resource':
+          const {StackResources} = await cfn.describeStackResources({StackName}).promise();
+          const resources = _.fromPairs(_.map(StackResources, (r) => [r.LogicalResourceId, r]));
+          data = fieldKey ? _.get(resources, fieldKey) : resources;
+          doc = data;
+          break;
+        case 'stack':
+          data = stack
+          doc = data;
+          break;
+        default:
+          throw new Error(`Invalid cfn $import: ${location}`);
+      }
+      return {resolvedLocation: location, data, doc};
+    } else {
+      throw new Error(`${location} not found`);
+    }
   },
 
   http: async (location, baseLocation) => {
