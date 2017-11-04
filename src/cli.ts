@@ -1,6 +1,9 @@
 import * as process from 'process';
 // We need to set this early because of https://github.com/aws/aws-sdk-js/pull/1391
 process.env.AWS_SDK_LOAD_CONFIG = '1';
+// Use bluebird promises globally. We need to load this prior to 'aws-sdk'
+import * as bluebird from 'bluebird';
+global.Promise = bluebird;
 
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
