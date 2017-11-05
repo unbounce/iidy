@@ -1034,10 +1034,12 @@ function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutpu
                 cli.blackBright(resourceChange.PhysicalResourceId)));
           } else {
             console.log(
-              sprintf('  %-17s %-30s %s',
+              sprintf('  %-17s %-30s %s %s',
                 cli.yellow('Modify'),
                 resourceChange.LogicalResourceId,
-                cli.blackBright(resourceChange.PhysicalResourceId)));
+                cli.yellow(resourceChange.Scope || ''),
+                cli.blackBright(resourceChange.PhysicalResourceId)
+              ));
           }
           break;
       }
