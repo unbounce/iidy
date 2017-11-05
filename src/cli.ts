@@ -53,8 +53,7 @@ export interface CfnStackCommands {
 
   estimateCost: Handler; // TODO fix inconsistent name
 
-  createUpdateChangesetMain: Handler;
-  createCreationChangesetMain: Handler;
+  createChangesetMain: Handler;
   executeChangesetMain: Handler;
   // TODO add an activate stack command wrapper
 }
@@ -95,8 +94,7 @@ const lazy: Commands = {
   getStackInstancesMain: lazyLoad('getStackInstancesMain'),
   deleteStackMain: lazyLoad('deleteStackMain'),
 
-  createUpdateChangesetMain: lazyLoad('createUpdateChangesetMain'),
-  createCreationChangesetMain: lazyLoad('createCreationChangesetMain'),
+  createChangesetMain: lazyLoad('createChangesetMain'),
   executeChangesetMain: lazyLoad('executeChangesetMain'),
 
   renderMain: lazyLoad('renderMain', './render'),
@@ -172,7 +170,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         description: 'optional description of changeset'
       })
       .option('stack-name', stackNameOpt),
-    wrapMainHandler(commands.createUpdateChangesetMain))
+    wrapMainHandler(commands.createChangesetMain))
 
     .command(
     'exec-changeset             <argsfile> <changesetName>',
@@ -181,18 +179,6 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.executeChangesetMain))
-
-    .command(
-    'create-stack-via-changeset <argsfile>',
-    description('create a cfn changeset to create a new stack'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('changeset-name', {
-        type: 'string', default: 'initial',
-        description: 'name for initial changeset'
-      })
-      .option('stack-name', stackNameOpt),
-    wrapMainHandler(commands.createCreationChangesetMain))
 
     .command('\t', '') // fake command to add a line-break to the help output
 

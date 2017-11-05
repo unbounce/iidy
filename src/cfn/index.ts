@@ -1026,8 +1026,10 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const createChangeSetInput =
       await stackArgsToCreateChangeSetInput(ChangeSetName, this.stackArgs, this.argsfile, this.stackName);
     const StackName = createChangeSetInput.StackName;
-    createChangeSetInput.ChangeSetType = this.argv.changesetType;
     createChangeSetInput.Description = this.argv.description;
+
+    const stackExists = await this._cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
+    createChangeSetInput.ChangeSetType = stackExists ? 'UPDATE' : 'CREATE';
 
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
 
@@ -1052,6 +1054,11 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
 
     await showPendingChangesets(StackName);
     // TODO diff createChangeSetInput.TemplateBody
+    if (!stackExists) {
+      console.log('Your new stack is now in REVIEW_IN_PROGRESS state. To create the resources run the following \n  ' +
+        `iidy exec-changeset ${this.argsfile} ${ChangeSetName}`);
+      console.log();
+    }
     showFinalComandSummary(true);
     return 0;
   }
@@ -1126,13 +1133,8 @@ export const updateStackMain = wrapCommandCtor(UpdateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
-export async function createUpdateChangesetMain(argv: Arguments): Promise<number> {
-  argv.changesetType = 'UPDATE';
-  return new CreateChangeSet(argv, await loadStackArgs(argv)).run();
-};
 
-export async function createCreationChangesetMain(argv: Arguments): Promise<number> {
-  argv.changesetType = 'CREATE';
+export async function createChangesetMain(argv: Arguments): Promise<number> {
   return new CreateChangeSet(argv, await loadStackArgs(argv)).run();
 };
 
@@ -1172,9 +1174,9 @@ export async function describeStackMain(argv: Arguments): Promise<number> {
   const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
   const stackPromise = getStackDescription(StackName);
+  await stackPromise; // we wait here in case the stack doesn't exist: better error messages this way.
   const stackEventsPromise = getAllStackEvents(StackName);
 
-  console.log();
   const stack = await summarizeStackDefinition(StackName, region, true, stackPromise);
   const StackId = stack.StackId as string;
   console.log();
