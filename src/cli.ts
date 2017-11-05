@@ -204,6 +204,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('watch a stack that is already being created or updated'),
     (args) => args
       .demandCommand(0, 0)
+      .option('inactivity-timeout', {
+        type: 'number', default: (60 * 3),
+        description: 'how long to wait for events when the stack is in a terminal state'
+      })
       .usage('Usage: iidy watch-stack <stackname>'),
     wrapMainHandler(commands.watchStackMain))
 

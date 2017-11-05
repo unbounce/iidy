@@ -271,7 +271,8 @@ async function getAllStackEvents(StackName: string, includeSubStacks = true, sub
   return events;
 }
 
-async function watchStack(StackName: string, startTime: Date, pollInterval = 2) {
+const DEFAULT_EVENT_POLL_INTERVAL = 2;
+async function watchStack(StackName: string, startTime: Date, pollInterval = DEFAULT_EVENT_POLL_INTERVAL, inactivityTimeout = 0) {
   // TODO passthrough of statusPadding
   console.log(formatSectionHeading(`Live Stack Events (${pollInterval}s poll):`))
 
@@ -287,16 +288,29 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = 2) 
   // to ensure calcElapsedSeconds is accurate in the face of innacurate local clocks
   const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
   let lastEvTimestamp: Date = new Date();    // might be off because of drift
+  let DONE = false;
 
   spinner.start();
-  const spinnerInterval = setInterval(() => {
+
+  const spinnerInterval = setInterval(async () => {
+    const secondsSinceLastEvent = calcElapsedSeconds(lastEvTimestamp);
     spinner.text = cli.xterm(240)(
       `${calcElapsedSeconds(startTime)} seconds elapsed total.`
-      + ` ${calcElapsedSeconds(lastEvTimestamp)} since last event.`);
+      + ` ${secondsSinceLastEvent} since last event.`);
+
+    if (inactivityTimeout > 0 && secondsSinceLastEvent > inactivityTimeout) {
+      const stack = await getStackDescription(StackName);
+      if (_.includes(terminalStackStates, stack.StackStatus)) {
+        clearInterval(spinnerInterval);
+        DONE = true;
+        spinner.stop();
+        logger.info('Timed out due to inactivity');
+      }
+
+    }
   }, 1000);
 
   const subStacksToIgnore = new Set();
-  let DONE = false;
   while (!DONE) {
     let evs = await getAllStackEvents(StackName, true, subStacksToIgnore);
     const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
@@ -1202,7 +1216,7 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
   await showStackEvents(StackId, 10);
 
   console.log();
-  await watchStack(StackId, startTime);
+  await watchStack(StackId, startTime, DEFAULT_EVENT_POLL_INTERVAL, argv.inactivityTimeout);
   console.log();
   await summarizeCompletedStackOperation(StackId);
   return 0;
