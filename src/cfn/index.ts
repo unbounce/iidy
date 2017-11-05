@@ -872,6 +872,7 @@ abstract class AbstractCloudFormationStackCommand {
   protected readonly _expectedFinalStackStatus: string[]
   protected readonly _showTimesInSummary: boolean = true;
   protected readonly _showPreviousEvents: boolean = true;
+  protected _previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>
   protected readonly _watchStackEvents: boolean = true;
 
   constructor(readonly argv: Arguments, readonly stackArgs: StackArgs) {
@@ -885,6 +886,9 @@ abstract class AbstractCloudFormationStackCommand {
     await configureAWS(this.profile, this.region)
     this.region = def(getCurrentAWSRegion(), this.region);
     this._cfn = new aws.CloudFormation()
+    if (this._showPreviousEvents) {
+      this._previousStackEventsPromise = getAllStackEvents(this.stackName);
+    }
   }
 
   async _updateStackTerminationPolicy() {
@@ -932,13 +936,12 @@ abstract class AbstractCloudFormationStackCommand {
 
     // we use StackId below rather than StackName to be resilient to deletions
     const stackPromise = getStackDescription(stackId);
-    const stackEventsPromise = getAllStackEvents(stackId);
     await summarizeStackDefinition(stackId, this.region, this._showTimesInSummary, stackPromise);
 
     if (this._showPreviousEvents) {
       console.log();
       console.log(formatSectionHeading('Previous Stack Events (max 10):'))
-      await showStackEvents(stackId, 10, stackEventsPromise);
+      await showStackEvents(stackId, 10, this._previousStackEventsPromise);
     }
 
     console.log();
