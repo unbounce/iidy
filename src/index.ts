@@ -776,7 +776,7 @@ function visit$map(node: yaml.$map, path: string, env: Env): AnyButUndefined {
   const {template, items} = node.data
   // TODO handle nested maps
   const varName = node.data.var || 'item';
-  const mapped = _.map(node.data.items, (item0: any, idx: number) => {
+  const mapped = _.map(visitNode(node.data.items, path, env), (item0: any, idx: number) => {
     // TODO improve stackFrame details
     const subPath = appendPath(path, idx.toString());
     const item = visitNode(item0, subPath, env); // visit pre expansion
@@ -812,7 +812,14 @@ function visit$concatMap(node: yaml.$concatMap, path: string, env: Env): AnyButU
 }
 
 function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButUndefined {
-  return visitNode(_liftKVPairs(node.data), path, env);
+  let input: any = node.data; // TODO tighten this type
+  if (input.length === 1 && input[0] instanceof yaml.$include) {
+    input = visit$include(input[0], path, env);
+  }
+  if (input.length > 0 && _.has(input[0], 'Key') && _.has(input[0], 'Value')) {
+    input = _.map(input, (i) => ({key: _.get(i, 'Key') as string, value: _.get(i, 'Value')}))
+  }
+  return visitNode(_liftKVPairs(input), path, env);
 }
 
 function visit$mapListToHash(node: yaml.$mapListToHash, path: string, env: Env): AnyButUndefined {
