@@ -44,8 +44,8 @@ fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
 
 prepare_release : check_working_dir_is_clean test  ## Prepare a new public release. Requires clean git workdir
-
-
+	cd dist && for OS in linux macos; do mv iidy-$$OS iidy; zip iidy-$${OS}-amd64.zip iidy; done
+	rm -f dist/iidy
 ################################################################################
 ## Plumbing
 
