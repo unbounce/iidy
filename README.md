@@ -56,7 +56,7 @@ when you run into errors with a CloudFormation stack:
 
 ### MacOS: Binary Install via Homebrew
 
-Use Unbounce's custom Homebrew Tap to install iidy.
+Use Unbounce's custom Homebrew Tap to install iidy.  This is the preferred method for macos.
 
 ```
 brew tap unbounce/homebrew-taps
@@ -64,26 +64,22 @@ brew update
 brew install iidy
 ```
 
-### Other distributions
-
-* Binary installation. This is the preferred method.
+### Binary Installation on Other Platforms
 ```
 # Grab the appropriate binary from the releases page.
-# (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.6.0-rc1/iidy-macos.gz # or -linux.gz
-
-cd ~/Downloads                # or wherever Linux puts it
-gunzip iidy*.gz
-chmod +x iidy*
-mv iidy* /usr/local/bin/iidy   # or somewhere more appropriate
+wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc1/iidy-linux-amd64.zip
+# or wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc1/iidy-macos-amd64.zip
+unzip iidy*.zip
+chmod +x iidy
+mv iidy /usr/local/bin/   # or somewhere more appropriate
 ```
 
-* Installing from source if you have node installed.
-  Counter-intuitively, this requires more disk space than the binary
-  install.
+### Installation from Source
+
+Counter-intuitively, this requires more disk space than the binary
+install. You need Node 7+ and npm 4+ installed.
 
 ```
-# You need Node 7+ and npm 4+ installed.
 git clone git@github.com:unbounce/iidy.git
 cd iidy
 npm install . && npm run build # to compile our source first
