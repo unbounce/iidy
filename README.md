@@ -1,7 +1,7 @@
 # iidy (Is it done yet?) -- a CloudFormation CLI tool
 
 (Note: this is written assuming an Unbounce developer is the reader and we
-currently use Ansible.)
+previously used Ansible for orchestrating CloudFormation.)
 
 `iidy` improves the developer experience with CloudFormation.
 
@@ -43,8 +43,7 @@ Yaml templates. It includes an optional yaml pre-processor that:
 ## Pronunciation 
 
 iidy is pronounced "eye-dee", like the audience's response to Cab Calloway in Minnie the
-Moocher:
-https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
+Moocher: https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
 
 ## Demo
 [![asciicast](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E.png)](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E)
@@ -65,15 +64,13 @@ brew update
 brew install iidy
 ```
 
-Note that, due to the current filename scheme, you will need to call `iidy-macos` in your terminal.
-
 ### Other distributions
 
 * Binary installation. This is the preferred method.
 ```
 # Grab the appropriate binary from the releases page.
 # (Wget won't work while this is a private repo)
-open https://github.com/unbounce/iidy/releases/download/v1.4.0/iidy-macos.gz # or -linux.gz
+open https://github.com/unbounce/iidy/releases/download/v1.6.0-rc1/iidy-macos.gz # or -linux.gz
 
 cd ~/Downloads                # or wherever Linux puts it
 gunzip iidy*.gz
@@ -102,20 +99,22 @@ $ iidy help
 iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
 Commands:
+
   create-stack  <argsfile>                               create a cfn stack based on stack-args.yaml
   update-stack  <argsfile>                               update a cfn stack based on stack-args.yaml
   estimate-cost <argsfile>                               estimate aws costs based on stack-args.yaml
 
-  create-changeset           <changesetName> <argsfile>  create a cfn changeset based on stack-args.yaml
-  exec-changeset             <changesetName> <argsfile>  execute a cfn changeset based on stack-args.yaml
-  create-stack-via-changeset <changesetName> <argsfile>  create a cfn changeset to create a new stack
+  create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
+  exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
 
-  describe-stack     <stackname>                         describe a stack
-  watch-stack        <stackname>                         watch a stack that is already being created or updated
-  delete-stack       <stackname>                         delete a stack (after confirmation)
-  get-stack-template <stackname>                         download the template of a live stack
+  describe-stack      <stackname>                        describe a stack
+  watch-stack         <stackname>                        watch a stack that is already being created or updated
+  delete-stack        <stackname>                        delete a stack (after confirmation)
+  get-stack-template  <stackname>                        download the template of a live stack
   get-stack-instances <stackname>                        list the ec2 instances of a live stack
   list-stacks                                            list all stacks within a region
+
+  param                                                  sub commands for working with AWS SSM Parameter Store
 
 Additional Commands:
   render <template>                                      pre-process and render cloudformation yaml template
@@ -123,12 +122,15 @@ Additional Commands:
   completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
 AWS Options
-  --region   AWS region
-  --profile  AWS profile
+  --region   AWS region. Can also be set via --environment & stack-args.yaml:Region
+  --profile  AWS profile.  Can also be set via --environment & stack-args.yaml:Profile
+  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries
 
 Options:
-  -v, --version  Show version number
-  -h, --help     Show help
+  --environment, -e  used to load environment based settings: AWS Profile, Region, etc.
+  --debug            log debug information to stderr
+  -v, --version  show version number
+  -h, --help     show help
 
 ```
 
@@ -385,28 +387,41 @@ commands in `package.json` for details about the build process.
 MIT.
 
 ## Changelog
+* [v1.6.0-rc1](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc1)
+  Getting ready for the biggest release yet -- November 5, 2017
 
-* v1.4.0 get-stack-instances command, improved error reporting --
-  August 24, 2017
+* [v1.5.0](https://github.com/unbounce/iidy/releases/tag/v1.5.0) A bit
+  of polish plus dependency updates -- September 1, 2017
 
-* v1.3.3 Bug fixes and input validation -- August 22, 2017
+* [v1.4.0](https://github.com/unbounce/iidy/releases/tag/v1.4.0)
+  get-stack-instances command, improved error reporting -- August 24,
+  2017
 
-* v1.3.2 Internal refactoring -- August 15, 2017
+* [v1.3.3](https://github.com/unbounce/iidy/releases/tag/v1.3.3) Bug
+  fixes and input validation -- August 22, 2017
 
-* v1.3.1 Added time since last event to the event polling output. -- August 11, 2017
+* [v1.3.2](https://github.com/unbounce/iidy/releases/tag/v1.3.2)
+  Internal refactoring -- August 15, 2017
 
-* v1.3.0 More robust time handling / event filtering to protect
-  against local clock drift. Also there's now a Dockerfile for
-  creating a small Alpine based container image. -- August 10, 2017
+* [v1.3.1](https://github.com/unbounce/iidy/releases/tag/v1.3.1) Added
+  time since last event to the event polling output. -- August 11,
+  2017
 
-* v1.2.0: CLI output is prettier, new `demo` command, `--role-arn`
-  option for `delete-stack`, add missing `prepublish` entry to
-  `package.json`, improved handling of aws region in cli output. --
-  August 8, 2017
+* [v1.3.0](https://github.com/unbounce/iidy/releases/tag/v1.3.0) More
+  robust time handling / event filtering to protect against local
+  clock drift. Also there's now a Dockerfile for creating a small
+  Alpine based container image. -- August 10, 2017
 
-* v1.1.0: Docs, examples, and improvements -- August 3, 2017
+* [v1.2.0](https://github.com/unbounce/iidy/releases/tag/v1.2.0) CLI
+  output is prettier, new `demo` command, `--role-arn` option for
+  `delete-stack`, add missing `prepublish` entry to `package.json`,
+  improved handling of aws region in cli output. -- August 8, 2017
 
-* v1.0.0: Initial Release -- August 1, 2017
+* [v1.1.0](https://github.com/unbounce/iidy/releases/tag/v1.1.0) Docs,
+  examples, and improvements -- August 3, 2017
+
+* [v1.0.0](https://github.com/unbounce/iidy/releases/tag/v1.0.0)
+  Initial Release -- August 1, 2017
 
 
 ## Roadmap
