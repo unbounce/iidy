@@ -13,11 +13,12 @@ DEPS_STATEFILE = .make/done_deps
 TESTS_STATEFILE = .make/done_tests
 DOCKER_STATEFILE = .make/done_docker
 BUILD_ARTIFACTS = dist/iidy-macos dist/iidy-linux
+RELEASE_PACKAGES = dist/iidy-macos-amd64.zip dist/iidy-linux-amd64.zip
 
 DOCKER_BUILD_ARGS = --force-rm
 ##########################################################################################
 ## Top level targets. Our public api. See Plumbing section for the actual work
-.PHONY : prereqs deps build docker_build test clean fullclean release help
+.PHONY : prereqs deps build docker_build test clean fullclean package prepare_release help
 
 help: ## Display this message
 	@grep -E '^[a-zA-Z_-]+ *:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -34,18 +35,22 @@ docker_build : $(DOCKER_STATEFILE) ## Build and test docker images
 
 test : $(TESTS_STATEFILE)	  ## Run functional tests
 
-# TODO script version bump & upload of the binaries
-#release: check_working_dir_is_clean clean deps build test
-
 clean :			          ## Clean the dist/ directory (binaries, etc.)
 	rm -rf dist/* lib/*
 
 fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
 
-prepare_release : check_working_dir_is_clean test  ## Prepare a new public release. Requires clean git workdir
-	cd dist && for OS in linux macos; do mv iidy-$$OS iidy; zip iidy-$${OS}-amd64.zip iidy; done
-	rm -f dist/iidy
+package: $(RELEASE_PACKAGES)
+	@git diff --quiet --ignore-submodules HEAD || echo '\x1b[0;31mWARNING: git workding dir not clean\x1b[0m'
+	@ls -alh dist/*zip
+	@echo open dist/
+
+prepare_release : check_working_dir_is_clean test package  ## Prepare a new public release. Requires clean git workdir
+
+# TODO script version bump & upload of the binaries
+#release: check_working_dir_is_clean clean deps build test
+
 ################################################################################
 ## Plumbing
 
@@ -68,6 +73,15 @@ $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 	./node_modules/.bin/mocha -- lib/tests/
 	bin/iidy help | grep argsfile > /dev/null
 	npm run pkg-binaries
+
+$(RELEASE_PACKAGES) : $(BUILD_ARTIFACTS)
+	cd dist && \
+	for OS in linux macos; do \
+	  cp iidy-$$OS iidy; \
+	  zip iidy-$${OS}-amd64.zip iidy;\
+	  shasum -p -a 256 iidy-$${OS}-amd64.zip; \
+	done
+	rm -f dist/iidy
 
 $(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 # initial sanity checks:
@@ -105,5 +119,4 @@ $(DOCKER_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	@rm -rf /tmp/iidy
 
 check_working_dir_is_clean :
-	git diff --quiet --ignore-submodules HEAD
-
+	@git diff --quiet --ignore-submodules HEAD || ( echo '\x1b[0;31mERROR: git workding dir not clean\x1b[0m'; false )
