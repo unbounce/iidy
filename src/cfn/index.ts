@@ -690,6 +690,22 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
   }
 }
 
+export async function addDefaultNotificationArn(args: StackArgs): Promise<StackArgs> {
+  const ssm = new aws.SSM();
+  const ssmLookup = await ssm.getParameter(
+    {Name: '/iidy/default-notification-arn', WithDecryption: true}).promise().catch(() => null);
+  if (ssmLookup && ssmLookup.Parameter && ssmLookup.Parameter.Value) {
+    const TopicArn = ssmLookup.Parameter.Value;
+    const sns = new aws.SNS();
+    if (await sns.getTopicAttributes({TopicArn}).promise().return(true).catchReturn(false)) {
+      args.NotificationARNs = (args.NotificationARNs || []).concat(TopicArn);
+    } else {
+      logger.warn(
+        `iidy's default NotificationARN set in this region is invalid: ${TopicArn}`);
+    }
+  }
+  return args;
+}
 
 export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
   // TODO json schema validation
@@ -697,7 +713,7 @@ export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
   if (argv.clientRequestToken) {
     args.ClientRequestToken = argv.clientRequestToken;
   }
-  return args
+  return addDefaultNotificationArn(args);
 }
 
 export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
