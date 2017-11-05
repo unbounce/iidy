@@ -67,9 +67,9 @@
     "chai": "^4.1.2",
     "intercept-stdout": "^0.1.2",
     "mocha": "^3.5.3",
-    "mocha-typescript": "^1.1.9",
-    "pkg": "^4.2.5",
-    "tslint": "^5.7.0",
-    "typescript": "^2.5.3"
+    "mocha-typescript": "^1.1.12",
+    "pkg": "^4.2.6",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.1"
   }
 }
