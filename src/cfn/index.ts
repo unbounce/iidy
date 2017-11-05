@@ -1034,15 +1034,12 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
 
     const _changeSetResult = await this._cfn.createChangeSet(createChangeSetInput).promise();
-
-    await this._waitForChangeSetCreateComplete();
-
+    await this._waitForChangeSetCreateComplete().catch(() => null); // catch for failed changesets
     const changeSet = await this._cfn.describeChangeSet({ChangeSetName, StackName}).promise();
     if (changeSet.Status === 'FAILED') {
-      logger.error(changeSet.StatusReason as string);
-      logger.info('Deleting changeset.')
+      logger.error(changeSet.StatusReason as string, 'Deleting failed changeset.');
       await this._cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
-      throw new Error('ChangeSet failed to create');
+      return 1;
     }
     console.log();
 
@@ -1056,7 +1053,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     // TODO diff createChangeSetInput.TemplateBody
     if (!stackExists) {
       console.log('Your new stack is now in REVIEW_IN_PROGRESS state. To create the resources run the following \n  ' +
-        `iidy exec-changeset ${this.argsfile} ${ChangeSetName}`);
+        `iidy exec-changeset --stack-name ${this.stackName} ${this.argsfile} ${ChangeSetName}`);
       console.log();
     }
     showFinalComandSummary(true);
@@ -1129,9 +1126,35 @@ const wrapCommandCtor =
     }
 
 export const createStackMain = wrapCommandCtor(CreateStack);
-export const updateStackMain = wrapCommandCtor(UpdateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
+
+export async function updateStackMain(argv: Arguments): Promise<number> {
+  if (argv.changeset) {
+    const stackArgs = await loadStackArgs(argv);
+    const changeSetRunner = new CreateChangeSet(argv, stackArgs);
+    const createChangesetResult = await changeSetRunner.run();
+    if (createChangesetResult > 0) {
+      return createChangesetResult;
+    }
+    const resp = await inquirer.prompt(
+      {
+        name: 'confirmed',
+        type: 'confirm', default: false,
+        message: `Do you want to execute this changeset now?`
+      })
+    if (resp.confirmed) {
+      argv.changesetName = changeSetRunner._changeSetName;
+      return new ExecuteChangeSet(argv, stackArgs).run();
+    } else {
+      console.log(`You can do so later using\n`
+        + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner._changeSetName}`);
+      return 0;
+    }
+  } else {
+    return new UpdateStack(argv, await loadStackArgs(argv)).run();
+  }
+};
 
 
 export async function createChangesetMain(argv: Arguments): Promise<number> {

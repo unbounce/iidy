@@ -144,6 +144,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .usage('Usage: iidy update-stack <stack-args.yaml>')
       .option('stack-name', stackNameOpt)
+      .option('changeset', {
+        type: 'boolean', default: false,
+        description: 'review & confirm changes via a changeset'
+      })
       .option('stack-policy-during-update', {
         type: 'string', default: null,
         description: 'override original stack-policy for this update only'
