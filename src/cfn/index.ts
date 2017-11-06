@@ -1023,7 +1023,7 @@ function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutpu
             sprintf('  %-17s %-30s %s',
               cli.red('Remove'),
               resourceChange.LogicalResourceId,
-              cli.blackBright(resourceChange.PhysicalResourceId)));
+              cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)));
           break;
         case 'Modify':
           if (resourceChange.Replacement === 'True') {
@@ -1031,14 +1031,15 @@ function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutpu
               sprintf('  %-17s %-30s %s',
                 cli.red('Replace'),
                 resourceChange.LogicalResourceId,
-                cli.blackBright(resourceChange.PhysicalResourceId)));
+                cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)
+              ));
           } else {
             console.log(
               sprintf('  %-17s %-30s %s %s',
                 cli.yellow('Modify'),
                 resourceChange.LogicalResourceId,
                 cli.yellow(resourceChange.Scope || ''),
-                cli.blackBright(resourceChange.PhysicalResourceId)
+                cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)
               ));
           }
           break;
