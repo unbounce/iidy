@@ -18,6 +18,6 @@ FROM alpine:3.6
 
 RUN apk --no-cache add libstdc++
 
-COPY --from=0 /tmp/iidy/dist/iidy /iidy
+COPY --from=0 /tmp/iidy/dist/iidy /usr/local/bin/iidy
 
-ENTRYPOINT ["/iidy"]
+ENTRYPOINT ["/usr/local/bin/iidy"]
