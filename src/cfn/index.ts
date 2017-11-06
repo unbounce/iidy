@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as pathmod from 'path';
 import * as process from 'process';
 import * as child_process from 'child_process';
+import * as url from 'url';
 
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
@@ -540,6 +541,14 @@ async function loadCFNTemplate(location: string, baseLocation: string):
     );
   }
   if (!shouldRender && importData.importType === 's3') {
+    const s3 = new aws.S3();
+    const {host, path} = url.parse(importData.resolvedLocation);
+    if (!host || !path || path === '/') {
+      throw new Error(`Invalid S3 Template url: ${location}`);
+    } else {
+      return {TemplateURL: s3.getSignedUrl('getObject', {Bucket: host, Key: path.slice(1)})};
+    }
+  } else if (!shouldRender && importData.importType === 'http') {
     return {TemplateURL: importData.resolvedLocation};
   } else {
     const body = shouldRender
