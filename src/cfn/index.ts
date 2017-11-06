@@ -18,6 +18,7 @@ import * as wrapAnsi from 'wrap-ansi';
 import * as ora from 'ora';
 import * as inquirer from 'inquirer';
 import * as nameGenerator from 'project-name-generator';
+import * as tmp from 'tmp';
 
 let getStrippedLength: (s: string) => number;
 // TODO declare module for this:
@@ -1088,7 +1089,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     }
     console.log();
 
-    console.log('Console URL:',
+    console.log('AWS Console URL for full changeset review:',
       cli.blackBright(
         `https://${this.region}.console.aws.amazon.com/cloudformation/home?region=${this.region}#`
         + `/changeset/detail?stackId=${querystring.escape(changeSet.StackId as string)}`
@@ -1174,14 +1175,73 @@ export const createStackMain = wrapCommandCtor(CreateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
+function parseTemplateBody(TemplateBody: string): object {
+  if (TemplateBody.match(/^ *\{/) !== null) {
+    return JSON.parse(TemplateBody);
+  } else {
+    return yaml.loadString(TemplateBody, '');
+  }
+}
+
+export async function diffStackTemplates(StackName: string, stackArgs: StackArgs, argsfile: string) {
+  const cfn = new aws.CloudFormation();
+  const {TemplateBody} = await cfn.getTemplate({StackName, TemplateStage: 'Original'}).promise();
+  if (TemplateBody) {
+    let oldTemplate = parseTemplateBody(TemplateBody);
+    const {TemplateBody: newTemplateBody, TemplateURL: newTemplateURL} = await loadCFNTemplate(stackArgs.Template, argsfile);
+    let newTemplate: object;
+    if (newTemplateURL) {
+      const importData = await readFromImportLocation(newTemplateURL, argsfile);
+      newTemplate = importData.doc;
+    } else if (newTemplateBody) {
+      newTemplate = parseTemplateBody(newTemplateBody);
+    } else {
+      throw new Error('Invalid template found');
+    }
+
+    console.log();
+    const tmpdir = tmp.dirSync();
+    const oldName = pathmod.join(tmpdir.name, 'old');
+    const newName = pathmod.join(tmpdir.name, 'new');
+    try {
+      fs.writeFileSync(oldName, yaml.dump(oldTemplate));
+      fs.writeFileSync(newName, yaml.dump(newTemplate));
+      const res = child_process.spawnSync(
+        `git diff --no-index --color -- ${oldName} ${newName}`, {
+          shell: '/bin/bash',
+          stdio: [0, 1, 2]
+        });
+    } catch (e) {
+      throw e;
+    } finally {
+      fs.unlinkSync(oldName);
+      fs.unlinkSync(newName);
+      fs.rmdirSync(tmpdir.name)
+    }
+  }
+}
+
 export async function updateStackMain(argv: Arguments): Promise<number> {
   if (argv.changeset) {
     const stackArgs = await loadStackArgs(argv);
+    const region = getCurrentAWSRegion();
+    const StackName = argv.stackName || stackArgs.StackName;
+    const stack = await summarizeStackDefinition(StackName, region);
     const changeSetRunner = new CreateChangeSet(argv, stackArgs);
+
+    if (argv.diff) {
+      console.log()
+      console.log(formatSectionHeading('Stack Template Diff:'))
+      await diffStackTemplates(changeSetRunner.stackName, stackArgs, argv.argsfile);
+      console.log()
+    }
+
     const createChangesetResult = await changeSetRunner.run();
     if (createChangesetResult > 0) {
       return createChangesetResult;
     }
+    console.log()
+
     const resp = await inquirer.prompt(
       {
         name: 'confirmed',

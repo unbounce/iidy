@@ -148,6 +148,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'boolean', default: false,
         description: 'review & confirm changes via a changeset'
       })
+      .option('diff', {
+        type: 'boolean', default: true,
+        description: 'diff & review changes to the template body as part of changeset review'
+      })
       .option('stack-policy-during-update', {
         type: 'string', default: null,
         description: 'override original stack-policy for this update only'
