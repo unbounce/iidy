@@ -432,10 +432,15 @@ async function summarizeCompletedStackOperation(StackId: string, stackPromise?: 
       _.max(_.map(resources, r => r.LogicalResourceId.length)) as number,
       MAX_PADDING);
 
+    const resourceTypePadding = Math.min(
+      _.max(_.map(resources, r => r.ResourceType.length)) as number,
+      MAX_PADDING);
+
     for (const resource of resources) {
       console.log(
         formatLogicalId(sprintf(` %-${idPadding}s`, resource.LogicalResourceId)),
-        cli.blackBright(resource.PhysicalResourceId)
+        cli.blackBright(sprintf(`%-${resourceTypePadding}s`, resource.ResourceType)),
+        cli.blackBright(resource.PhysicalResourceId),
       );
     }
   }
@@ -1020,37 +1025,41 @@ function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutpu
   for (const change of changeSet.Changes || []) {
     if (change.ResourceChange) {
       const resourceChange = change.ResourceChange;
+      const sprintfTemplate = '  %-17s %-30s %s';
       switch (resourceChange.Action) {
         case 'Add':
           console.log(
-            sprintf('  %-17s %-30s %s',
+            sprintf(sprintfTemplate,
               cli.green('Add'),
               resourceChange.LogicalResourceId,
               cli.blackBright(resourceChange.ResourceType)));
           break;
         case 'Remove':
           console.log(
-            sprintf('  %-17s %-30s %s',
+            sprintf(sprintfTemplate,
               cli.red('Remove'),
               resourceChange.LogicalResourceId,
               cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)));
           break;
         case 'Modify':
-          if (resourceChange.Replacement === 'True') {
+          if (_.includes(['True', 'Conditional'], resourceChange.Replacement)) {
             console.log(
-              sprintf('  %-17s %-30s %s',
-                cli.red('Replace'),
+              sprintf(sprintfTemplate,
+                cli.red('Replace' + (resourceChange.Replacement === 'Conditional' ? '?' : '')),
                 resourceChange.LogicalResourceId,
                 cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)
               ));
           } else {
             console.log(
-              sprintf('  %-17s %-30s %s %s',
+              sprintf(sprintfTemplate,
                 cli.yellow('Modify'),
                 resourceChange.LogicalResourceId,
                 cli.yellow(resourceChange.Scope || ''),
                 cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)
               ));
+          }
+          if (resourceChange.Details) {
+            console.log(cli.blackBright(yaml.dump(resourceChange.Details)));
           }
           break;
       }
