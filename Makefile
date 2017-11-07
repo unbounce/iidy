@@ -1,6 +1,6 @@
 rfind = $(shell find '$(1)' -name '$(2)')
 
-# TODO add this back in: Makefile 
+# TODO add this back in: Makefile
 SRC_FILES := src/index.ts \
 	$(call rfind,src,[^.]*.ts) \
 	$(call rfind,src,[^.]*.js) \
@@ -41,9 +41,21 @@ clean :			          ## Clean the dist/ directory (binaries, etc.)
 fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
 
+package: SHELL:=/bin/bash
 package: $(RELEASE_PACKAGES)
-	@git diff --quiet --ignore-submodules HEAD || echo '\x1b[0;31mWARNING: git workding dir not clean\x1b[0m'
+	@git diff --quiet --ignore-submodules HEAD || echo -e '\x1b[0;31mWARNING: git workding dir not clean\x1b[0m'
+	@echo
 	@ls -alh dist/*zip
+	@shasum -p -a 256 dist/*
+	@echo
+	@echo Changelog:
+	@ { \
+	  IFS=":" read -r first second; \
+	  echo git log $${first}...$${second}; echo ; \
+	  git log $${first}...$${second} \
+	  --pretty=format:'<li> <a href="http://github.com/unbounce/iidy/commit/%H">view commit</a> %s</li> '; \
+	  } < <(git tag | tail -n2 | paste -sd':' -)
+	@echo
 	@echo open dist/
 
 prepare_release : check_working_dir_is_clean test package  ## Prepare a new public release. Requires clean git workdir
