@@ -511,10 +511,19 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
   if (_.isUndefined(policy)) {
     return {};
   } else if (_.isString(policy)) {
+    // TODO dry this and loadCfnTemplate up
     const location = policy;
     const shouldRender = (location.trim().indexOf('render:') === 0);
     const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
     if (!shouldRender && importData.importType === 's3') {
+      const s3 = new aws.S3();
+      const {host, path} = url.parse(importData.resolvedLocation);
+      if (!host || !path || path === '/') {
+        throw new Error(`Invalid S3 Template url: ${location}`);
+      } else {
+        return {StackPolicyURL: s3.getSignedUrl('getObject', {Bucket: host, Key: path.slice(1)})};
+      }
+    } else if (!shouldRender && importData.importType === 'http') {
       return {StackPolicyURL: importData.resolvedLocation};
     } else {
       return {
@@ -536,6 +545,7 @@ async function loadCFNTemplate(location: string, baseLocation: string):
   if (_.isUndefined(location)) {
     return {};
   }
+  // TODO dry this and loadCFNStackPolicy up
   const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
   const shouldRender = (location.trim().indexOf('render:') === 0);
   if (!shouldRender && importData.data.indexOf('$imports:') > -1) {
