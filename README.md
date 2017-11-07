@@ -244,53 +244,7 @@ $ iidy delete-stack iidy-demo
 
 ### Creating or Executing CloudFormation Changesets
 
-```
-$ tree examples/hello-world
-examples/hello-world
-├── stack-args.yaml         # see above
-├── cfn-template.yaml # a vanilla cloudformation template
-
-$ cd examples/hello-world/
-
-$ cat stack-args.yaml
-StackName: iidy-demo
-Template: ./cfn-template.yaml # details are irrelevant for the demo
-Tags:
-  owner: tavis
-  project: iidy-demo
-  environment: development
-  lifetime: short
-
-$ iidy create-stack-via-changeset initialset stack-args.yaml
-# ... lots of useful output about what iidy and CloudFormation are doing ...
-
-$ iidy describe-stack iidy-demo
-# ... a complete description of the pending stack
-
-$ iidy exec-changeset initialset stack-args.yaml
-# ... lots of useful output about what iidy and CloudFormation are doing ...
-
-$ iidy list-stacks | grep iidy-demo
-Wed Aug 02 2017 00:51:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
-
-# edit something in stack-args to demo a simple update-stack
-sed s/tavis/Tavis/ stack-args.yaml > stack-args2.yaml
-
-$ iidy create-changeset change1 stack-args2.yaml
-# ... lots of useful output about what iidy and CloudFormation are doing ...
-
-$ iidy execute-changeset change1 stack-args2.yaml
-# ... lots of useful output about what iidy and CloudFormation are doing ...
-
-$ iidy list-stacks | grep iidy-demo
-Wed Aug 02 2017 00:55:49 UPDATE_COMPLETE          iidy-demo owner=Tavis, environment=development, lifetime=short, project=iidy-demo
-
-$ iidy describe-stack iidy-demo
-# ... more details ...
-
-$ iidy delete-stack iidy-demo
-# ... confirm Yes ...
-```
+[![asciicast](https://asciinema.org/a/fl9ss0EYyPbDtFmSCaERC2YBU.png)](https://asciinema.org/a/fl9ss0EYyPbDtFmSCaERC2YBU)
 
 ### Using Parameter Store for secrets and ARNs
 
@@ -348,13 +302,11 @@ Mappings: !$ mappings
 * filehash
 * s3
 * https
-* environment variables
-* AWS SSM ParameterStore
 * git
 * random
-* literal
-
-
+* environment variables
+* CloudFormation stacks
+* AWS SSM ParameterStore
 
 ### Working With CloudFormation Yaml
 

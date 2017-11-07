@@ -1,0 +1,121 @@
+#!/usr/bin/env iidy demo
+$imports:
+  nameSuffix: random:dashed-name
+
+$defs:
+  StackName: "iidy-changeset-demo-{{ nameSuffix }}"
+
+files:
+  cfn-template1.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello ${Name}"
+
+  cfn-template2.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello Universe and ${Name}"
+      ButWait:
+        Type: AWS::CloudFormation::WaitConditionHandle
+
+  cfn-template3.yaml: |-
+    Parameters:
+      Name:
+        Type: String
+    Resources:
+      HelloWorld:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: !Sub "Hello Universe and ${Name}"
+
+  stack-args.yaml: |-
+    StackName: "{{ StackName }}"  # auto generated name
+    Template: ./cfn-template1.yaml
+
+    Parameters:
+      Name: world
+
+    Tags:
+      project: iidy-changeset-demo
+      environment: development
+      lifetime: short
+
+demo:
+  - setenv:
+      AWS_REGION: us-west-2
+      AWS_PROFILE: sandbox
+      "BASH_FUNC_highlight%%": |
+        () {
+          GREP_COLOR="1;32" grep --color -E "$1|$";
+        }
+
+  - banner: In this *live* demo we will create a simple stack, update it via changeset, and then delete it.
+  - sleep: 3
+  - ls .
+  - banner: "We'll use these files throughout the demo."
+  - sleep: 3
+  - banner: "'cfn-template1.yaml' is a very simple CloudFormation Template. It creates an SNS Topic."
+  - cat cfn-template1.yaml
+  - sleep: 3
+
+  - banner: |-
+      The file 'stack-args.yaml' specifies arguments for CloudFormation operations.
+  - sleep: 3
+  - cat stack-args.yaml
+  - sleep: 4
+
+  - iidy create-stack stack-args.yaml
+  - sleep: 1
+
+  - banner: "We can see it with `iidy list-stacks` or `iidy describe-stack {{ StackName }}`."
+  - "iidy list-stacks | grep {{ StackName }}"
+  - sleep: 1
+
+
+  - banner: "Let's switch to the second version of the template and update-stack with the --changeset option"
+  - sleep: 2
+
+  - highlight 'cfn-template.*' < stack-args.yaml
+  - "sed -i.bak s/cfn-template1/cfn-template2/ stack-args.yaml"
+  - highlight 'cfn-template.*' < stack-args.yaml
+  - sleep: 2
+  - "{ sleep 12; echo y; } | iidy update-stack --changeset stack-args.yaml"
+
+
+  - banner: "Let's run a second changeset."
+  - "sed -i.bak s/cfn-template2/cfn-template3/ stack-args.yaml"
+  - sleep: 1
+  - "{ sleep 12; echo y; } | iidy update-stack --changeset stack-args.yaml"
+
+  - banner: "Now we'll reset back to the original and explicitly create/exec the changeset in separate steps."
+  - "sed -i.bak s/cfn-template3/cfn-template1/ stack-args.yaml"
+  - sleep: 3
+  - "iidy create-changeset stack-args.yaml sample"
+  - banner: "A separate user with higher IAM privileges might do the following:"
+  - sleep: 3
+  - "iidy exec-changeset stack-args.yaml sample"
+  
+  - banner: "We can now see the full stack history via 'describe-stack'."
+  - sleep: 2
+  - iidy describe-stack {{ StackName }}
+  - sleep: 2
+
+  #- mv cfn-template.yaml.bak cfn-template.yaml
+
+  - sleep: 2
+  - banner: "We've created and updated the stack. Time to delete it."
+  - sleep: 1
+  - "iidy delete-stack --yes {{ StackName }}"
+
+  - banner: "That's all for our demo. Thanks for watching!"
+  - sleep: 3
