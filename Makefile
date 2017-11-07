@@ -102,19 +102,20 @@ $(DOCKER_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	@rm -rf /tmp/iidy
 	@git clone . /tmp/iidy
 
-	docker build $(DOCKER_BUILD_ARGS) -t iidy -f /tmp/iidy/Dockerfile /tmp/iidy
-	sleep 0.5
-	docker run -it --rm iidy help > /dev/null
-
-	docker build $(DOCKER_BUILD_ARGS) -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
-	sleep 0.5
-	docker run -it --rm iidy-yarn help > /dev/null
-	docker rmi iidy-yarn
-
 	docker build $(DOCKER_BUILD_ARGS) -t iidy-npm -f /tmp/iidy/Dockerfile.test-npm-build /tmp/iidy
 	sleep 0.5
 	docker run -it --rm iidy-npm help  > /dev/null
 	docker rmi iidy-npm
+
+	docker build $(DOCKER_BUILD_ARGS) -t iidy -f /tmp/iidy/Dockerfile /tmp/iidy
+	sleep 0.5
+	docker run -it --rm iidy help > /dev/null
+
+## Yarn is currently broken for typescript 2.6.1 installs with iidy
+#	docker build $(DOCKER_BUILD_ARGS) -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
+#	sleep 0.5
+#	docker run -it --rm iidy-yarn help > /dev/null
+#	docker rmi iidy-yarn
 
 	@rm -rf /tmp/iidy
 

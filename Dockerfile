@@ -6,8 +6,11 @@ COPY . .
 
 # TODO use PKG_CACHE_PATH to cache the pkg downloads
 
+## Yarn is currently borked
+#  && yarn --frozen-lockfile \
+
 RUN apk update && apk add --no-cache binutils \
-  && yarn --frozen-lockfile \
+  && npm install . && npm run build \
   && $(npm bin)/pkg --out-path dist -t node8-alpine-x64 package.json \
   && strip /root/.pkg-cache/*/fetched-v8* \
   && $(npm bin)/pkg --out-path dist -t node8-alpine-x64 package.json
