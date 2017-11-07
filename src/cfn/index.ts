@@ -215,7 +215,7 @@ const objectToCFNTags =
   (obj: object): aws.CloudFormation.Tags =>
     _.map(_.toPairs(obj),
       // TODO handle UsePreviousValue for updates
-      ([Key, Value]) => {return {Key, Value}});
+      ([Key, Value]) => {return {Key, Value: Value.toString()}});
 
 const objectToCFNParams =
   (obj: {[key: string]: string}): aws.CloudFormation.Parameters =>
