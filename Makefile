@@ -59,6 +59,8 @@ package: $(RELEASE_PACKAGES)
 	@echo open dist/
 
 prepare_release : check_working_dir_is_clean test package  ## Prepare a new public release. Requires clean git workdir
+	@echo update https://github.com/unbounce/iidy/releases
+	@echo and remember to update https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb
 
 # TODO script version bump & upload of the binaries
 #release: check_working_dir_is_clean clean deps build test
