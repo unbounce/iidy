@@ -11,8 +11,8 @@ export async function paginateAwsCall
   let resp: T = await fetcher(args).promise();
   let results: R[] = def([], _.get(resp, selector));
   while (!_.isUndefined(resp.NextToken)) {
-    resp = await fetcher(_.merge({NextToken: resp.NextToken}, args)).promise();
-    results.concat(def([], _.get(resp, selector)));
+    resp = await fetcher(_.merge({}, args, {NextToken: resp.NextToken})).promise();
+    results = results.concat(def([], _.get(resp, selector)));
   }
   return results;
 }

@@ -61,6 +61,7 @@ export interface CfnStackCommands {
 export interface MiscCommands {
   renderMain: Handler;
   demoMain: Handler;
+  convertStackToIIDY: Handler;
 }
 
 export interface Commands extends CfnStackCommands, MiscCommands {};
@@ -102,6 +103,7 @@ const lazy: Commands = {
   estimateCost: lazyLoad('estimateCost'),
 
   demoMain: lazyLoad('demoMain', './demo'),
+  convertStackToIIDY: lazyLoad('convertStackToIIDY'),
   // TODO init-stack-args command to create a stack-args.yaml
   // TODO example command pull down an examples dir
 
