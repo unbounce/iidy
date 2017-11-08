@@ -148,15 +148,15 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('stack-name', stackNameOpt)
       .option('changeset', {
         type: 'boolean', default: false,
-        description: 'review & confirm changes via a changeset'
+        description: description('review & confirm changes via a changeset')
       })
       .option('diff', {
         type: 'boolean', default: true,
-        description: 'diff & review changes to the template body as part of changeset review'
+        description: description('diff & review changes to the template body as part of changeset review')
       })
       .option('stack-policy-during-update', {
         type: 'string', default: null,
-        description: 'override original stack-policy for this update only'
+        description: description('override original stack-policy for this update only')
       }),
     wrapMainHandler(commands.updateStackMain))
 
@@ -177,7 +177,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('description', {
         type: 'string', default: undefined,
-        description: 'optional description of changeset'
+        description: description('optional description of changeset')
       })
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.createChangesetMain))
@@ -200,7 +200,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('events', {
         type: 'number', default: 50,
-        description: 'how many stack events to display'
+        description: description('how many stack events to display')
       })
       .usage('Usage: iidy describe-stack <stackname>'),
     wrapMainHandler(commands.describeStackMain))
@@ -212,7 +212,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('inactivity-timeout', {
         type: 'number', default: (60 * 3),
-        description: 'how long to wait for events when the stack is in a terminal state'
+        description: description('how long to wait for events when the stack is in a terminal state')
       })
       .usage('Usage: iidy watch-stack <stackname>'),
     wrapMainHandler(commands.watchStackMain))
@@ -229,7 +229,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('retain-resources', {
         type: 'string',
         array: true,
-        description: 'For stacks in the DELETE_FAILED, list of logical resource ids to retain'
+        description: description('For stacks in the DELETE_FAILED, list of logical resource ids to retain')
       })
       .option('yes', {
         type: 'boolean', default: false,
@@ -246,12 +246,12 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('format', {
         type: 'string', default: 'original',
         choices: ['original', 'yaml', 'json'],
-        description: 'Template stage to show'
+        description: description('Template stage to show')
       })
       .option('stage', {
         type: 'string', default: 'Original',
         choices: ['Original', 'Processed'],
-        description: 'Template stage to show'
+        description: description('Template stage to show')
       })
       .usage('Usage: iidy get-stack-template <stackname>'),
     wrapMainHandler(commands.getStackTemplateMain))
@@ -263,7 +263,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('short', {
         type: 'boolean', default: false,
-        description: 'Show only instance dns names'
+        description: description('Show only instance dns names')
       })
       .usage('Usage: iidy get-stack-instances <stackname>'),
     wrapMainHandler(commands.getStackInstancesMain))
@@ -276,11 +276,11 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('tag-filter', {
         type: 'string', default: [],
         array: true,
-        description: 'Filter by tags: key=value'
+        description: description('Filter by tags: key=value')
       })
       .option('tags', {
         type: 'boolean', default: false,
-        description: 'Show stack tags'
+        description: description('Show stack tags')
       }),
     wrapMainHandler(commands.listStacksMain))
 
@@ -300,20 +300,20 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .usage('Usage: iidy render <input-template.yaml>')
       .option('outfile', {
         type: 'string', default: 'stdout',
-        description: 'yaml input template to preprocess'
+        description: description('yaml input template to preprocess')
       })
       .option('format', {
         type: 'string', default: 'yaml',
         choices: ['yaml', 'json'],
-        description: 'output serialization syntax'
+        description: description('output serialization syntax')
       })
       .option('query', {
         type: 'string', default: null,
-        description: 'jmespath search query to select a subset of the output'
+        description: description('jmespath search query to select a subset of the output')
       })
       .option('overwrite', {
         type: 'boolean', default: false,
-        description: 'Whether to overwrite an existing <outfile>.'
+        description: description('Whether to overwrite an existing <outfile>.')
       })
       .strict(),
     wrapMainHandler(commands.renderMain))
@@ -325,10 +325,25 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('timescaling', {
         type: 'number', default: 1,
-        description: 'time scaling factor for sleeps, etc.'
+        description: description('time scaling factor for sleeps, etc.')
       })
       .strict(),
     wrapMainHandler(commands.demoMain))
+
+    .command(
+    'convert-stack-to-iidy <stackname> <outputDir>',
+    description('create an iidy project directory from an existing CFN stack'),
+    (args) => args
+      .demandCommand(0, 0)
+      .option('move-params-to-ssm', {
+        type: 'boolean', default: false,
+        description: description('automatically create an AWS SSM parameter namespace populated with the stack Parameters')
+      })
+      .option('project', {
+        type: 'string', default: null,
+        description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
+      }),
+    wrapMainHandler(commands.convertStackToIIDY))
 
     .option('environment', environmentOpt)
     .option('client-request-token', {

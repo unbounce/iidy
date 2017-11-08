@@ -25,7 +25,7 @@ async function getAllKMSAliases(): Promise<aws.KMS.AliasList> {
   return aliases;
 }
 
-async function getKMSAliasForParameter(paramPath: aws.SSM.ParameterName): Promise<undefined | aws.KMS.AliasNameType> {
+export async function getKMSAliasForParameter(paramPath: aws.SSM.ParameterName): Promise<undefined | aws.KMS.AliasNameType> {
   const aliases = _.fromPairs(_.map(await getAllKMSAliases(), (al) => [al.AliasName, al.AliasName]));
   let pathParts = ['alias', 'ssm'].concat(_.filter(paramPath.split('/')));
   while (pathParts.length) {
@@ -101,6 +101,17 @@ const paramsToSortedMap = (params: aws.SSM.ParameterList) =>
     .sort()
     .fromPairs()
     .value();
+
+export async function _getParamsByPath(Path: string): Promise<aws.SSM.ParameterList> {
+  const ssm = new aws.SSM();
+  const args = {
+    Path,
+    WithDecryption: true
+  };
+  const parameters: aws.SSM.ParameterList = await paginateAwsCall(
+    (args) => ssm.getParametersByPath(args), args, 'Parameters');
+  return parameters;
+}
 
 export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number> {
   await configureAWS(argv.profile, argv.region);
