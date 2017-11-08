@@ -10,6 +10,8 @@ import {transform} from './index';
 import {_loadStackArgs} from './cfn';
 import {logger} from './logger';
 
+import {search} from 'jmespath';
+
 export function isStackArgsFile(location: string, doc: any): boolean {
   if (_.includes(['stack-args.yaml', 'stack-args.yml'], pathmod.basename(location))) {
     return true;
@@ -30,8 +32,10 @@ export async function renderMain(argv: Arguments): Promise<number> {
   } else {
     outputDoc = await transform(input, rootDocLocation);
   }
-  
-  const outputString = yaml.dump(outputDoc);
+  if (argv.query) {
+    outputDoc = search(outputDoc, argv.query);
+  }
+  const outputString = argv.format === 'yaml' ? yaml.dump(outputDoc) : JSON.stringify(outputDoc, null, ' ');
   if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
     console.log(outputString);
   } else if (_.includes(['/dev/stderr', 'stderr'], argv.outfile)) {

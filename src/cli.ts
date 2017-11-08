@@ -300,6 +300,15 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'string', default: 'stdout',
         description: 'yaml input template to preprocess'
       })
+      .option('format', {
+        type: 'string', default: 'yaml',
+        choices: ['yaml', 'json'],
+        description: 'output serialization syntax'
+      })
+      .option('query', {
+        type: 'string', default: null,
+        description: 'jmespath search query to select a subset of the output'
+      })
       .option('overwrite', {
         type: 'boolean', default: false,
         description: 'Whether to overwrite an existing <outfile>.'
