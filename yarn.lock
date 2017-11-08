@@ -41,6 +41,10 @@
     "@types/rx" "*"
     "@types/through" "*"
 
+"@types/jmespath@^0.15.0":
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/@types/jmespath/-/jmespath-0.15.0.tgz#4a01629096a86231c891a0e2deccc15f53c9291d"
+
 "@types/js-yaml@^3.9.1":
   version "3.9.1"
   resolved "https://registry.yarnpkg.com/@types/js-yaml/-/js-yaml-3.9.1.tgz#2f3c142771bb345829ce690c5838760b6b9ba553"
@@ -312,9 +316,9 @@ asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
 
-aws-sdk@^2.145.0:
-  version "2.145.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.145.0.tgz#085bb4553231defd93b96b0d95023717c9c3c093"
+aws-sdk@^2.147.0:
+  version "2.147.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.147.0.tgz#a0d168ad1f8fd5d15ee9bb537fdddfdf63a205c1"
   dependencies:
     buffer "4.9.1"
     crypto-browserify "1.0.9"

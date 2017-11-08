@@ -1,6 +1,6 @@
 {
   "name": "iidy",
-  "version": "1.6.0-rc2",
+  "version": "1.6.0-rc3",
   "description": "A tool for working with CloudFormation and yaml templates.",
   "main": "lib/cli.js",
   "types": "lib/index",
@@ -22,7 +22,7 @@
     "npm": ">=4.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.145.0",
+    "aws-sdk": "^2.147.0",
     "bluebird": "^3.5.1",
     "cli-color": "^1.2.0",
     "dateformat": "^2.0.0",
