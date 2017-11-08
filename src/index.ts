@@ -23,7 +23,7 @@ import * as tv4 from 'tv4';
 
 import * as yaml from './yaml';
 import {logger} from './logger';
-
+import {_getParamsByPath} from './params';
 
 const HANDLEBARS_RE = /{{(.*?)}}/;
 const CFN_SUB_RE = /\${([^!].*?)}/g;
@@ -407,10 +407,8 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     if (!resolvedLocation.endsWith('/')) {
       resolvedLocation += '/';
     }
-    const ssm2 = new aws.SSM();
-    const params = await ssm2.getParametersByPath(
-      {Path: resolvedLocation, WithDecryption: true}).promise()
-    const doc = _.fromPairs(_.map(params.Parameters, ({Name, Value}) =>
+    const params = await _getParamsByPath(resolvedLocation);
+    const doc = _.fromPairs(_.map(params, ({Name, Value}) =>
       [(Name as string).replace(resolvedLocation, ''),
       parseDataFromParamStore(Value as string, format)]));
     return {resolvedLocation, data: JSON.stringify(doc), doc};
