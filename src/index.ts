@@ -432,6 +432,15 @@ async function loadImports(
 ): Promise<void> {
   // recursively load the entire set of imports
   doc.$envValues = doc.$envValues || {};
+  if (doc.$defs) {
+    for (const key in doc.$defs) {
+      if (_.includes(_.keys(doc.$envValues), key)) {
+        throw new Error(
+          `"${key}" in $defs collides with the same name in $imports of ${baseLocation}`)
+      }
+      doc.$envValues[key] = doc.$defs[key];
+    }
+  }
   if (doc.$imports) {
 
     if (!_.isPlainObject(doc.$imports)) {
@@ -460,22 +469,14 @@ async function loadImports(
       });
 
       if (_.includes(doc.$envValues, asKey)) {
-        throw new Error(`Duplicate import name ${asKey} in ${baseLocation}`);
+        throw new Error(
+          `"${asKey}" in $imports collides with the same name in $defs of ${baseLocation}`);
       }
       doc.$envValues[asKey] = importData.doc;
       if (importData.doc.$imports || importData.doc.$defs) {
         await loadImports(
           importData.doc, importData.resolvedLocation, importsAccum, importLoader)
       }
-    }
-  }
-  if (doc.$defs) {
-    for (const key in doc.$defs) {
-      if (_.includes(_.keys(doc.$envValues), key)) {
-        throw new Error(
-          `"${key}" in $defs collides with the same name in $imports of ${baseLocation}`)
-      }
-      doc.$envValues[key] = doc.$defs[key];
     }
   }
   if (doc.$params) {
