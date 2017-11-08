@@ -112,7 +112,7 @@ const lazy: Commands = {
 export const description = cli.xterm(250);
 
 const environmentOpt: yargs.Options = {
-  type: 'string', default: null,
+  type: 'string', default: 'development',
   alias: 'e',
   description: description('used to load environment based settings: AWS Profile, Region, etc.')
 };
