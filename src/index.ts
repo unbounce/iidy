@@ -23,6 +23,7 @@ import * as tv4 from 'tv4';
 
 import * as yaml from './yaml';
 import {logger} from './logger';
+import paginateAwsCall from './paginateAwsCall';
 import {_getParamsByPath} from './params';
 
 const HANDLEBARS_RE = /{{(.*?)}}/;
@@ -303,13 +304,30 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
   cfn: async (location, baseLocation) => {
     let resolvedLocation, StackName, field, fieldKey;
     let data: any, doc: any;
-    [, field, resolvedLocation] = location.split(':');
-    [StackName, fieldKey] = resolvedLocation.split('/');
     const cfn = new aws.CloudFormation();
-    const {Stacks} = await cfn.describeStacks({StackName}).promise();
-    if (Stacks && Stacks[0]) {
-      const stack = Stacks[0];
-      switch (field) {
+    [, field, resolvedLocation] = location.split(':');
+    if (field === 'export') {
+      const exports0: aws.CloudFormation.Exports = await paginateAwsCall((args) => cfn.listExports(args), {}, 'Exports');
+      const exports = _.fromPairs(_.map(exports0, (ex) => [ex.Name, ex]));
+      const exportName = resolvedLocation;
+      if (exportName) {
+        if (! exports[exportName]) {
+          throw new Error(`${location} not found`);
+        }
+        data = exports[exportName];
+        doc = data.Value;
+      } else {
+        data = exports;
+        doc = data;
+      }
+      return {resolvedLocation: location, data, doc};
+
+    } else {
+      [StackName, fieldKey] = resolvedLocation.split('/');
+      const {Stacks} = await cfn.describeStacks({StackName}).promise();
+      if (Stacks && Stacks[0]) {
+        const stack = Stacks[0];
+        switch (field) {
         case 'output':
           const outputs = _.fromPairs(_.map(stack.Outputs, (output) => [output.OutputKey, output.OutputValue]));
           data = fieldKey ? _.get(outputs, fieldKey) : outputs;
@@ -337,10 +355,11 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
           break;
         default:
           throw new Error(`Invalid cfn $import: ${location}`);
+        }
+        return {resolvedLocation: location, data, doc};
+      } else {
+        throw new Error(`${location} not found`);
       }
-      return {resolvedLocation: location, data, doc};
-    } else {
-      throw new Error(`${location} not found`);
     }
   },
 
