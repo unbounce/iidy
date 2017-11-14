@@ -70,6 +70,7 @@ export interface CfnStackCommands {
 }
 
 export interface MiscCommands {
+  initStackArgs: Handler;
   renderMain: Handler;
   demoMain: Handler;
   convertStackToIIDY: Handler;
@@ -81,7 +82,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './index' | './demo' | './render';
+type LazyLoadModules = './cfn' | './index' | './demo' | './render' | './initStackArgs';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -93,6 +94,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./demo')[fnname](args);
     } else if (modName === './render') {
       return require('./render')[fnname](args);
+    } else if (modName === './initStackArgs') {
+      return require('./initStackArgs')[fnname](args);
     }
   }
 
@@ -115,7 +118,7 @@ const lazy: Commands = {
 
   demoMain: lazyLoad('demoMain', './demo'),
   convertStackToIIDY: lazyLoad('convertStackToIIDY'),
-  // TODO init-stack-args command to create a stack-args.yaml
+  initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
   // TODO example command pull down an examples dir
 
 };
@@ -355,6 +358,13 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
       }),
     wrapMainHandler(commands.convertStackToIIDY))
+
+    .command(
+    'init-stack-args',
+    description('initialize stack_args.yaml'),
+    (args) => args
+      .demandCommand(0, 0),
+    wrapMainHandler(commands.initStackArgs))
 
     .option('environment', environmentOpt)
     .option('client-request-token', {
