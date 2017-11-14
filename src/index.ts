@@ -1080,3 +1080,4 @@ export async function transform(
   await loadImports(root, rootDocLocation, accumulatedImports, importLoader);
   return transformPostImports(root, rootDocLocation, accumulatedImports);
 };
+

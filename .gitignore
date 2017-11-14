@@ -9,6 +9,7 @@ lib/params/*
 lib/*js
 lib/*d.ts
 lib/*map
+src/**/*js
 
 dist/
 tmp/
