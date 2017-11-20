@@ -1083,6 +1083,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
   _expectedFinalStackStatus = terminalStackStates
   _watchStackEvents = false
   _changeSetName: string;
+  _showPreviousEvents = false;
 
   async _run() {
     // TODO remove argv as an arg here. Too general
