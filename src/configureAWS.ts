@@ -12,22 +12,53 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
   //  Error: ENOENT: no such file or directory, open '.../.aws/credentials
 }
 
+const USE_AWS_CLI_STS_CACHE = process.env.iidy_use_sts_cache !== undefined;
+
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk';
 
 import {logger} from './logger';
 import {AWSRegion} from './aws-regions';
 
+async function loadSharedIniFile(profile?: string) {
+  // note, profile might be undefined here and that's fine.
+  const credentials = new aws.SharedIniFileCredentials({profile});
+  //await credentials.refreshPromise();
+  aws.config.credentials = credentials;
+}
+
 async function configureAWS(profile?: string, region?: AWSRegion) {
-  if (process.env.AWS_ACCESS_KEY_ID && !profile) {
+  const resolvedProfile: string | undefined = (
+    profile || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE);
+
+  if (process.env.AWS_ACCESS_KEY_ID && !resolvedProfile) {
     logger.debug(`Using AWS env vars. AWS_ACCESS_KEY_ID: ${process.env.AWS_ACCESS_KEY_ID}.`);
-  } else if (process.env.HOME && fs.existsSync(path.join(process.env.HOME as string, '.aws'))) {
-    logger.debug(`Using AWS ~/.aws/{config,credentials} file: profile: ${profile}.`);
-    // note, profile might be undefined here and that's fine.
-    const credentials = new aws.SharedIniFileCredentials({profile});
-    await credentials.refreshPromise();
-    aws.config.credentials = credentials;
-  } else if (profile || process.env.AWS_PROFILE) {
+  } else if (awsUserDir && fs.existsSync(awsUserDir)) {
+    logger.debug(`Using AWS ~/.aws/{config,credentials} file: profile: ${resolvedProfile}.`);
+    const cliCacheDir = path.join(awsUserDir, 'cli', 'cache');
+    if (USE_AWS_CLI_STS_CACHE && resolvedProfile && fs.existsSync(cliCacheDir)) {
+      // look for a valid cache entry in ./aws/cli/cache/
+      const fileRE = new RegExp(`^${resolvedProfile}--`);
+      const profileCacheFiles = _.filter(fs.readdirSync(cliCacheDir), (filename) => fileRE.test(filename));
+      if (profileCacheFiles.length === 1) {
+        const cachedEntry = JSON.parse(fs.readFileSync(path.join(cliCacheDir, profileCacheFiles[0]), 'utf-8').toString());
+        await loadSharedIniFile(undefined); // load master credentials first
+        const sts = new aws.STS();
+        const credentialsFrom: any = _.get(sts, 'credentialsFrom'); // work around missing typedef
+        const assumedCreds: aws.TemporaryCredentials = credentialsFrom(cachedEntry);
+        const credentialsExpired = (new Date(cachedEntry.Credentials.Expiration) < new Date() || assumedCreds.needsRefresh());
+        if (credentialsExpired) {
+          await loadSharedIniFile(resolvedProfile);
+        } else {
+          aws.config.credentials = assumedCreds;
+        }
+      } else {
+        await loadSharedIniFile(resolvedProfile);
+      }
+    } else {
+      await loadSharedIniFile(resolvedProfile);
+    }
+  } else if (resolvedProfile) {
     throw new Error('AWS profile provided but ~/.aws/{config,credentials} not found.')
   } else {
     logger.debug('Using AWS ec2 instance profile.');
