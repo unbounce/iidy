@@ -1,9 +1,18 @@
 import * as process from 'process';
-process.env.AWS_SDK_LOAD_CONFIG = '1'; // see https://github.com/aws/aws-sdk-js/pull/1391
-// We also set this env-var in the main cli entry-point
 
 import * as fs from 'fs';
 import * as path from 'path';
+
+const awsUserDir = process.env.HOME ? path.join(process.env.HOME as string, '.aws') : null;
+if (awsUserDir && fs.existsSync(awsUserDir)) {
+  // We also set this env-var in the main cli entry-point
+  process.env.AWS_SDK_LOAD_CONFIG = '1'; // see https://github.com/aws/aws-sdk-js/pull/1391
+  // Note:
+  // if this is set and ~/.aws doesn't exist we run into issue #17 as soon as the sdk is loaded:
+  //  Error: ENOENT: no such file or directory, open '.../.aws/credentials
+}
+
+import * as _ from 'lodash';
 import * as aws from 'aws-sdk';
 
 import {logger} from './logger';

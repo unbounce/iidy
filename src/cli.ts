@@ -1,6 +1,17 @@
+import * as path from 'path';
+import * as fs from 'fs';
 import * as process from 'process';
-// We need to set this early because of https://github.com/aws/aws-sdk-js/pull/1391
-process.env.AWS_SDK_LOAD_CONFIG = '1';
+
+const awsUserDir = process.env.HOME ? path.join(process.env.HOME as string, '.aws') : null;
+if (awsUserDir && fs.existsSync(awsUserDir)) {
+  // We need to set this early because of https://github.com/aws/aws-sdk-js/pull/1391
+  // We also set this env-var in the main cli entry-point
+  process.env.AWS_SDK_LOAD_CONFIG = '1'; // see https://github.com/aws/aws-sdk-js/pull/1391
+  // Note:
+  // if this is set and ~/.aws doesn't exist we run into issue #17 as soon as the sdk is loaded:
+  //  Error: ENOENT: no such file or directory, open '.../.aws/credentials
+}
+
 // Use bluebird promises globally. We need to load this prior to 'aws-sdk'
 import * as bluebird from 'bluebird';
 global.Promise = bluebird;
