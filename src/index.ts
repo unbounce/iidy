@@ -116,11 +116,11 @@ export type ImportData = {
 }
 
 export type ImportType =
-  "file" | "env" | "git" | "random" | "filehash" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
+  "file" | "env" | "git" | "random" | "filehash" | "cfn" | "ssm" | "ssm-path" | "s3" | "http" | "ami";
 // https://github.com/kimamula/ts-transformer-enumerate is an alternative to this
 // repetition. Could also use a keyboard macro.
 const importTypes: ImportType[] = [
-  "file", "env", "git", "random", "filehash", "cfn", "ssm", "ssm-path", "s3", "http"];
+  "file", "env", "git", "random", "filehash", "cfn", "ssm", "ssm-path", "s3", "http", "ami"];
 const localOnlyImportTypes: ImportType[] = ["file", "env"];
 
 // npm:version npm:project-name, etc. with equivs for lein/mvn
@@ -247,6 +247,18 @@ const parseDataFromParamStore = (payload: string, formatType?: string): any => {
 }
 
 export type ImportLoader = (location: ImportLocation, baseLocation: ImportLocation) => Promise<ImportData>;
+
+type KeyValueList = {key: string, value: string}[];
+
+function queryStringToKeyValueList(queryString: string): KeyValueList {
+  return queryString
+    .replace(/(^\?)/, '')
+    .split('&')
+    .reduce((acc: KeyValueList, n: string) => {
+      const [key, ...values] = n.split('=');
+      return acc.concat({ key, value: values.join('=') })
+    }, []);
+}
 
 export const importLoaders: {[key in ImportType]: ImportLoader} = {
 
@@ -418,6 +430,50 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
       throw new Error(
         `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
     }
+  },
+
+  ami: async (location, baseLocation) => {
+      // ami://dockerhost*
+      // ami://?tag=key=value
+      const ec2 = new aws.EC2();
+      const validFilterOptions = ['state', 'tag', 'virtualization-type', 'name'];
+      const [, name = null, queryString = null] =
+          location.match(/ami:\/\/([A-Za-z0-9\.*\/-]+)?(\?.*)?/) || [];
+      const defaults = {
+          'state': 'available'
+      }
+      const request: aws.EC2.Types.DescribeImagesRequest = {
+          Filters: []
+      };
+
+      if (queryString) {
+          _.forEach(queryStringToKeyValueList(queryString), ({key, value}) => {
+              logger.debug(`AMI ${key}: ${value}`);
+              request.Filters!.push({ Name: key, Values: [value] })
+          });
+      }
+
+      if(name != null) {
+          logger.debug(`AMI name: ${name}`);
+          request.Filters!.push({ Name: 'name', Values: [name] });
+      }
+
+      try {
+          const response = await ec2.describeImages(request).promise();
+          const count = response.Images!.length;
+          logger.debug(`Found ${count} AMIs`);
+          if(count > 0) {
+              const data = _.orderBy(response.Images!, ['CreationDate'], ['desc'])[0].ImageId!;
+
+              logger.debug(`AMI ID ${data}`);
+
+              return {resolvedLocation: location, data, doc: data};
+          } else {
+              throw new Error(`Unable to find an AMI for ${location}`);
+          }
+      } catch (error) {
+          throw new Error(`Error looking up AMI ${location} ${error.message}`);
+      }
   },
 
   "ssm-path": async (location, baseLocation) => {

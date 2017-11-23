@@ -1,4 +1,6 @@
 Parameters:
+  AMI:
+    Type: String
   Name:
     Type: String
 Resources:
