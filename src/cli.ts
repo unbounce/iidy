@@ -361,7 +361,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
 
     .command(
     'init-stack-args',
-    description('initialize stack_args.yaml'),
+    description('initialize stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0),
     wrapMainHandler(commands.initStackArgs))

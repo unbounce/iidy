@@ -3,7 +3,7 @@ import * as fs from 'fs';
 export async function initStackArgs() : Promise<number> {
   // await configureAWS(argv.profile, argv.region);
   // Here we import the File System module of node
-  const stack_args = `# REQUIRED SETTINGS:
+  const stackArgs = `# REQUIRED SETTINGS:
 StackName: <string>
 Template: <local file path or s3 path>
 # optionally you can use the yaml pre-processor by prepending 'render:' to the filename
@@ -51,7 +51,7 @@ NotificationARNs:
 #   - make build # for example`
 
 
-  fs.writeFileSync('stack_args.yaml', stack_args);
-  console.log("stack_args.yaml has been created!");
+  fs.writeFileSync('stack-args.yaml', stackArgs);
+  console.log("stack-args.yaml has been created!");
   return 0;
 }
