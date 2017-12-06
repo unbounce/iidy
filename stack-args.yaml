@@ -1,10 +1,4 @@
-import * as fs from 'fs';
-import {Arguments} from 'yargs';
-
-export async function initStackArgs(argv: Arguments) : Promise<number> {
-  // await configureAWS(argv.profile, argv.region);
-  // Here we import the File System module of node
-  const stackArgs = `# REQUIRED SETTINGS:
+# REQUIRED SETTINGS:
 StackName: <string>
 Template: <local file path or s3 path>
 # optionally you can use the yaml pre-processor by prepending 'render:' to the filename
@@ -49,20 +43,4 @@ NotificationARNs:
 
 # shell commands to run prior the cfn stack operation
 # CommandsBefore:
-#   - make build # for example`
-
-
-	if (fs.existsSync('./stack-args.yaml') && !argv.force) {
-		console.log("stack-args.yaml already exists! Use --force to overwrite");
-		return 1
-	}
-	else {
-		fs.writeFileSync('stack-args.yaml', stackArgs);
-		if (argv.force) {
-			console.log("stack-args.yaml has been overwritten by a new one!");
-		} else {
-			console.log("stack-args.yaml has been created!");
-		}
-	}
-  return 0;
-}
+#   - make build # for example
