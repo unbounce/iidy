@@ -363,7 +363,11 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     'init-stack-args',
     description('initialize stack-args.yaml'),
     (args) => args
-      .demandCommand(0, 0),
+      .demandCommand(0, 0)
+			.option('force', {
+				type: 'boolean', default: false,
+				description: description('Overwrite the current stack-args.yaml')
+			}),
     wrapMainHandler(commands.initStackArgs))
 
     .option('environment', environmentOpt)
