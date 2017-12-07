@@ -361,13 +361,21 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
 
     .command(
     'init-stack-args',
-    description('initialize stack-args.yaml'),
-    (args) => args
+    description('initialize stack-args.yaml and cfn-template.yaml'),
+      (args) => args
       .demandCommand(0, 0)
-			.option('force', {
-				type: 'boolean', default: false,
-				description: description('Overwrite the current stack-args.yaml')
-			}),
+      .option('force', {
+        type: 'boolean', default: false,
+        description: description('Overwrite the current stack-args.yaml and cfn-template.yaml')
+      })
+      .option('force-stack-args', {
+        type: 'boolean', default: false,
+        description: description('Overwrite the current stack-args.yaml')
+      })
+      .option('force-cfn-template', {
+        type: 'boolean', default: false,
+        description: description('Overwrite the current cfn-template.yaml')
+      }),
     wrapMainHandler(commands.initStackArgs))
 
     .option('environment', environmentOpt)

@@ -2,11 +2,14 @@ import * as fs from 'fs';
 import {Arguments} from 'yargs';
 
 export async function initStackArgs(argv: Arguments) : Promise<number> {
-  // await configureAWS(argv.profile, argv.region);
-  // Here we import the File System module of node
+
+  const cfnTemplateArgs = `Dummy:
+    Type: "AWS::CloudFormation::WaitConditionHandle"
+    Properties: {}`
+
   const stackArgs = `# REQUIRED SETTINGS:
 StackName: <string>
-Template: <local file path or s3 path>
+Template: ./cfn-template.yaml
 # optionally you can use the yaml pre-processor by prepending 'render:' to the filename
 # Template: render:<local file path or s3 path>
 
@@ -52,17 +55,28 @@ NotificationARNs:
 #   - make build # for example`
 
 
-	if (fs.existsSync('./stack-args.yaml') && !argv.force) {
-		console.log("stack-args.yaml already exists! Use --force to overwrite");
-		return 1
-	}
-	else {
-		fs.writeFileSync('stack-args.yaml', stackArgs);
-		if (argv.force) {
-			console.log("stack-args.yaml has been overwritten by a new one!");
-		} else {
-			console.log("stack-args.yaml has been created!");
-		}
-	}
+  let stackArgsInitialized = fs.existsSync('./stack-args.yaml')
+  let cfnTemplateInitialized = fs.existsSync('./cfn-template.yaml')
+
+  let forceStackArgs = argv.force || argv.forceStackArgs
+  let forceCfnTemplate = argv.force || argv.forceCfnTemplate
+
+  if (stackArgsInitialized && !forceStackArgs) {
+    console.log("stack-args.yaml already exists! See help [-h] for overwrite options");
+  }
+  else {
+    fs.writeFileSync('stack-args.yaml', stackArgs);
+    console.log("stack-args.yaml has been created!");
+  }
+
+
+  if (cfnTemplateInitialized && !forceCfnTemplate) {
+    console.log("cfn-template.yaml already exists! See help [-h] for overwrite options");
+  }
+  else {
+    fs.writeFileSync('cfn-template.yaml', cfnTemplateArgs);
+    console.log("cfn-template.yaml has been created!");
+  }
+
   return 0;
 }
