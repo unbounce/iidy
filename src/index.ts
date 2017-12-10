@@ -875,7 +875,8 @@ function shouldRewriteRef(ref: string, env: Env) {
   return env.$envValues.Prefix && !(isGlobal || ref.startsWith('AWS:'));
 }
 
-function maybeRewriteRef(ref: string, env: Env) {
+function maybeRewriteRef(ref0: string, path: string, env: Env) {
+  const ref = visitNode(ref0, path, env);
   if (shouldRewriteRef(ref.trim().split('.')[0], env)) {
     return `${env.$envValues.Prefix || ''}${ref.trim()}`;
   } else {
@@ -884,17 +885,17 @@ function maybeRewriteRef(ref: string, env: Env) {
 }
 
 export const visitRef = (node: yaml.Ref, path: string, env: Env): yaml.Ref =>
-  new yaml.Ref(maybeRewriteRef(node.data, env));
+  new yaml.Ref(maybeRewriteRef(node.data, path, env));
 
 export const visitGetAtt = (node: yaml.GetAtt, path: string, env: Env): yaml.GetAtt =>
-  new yaml.GetAtt(maybeRewriteRef(node.data, env));
+  new yaml.GetAtt(maybeRewriteRef(node.data, path, env));
 
 export function visitSubStringTemplate(template0: string, path: string, env: Env) {
-  let template = template0;
+  let template = visitString(template0, path, env);
   if (template.search(CFN_SUB_RE) > -1) {
     template = template.replace(CFN_SUB_RE, (match, g1) => {
       if (shouldRewriteRef(g1.trim().split('.')[0], env)) {
-        return `\${${maybeRewriteRef(g1, env)}}`
+        return `\${${maybeRewriteRef(g1, path, env)}}`
       } else {
         return match;
       }
@@ -904,16 +905,19 @@ export function visitSubStringTemplate(template0: string, path: string, env: Env
 }
 
 export function visitSub(node: yaml.Sub, path: string, env: Env): yaml.Sub {
-  if (_.isString(node.data)) {
-    return new yaml.Sub(visitSubStringTemplate(node.data, path, env));
-  } else {
+  if (_.isArray(node.data) && node.data.length === 1) {
+    return new yaml.Sub(visitSubStringTemplate(visitNode(node.data[0], path, env), path, env));
+  } else if (_.isArray(node.data) && node.data.length === 2) {
     const templateEnv = node.data[1];
     const subEnv = mkSubEnv(
-      env, _.merge({$globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))},
-        env.$envValues),
+      env, _.merge({}, env.$envValues, {$globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))}),
       {path});
-    const template = visitSubStringTemplate(node.data[0], path, subEnv);
+    const template = visitSubStringTemplate(visitNode(node.data[0], path, env), path, subEnv);
     return new yaml.Sub([template, templateEnv]);
+  } else if (_.isString(node.data)) {
+    return new yaml.Sub(visitSubStringTemplate(node.data, path, env));
+  } else {
+    throw new Error(`Invalid arguments to !Sub: ${node.data}`);
   }
 }
 
