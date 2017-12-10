@@ -311,7 +311,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
       const exports = _.fromPairs(_.map(exports0, (ex) => [ex.Name, ex]));
       const exportName = resolvedLocation;
       if (exportName) {
-        if (! exports[exportName]) {
+        if (!exports[exportName]) {
           throw new Error(`${location} not found`);
         }
         data = exports[exportName];
@@ -328,33 +328,33 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
       if (Stacks && Stacks[0]) {
         const stack = Stacks[0];
         switch (field) {
-        case 'output':
-          const outputs = _.fromPairs(_.map(stack.Outputs, (output) => [output.OutputKey, output.OutputValue]));
-          data = fieldKey ? _.get(outputs, fieldKey) : outputs;
-          doc = data;
-          break;
-        case 'parameter':
-          const params = _.fromPairs(_.map(stack.Parameters, (p) => [p.ParameterKey, p.ParameterValue]));
-          data = fieldKey ? _.get(params, fieldKey) : params;
-          doc = data;
-          break;
-        case 'tag':
-          const tags = _.fromPairs(_.map(stack.Tags, (t) => [t.Key, t.Value]));
-          data = fieldKey ? _.get(tags, fieldKey) : tags;
-          doc = data;
-          break;
-        case 'resource':
-          const {StackResources} = await cfn.describeStackResources({StackName}).promise();
-          const resources = _.fromPairs(_.map(StackResources, (r) => [r.LogicalResourceId, r]));
-          data = fieldKey ? _.get(resources, fieldKey) : resources;
-          doc = data;
-          break;
-        case 'stack':
-          data = stack
-          doc = data;
-          break;
-        default:
-          throw new Error(`Invalid cfn $import: ${location}`);
+          case 'output':
+            const outputs = _.fromPairs(_.map(stack.Outputs, (output) => [output.OutputKey, output.OutputValue]));
+            data = fieldKey ? _.get(outputs, fieldKey) : outputs;
+            doc = data;
+            break;
+          case 'parameter':
+            const params = _.fromPairs(_.map(stack.Parameters, (p) => [p.ParameterKey, p.ParameterValue]));
+            data = fieldKey ? _.get(params, fieldKey) : params;
+            doc = data;
+            break;
+          case 'tag':
+            const tags = _.fromPairs(_.map(stack.Tags, (t) => [t.Key, t.Value]));
+            data = fieldKey ? _.get(tags, fieldKey) : tags;
+            doc = data;
+            break;
+          case 'resource':
+            const {StackResources} = await cfn.describeStackResources({StackName}).promise();
+            const resources = _.fromPairs(_.map(StackResources, (r) => [r.LogicalResourceId, r]));
+            data = fieldKey ? _.get(resources, fieldKey) : resources;
+            doc = data;
+            break;
+          case 'stack':
+            data = stack
+            doc = data;
+            break;
+          default:
+            throw new Error(`Invalid cfn $import: ${location}`);
         }
         return {resolvedLocation: location, data, doc};
       } else {
