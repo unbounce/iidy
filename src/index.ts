@@ -819,14 +819,19 @@ function visit$map(node: yaml.$map, path: string, env: Env): AnyButUndefined {
   const {template, items} = node.data
   // TODO handle nested maps
   const varName = node.data.var || 'item';
-  const mapped = _.map(visitNode(node.data.items, path, env), (item0: any, idx: number) => {
+  const SENTINEL = {};
+  const mapped = _.without(_.map(visitNode(node.data.items, path, env), (item0: any, idx: number) => {
     // TODO improve stackFrame details
     const subPath = appendPath(path, idx.toString());
     const item = visitNode(item0, subPath, env); // visit pre expansion
     const subEnv = mkSubEnv(
       env, _.merge({[varName]: item, [varName + 'Idx']: idx}, env.$envValues), {path: subPath});
-    return visitNode(template, subPath, subEnv);
-  });
+    if (node.data.filter && !visitNode(node.data.filter, path, subEnv)) {
+      return SENTINEL;
+    } else {
+      return visitNode(template, subPath, subEnv);
+    }
+  }), SENTINEL);
   return visitNode(mapped, path, env); // TODO do we need to visit again like this?
 }
 
