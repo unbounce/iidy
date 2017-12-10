@@ -987,14 +987,15 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
           throw new Error(
             `Key "${k2}" is already present and cannot be $merge'd into path "${path}"`);
         }
-        res[k2] = sub[k2];
+        res[visitString(k2, path, env)] = sub[k2];
       }
       // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions
       //} else if ( .. Fn:Ref, etc. ) {
     } else if (_.includes(extendedCfnDocKeys, k)) {
+      // we don't want to include things like $imports and $envValues in the output doc
       continue;
     } else {
-      res[k] = visitNode(node[k], appendPath(path, k), env);
+      res[visitString(k, path, env)] = visitNode(node[k], appendPath(path, k), env);
     }
   }
   return res;
