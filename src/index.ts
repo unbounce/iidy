@@ -753,12 +753,20 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefin
     return visit$let(node, path, env);
   } else if (node instanceof yaml.$map) {
     return visit$map(node, path, env);
+  } else if (node instanceof yaml.$mapValues) {
+    return visit$mapValues(node, path, env);
+  } else if (node instanceof yaml.$merge) {
+    return visit$merge(node, path, env);
+  } else if (node instanceof yaml.$mergeMap) {
+    return visit$mergeMap(node, path, env);
   } else if (node instanceof yaml.$concat) {
     return visit$concat(node, path, env);
   } else if (node instanceof yaml.$concatMap) {
     return visit$concatMap(node, path, env);
   } else if (node instanceof yaml.$mapListToHash) {
     return visit$mapListToHash(node, path, env);
+  } else if (node instanceof yaml.$groupBy) {
+    return visit$groupBy(node, path, env);
   } else if (node instanceof yaml.$fromPairs) {
     return visit$fromPairs(node, path, env);
   } else if (node instanceof yaml.Ref) {
@@ -860,6 +868,19 @@ function visit$map(node: yaml.$map, path: string, env: Env): AnyButUndefined {
   return visitNode(mapped, path, env); // TODO do we need to visit again like this?
 }
 
+function visit$mapValues(node: yaml.$mapValues, path: string, env: Env): AnyButUndefined {
+  const input = visitNode(node.data.items, path, env);
+  const keys = visitNode(_.keys(input), path, env);
+  const varName = node.data.var || 'item';
+  const valuesMap = new yaml.$map({
+    items: _.map(input, (value, key) => ({value, key})),
+    template: node.data.template,
+    'var': varName
+  });
+  const values = visit$map(valuesMap, path, env);
+  return _.fromPairs(_.zip(keys, visitNode(valuesMap, path, env)));
+}
+
 function visit$string(node: yaml.$string, path: string, env: Env): string {
   const stringSource = (_.isArray(node.data) && node.data.length === 1)
     ? node.data[0]
@@ -867,10 +888,23 @@ function visit$string(node: yaml.$string, path: string, env: Env): string {
   return yaml.dump(visitNode(stringSource, path, env));
 }
 
+function visit$merge(node: yaml.$merge, path: string, env: Env): AnyButUndefined[] {
+  const input: any = _.isString(node.data) ? visit$include(new yaml.$include(node.data), path, env) : node.data;
+  if (!_.isArray(input) && _.every(input, _.isObject)) {
+    throw new Error(`Invalid argument to $merge at "${path}".`
+      + " Must be array of arrays.");
+  }
+  return visitNode(_.merge.apply(_, input), path, env);
+}
+
+function visit$mergeMap(node: yaml.$mergeMap, path: string, env: Env): AnyButUndefined {
+  return _.merge.apply(_, visitNode(new yaml.$map(node.data), path, env));
+}
+
 function visit$concat(node: yaml.$concat, path: string, env: Env): AnyButUndefined[] {
 
   if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
-    throw new Error(`Invalid argument to $flatten at "${path}".`
+    throw new Error(`Invalid argument to $concat at "${path}".`
       + " Must be array of arrays.");
   }
   return visitNode(_flatten(node.data), path, env);
@@ -882,6 +916,27 @@ function visit$parseYaml(node: yaml.$parseYaml, path: string, env: Env): AnyButU
 
 function visit$concatMap(node: yaml.$concatMap, path: string, env: Env): AnyButUndefined {
   return _flatten(visitNode(new yaml.$map(node.data), path, env));
+}
+
+function visit$groupBy(node: yaml.$groupBy, path: string, env: Env): AnyButUndefined {
+  const varName = node.data.var || 'item';
+  const grouped = _.groupBy(visitNode(node.data.items, path, env), (item0) => {
+    const item = visitNode(item0, path, env); // visit pre expansion
+    const subEnv = mkSubEnv(env, _.merge({}, env.$envValues, {[varName]: item}), {path});
+    return visitNode(node.data.key, path, subEnv);
+  });
+
+  if (node.data.template) {
+    return _.mapValues(
+      grouped,
+      (items) => _.map(items, (item0) => {
+        const item = visitNode(item0, path, env); // visit pre expansion
+        const subEnv = mkSubEnv(env, _.merge({}, env.$envValues, {[varName]: item}), {path});
+        return visitNode(node.data.template, path, subEnv);
+      }));
+  } else {
+    return grouped;
+  }
 }
 
 function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButUndefined {

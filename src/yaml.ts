@@ -154,6 +154,15 @@ addCustomTag('$eq', $eq); // mapping
 ////////////////////////////////////////////////////////////////////////////////
 // looping and data restructuring custom tags
 
+export class $concat extends Tag<any[][]> {}
+addCustomTag('$concat', $concat); // sequence
+
+export class $merge extends Tag<object[]> {}
+addCustomTag('$merge', $merge); // sequence
+
+export class $fromPairs extends Tag<{key: string, value: any}[]> {}
+addCustomTag('$fromPairs', $fromPairs); // mapping
+
 export type $MapParams = {template: any, items: any[], var?: string, filter?: any};
 export class $map extends Tag<$MapParams> {}
 addCustomTag('$map', $map); // mapping
@@ -161,14 +170,19 @@ addCustomTag('$map', $map); // mapping
 export class $concatMap extends Tag<$MapParams> {}
 addCustomTag('$concatMap', $concatMap); // mapping
 
+export class $mergeMap extends Tag<$MapParams> {}
+addCustomTag('$mergeMap', $mergeMap); // mapping
+
 export class $mapListToHash extends Tag<$MapParams> {}
 addCustomTag('$mapListToHash', $mapListToHash); // mapping
 
-export class $concat extends Tag<any[][]> {}
-addCustomTag('$concat', $concat); // sequence
+export class $mapValues extends Tag<$MapParams> {}
+addCustomTag('$mapValues', $mapValues); // mapping
 
-export class $fromPairs extends Tag<{key: string, value: any}[]> {}
-addCustomTag('$fromPairs', $fromPairs); // mapping
+export class $groupBy extends Tag<{items: any, key: any, var?: string, template?: any}> {}
+addCustomTag('$groupBy', $groupBy); // mapping
+
+// TODO enumerate, zip, zipWith
 
 ////////////////////////////////////////////////////////////////////////////////
 const schema = jsyaml.Schema.create(schemaTypes);
