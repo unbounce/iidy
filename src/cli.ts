@@ -362,7 +362,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .command(
     'init-stack-args',
     description('initialize stack-args.yaml and cfn-template.yaml'),
-      (args) => args
+    (args) => args
       .demandCommand(0, 0)
       .option('force', {
         type: 'boolean', default: false,

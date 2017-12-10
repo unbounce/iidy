@@ -1,11 +1,11 @@
 import * as fs from 'fs';
 import {Arguments} from 'yargs';
 
-export async function initStackArgs(argv: Arguments) : Promise<number> {
+export async function initStackArgs(argv: Arguments): Promise<number> {
 
   const cfnTemplateArgs = `Dummy:
     Type: "AWS::CloudFormation::WaitConditionHandle"
-    Properties: {}`
+    Properties: {}`;
 
   const stackArgs = `# REQUIRED SETTINGS:
 StackName: <string>
@@ -52,14 +52,14 @@ NotificationARNs:
 
 # shell commands to run prior the cfn stack operation
 # CommandsBefore:
-#   - make build # for example`
+#   - make build # for example`;
 
 
-  let stackArgsInitialized = fs.existsSync('./stack-args.yaml')
-  let cfnTemplateInitialized = fs.existsSync('./cfn-template.yaml')
+  let stackArgsInitialized = fs.existsSync('./stack-args.yaml');
+  let cfnTemplateInitialized = fs.existsSync('./cfn-template.yaml');
 
-  let forceStackArgs = argv.force || argv.forceStackArgs
-  let forceCfnTemplate = argv.force || argv.forceCfnTemplate
+  let forceStackArgs = argv.force || argv.forceStackArgs;
+  let forceCfnTemplate = argv.force || argv.forceCfnTemplate;
 
   if (stackArgsInitialized && !forceStackArgs) {
     console.log("stack-args.yaml already exists! See help [-h] for overwrite options");
