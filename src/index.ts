@@ -789,13 +789,13 @@ function visit$expand(node: yaml.$expand, path: string, env: Env): AnyButUndefin
 
 function visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
   if (node.data.indexOf('.') > -1) {
-    const [key, ...selector] = node.data.split('.');
-    if (!_.has(env.$envValues, key)) {
-      throw new Error(`Could not find "${key}" at ${path}`);
-    }
-    const lookupRes: any = _.get(env.$envValues[key], selector);
+    const reduce: any = _.reduce; // HACK work around broken lodash typedefs
+    const lookupRes: any = reduce(node.data.split('.'), (result: any, subKey: string) => {
+      const subEnv = _.isUndefined(result) ? env : mkSubEnv(env, _.merge({}, env.$envValues, result), {path});
+      return lookupInEnv(subKey.trim(), path, subEnv);
+    }, undefined);
     if (_.isUndefined(lookupRes)) {
-      throw new Error(`Could not find path ${selector} in ${key} at ${path}`);
+      throw new Error(`Could not find ${node.data} at ${path}`);
     } else {
       return visitNode(lookupRes, path, env);
     }
