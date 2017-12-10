@@ -141,7 +141,7 @@ addCustomTag('$expand', $expand); // mapping
 ////////////////////////////////////////////////////////////////////////////////
 // looping and data restructuring custom tags
 
-export type $MapParams = {template: any, items: any[], var?: string};
+export type $MapParams = {template: any, items: any[], var?: string, filter?: any};
 export class $map extends Tag<$MapParams> {}
 addCustomTag('$map', $map); // mapping
 
