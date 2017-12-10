@@ -613,88 +613,111 @@ function validateTemplateParameter(param: $param, mergedParams: any, name: strin
   }
 }
 
+function visitCustomResource(name: string, resource: any, path: string, env: Env) {
+  const template: ExtendedCfnDoc = env.$envValues[resource.Type] as ExtendedCfnDoc;
+  if (_.isUndefined(template)) {
+    throw new Error(
+      `Invalid custom resource type: ${resource.Type} at ${path}: ${JSON.stringify(resource, null, ' ')}`)
+  }
+  // TODO s/NamePrefix/$namePrefix/
+  const prefix = _.isUndefined(resource.NamePrefix) ? name : resource.NamePrefix;
+  const stackFrame = {location: template.$location, path: appendPath(path, name)};
+  const resourceDoc = _.merge(
+    {}, template,
+    visitNode(resource.Overrides,
+      appendPath(path, `${name}.Overrides`),
+      // This is pre template expansion so the names
+      // used by $include, etc. must be in scope of the current
+      // environment, not in the template's env.
+      env));
+
+  // flag any names in the Template that should not be
+  // prefixed by visitRef, etc.
+  const $globalRefs: {[key: string]: boolean} = {};
+  _.forOwn(_.merge({}, resourceDoc.Parameters,
+    resourceDoc.Resources,
+    resourceDoc.Mappings,
+    resourceDoc.Conditions),
+    (param, key) => {
+      if (param.$global) {
+        $globalRefs[key] = true;
+      }
+    });
+
+  const $paramDefaultsEnv = mkSubEnv(
+    env, _.merge({Prefix: prefix}, template.$envValues), stackFrame);
+
+  const $paramDefaults = _.fromPairs(
+    _.filter(
+      _.map(
+        template.$params,
+        (v) => [v.Name,
+        visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
+      ([k, v]) => !_.isUndefined(v)));
+
+  const providedParams = visitNode(resource.Properties, appendPath(path, `${name}.Properties`), env);
+  // TODO factor this out:
+  // TODO validate providedParams against template.$params[].type json-schema
+  // ! 1 find any missing params with no defaults
+  // 2 check against AllowedValues and AllowedPattern
+  // 3 check min/max Value / Length
+  const mergedParams = _.assign({}, $paramDefaults, providedParams);
+  _.forEach(template.$params, (param) => validateTemplateParameter(param, mergedParams, name, env));
+
+  const subEnv = mkSubEnv(
+    env,
+    _.merge(
+      {Prefix: prefix, $globalRefs},
+      mergedParams,
+      template.$envValues),
+    stackFrame);
+
+  // TODO consider just visitNode on the entire resourceDoc here
+  //      ... that requires finding a way to avoid double processing of .Resources
+  const outputResources = visitNode(resourceDoc.Resources, appendPath(path, `${name}.Resources`), subEnv)
+  // this will call visitNode on each section as it goes. See above ^
+  mapCustomResourceToGlobalSections(resourceDoc, path, subEnv);
+
+  // TODO allow individual output resources to have distinct $namePrefixes
+  //    prefix could be a map of resname: prefix
+  // Could also add a special char prefix individual resource names and global sections to
+  // override this name remapping.
+  // This ties in with supporting singleton custom resources that should be shared amongst templates
+  return _.map(_.toPairs(outputResources), ([resname, val]) => {
+    const isGlobal = _.has(val, '$global');
+    delete val.$global;
+    if (isGlobal) {
+      return [resname, val];
+    } else {
+      return [`${subEnv.$envValues.Prefix}${resname}`, val];
+    }
+  });
+}
+
+function visitResourceNode(node: any, path: string, env: Env): AnyButUndefined {
+  const expanded: {[key: string]: any} = {};
+  for (const k in node) {
+    if (k.indexOf('$merge') === 0) {
+      const sub: any = visitNode(node[k], appendPath(path, k), env);
+      for (const k2 in sub) {
+        expanded[visitString(k2, path, env)] = sub[k2];
+      }
+    } else if (_.includes(extendedCfnDocKeys, k)) {
+      continue;
+    } else {
+      expanded[visitString(k, path, env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
+    }
+  }
+  return _visitResourceNode(expanded, path, env);
+}
+
 // TODO tighten up the return type here: {[key: string]: any}
-const visitResourceNode = (node: object, path: string, env: Env): AnyButUndefined =>
+const _visitResourceNode = (node: object, path: string, env: Env): AnyButUndefined =>
   _.fromPairs(
     _flatten( // as we may output > 1 resource for each template
       _.map(_.toPairs(node), ([name, resource]) => {
-        // TODO remove the need for this cast
-        const template: ExtendedCfnDoc = env.$envValues[resource.Type] as ExtendedCfnDoc;
-        if (template) {
-          // TODO s/NamePrefix/$namePrefix/
-          const prefix = _.isUndefined(resource.NamePrefix) ? name : resource.NamePrefix;
-          const stackFrame = {location: template.$location, path: appendPath(path, name)};
-          const resourceDoc = _.merge(
-            {}, template,
-            visitNode(resource.Overrides,
-              appendPath(path, `${name}.Overrides`),
-              // This is pre template expansion so the names
-              // used by $include, etc. must be in scope of the current
-              // environment, not in the template's env.
-              env))
-
-          // flag any names in the Template that should not be
-          // prefixed by visitRef, etc.
-          const $globalRefs: {[key: string]: boolean} = {};
-          _.forOwn(_.merge({}, resourceDoc.Parameters,
-            resourceDoc.Resources,
-            resourceDoc.Mappings,
-            resourceDoc.Conditions),
-            (param, key) => {
-              if (param.$global) {
-                $globalRefs[key] = true;
-              }
-            });
-
-          const $paramDefaultsEnv = mkSubEnv(
-            env, _.merge({Prefix: prefix}, template.$envValues), stackFrame);
-
-          const $paramDefaults = _.fromPairs(
-            _.filter(
-              _.map(
-                template.$params,
-                (v) => [v.Name,
-                visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
-              ([k, v]) => !_.isUndefined(v)));
-
-          const providedParams = visitNode(resource.Properties, appendPath(path, `${name}.Properties`), env);
-          // TODO factor this out:
-          // TODO validate providedParams against template.$params[].type json-schema
-          // ! 1 find any missing params with no defaults
-          // 2 check against AllowedValues and AllowedPattern
-          // 3 check min/max Value / Length
-          const mergedParams = _.assign({}, $paramDefaults, providedParams);
-          _.forEach(template.$params, (param) => validateTemplateParameter(param, mergedParams, name, env));
-
-          const subEnv = mkSubEnv(
-            env,
-            _.merge(
-              {Prefix: prefix, $globalRefs},
-              mergedParams,
-              template.$envValues),
-            stackFrame);
-
-          // TODO consider just visitNode on the entire resourceDoc here
-          //      ... that requires finding a way to avoid double processing of .Resources
-          const outputResources = visitNode(resourceDoc.Resources, appendPath(path, `${name}.Resources`), subEnv)
-          // this will call visitNode on each section as it goes. See above ^
-          mapCustomResourceToGlobalSections(resourceDoc, path, subEnv);
-
-          // TODO allow individual output resources to have distinct $namePrefixes
-          //    prefix could be a map of resname: prefix
-          // Could also add a special char prefix individual resource names and global sections to
-          // override this name remapping.
-          // This ties in with supporting singleton custom resources that should be shared amongst templates
-          return _.map(_.toPairs(outputResources), ([resname, val]) => {
-            const isGlobal = _.has(val, '$global');
-            delete val.$global;
-            if (isGlobal) {
-              return [resname, val];
-            } else {
-              return [`${subEnv.$envValues.Prefix}${resname}`, val];
-            }
-          })
-
+        if (_.has(env.$envValues, resource.Type)) {
+          return visitCustomResource(name, resource, path, env);
         } else if (resource.Type &&
           (resource.Type.indexOf('AWS') === 0
             || resource.Type.indexOf('Custom') === 0)) {
