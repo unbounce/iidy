@@ -743,6 +743,12 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefin
     return visit$string(node, path, env);
   } else if (node instanceof yaml.$parseYaml) {
     return visit$parseYaml(node, path, env);
+  } else if (node instanceof yaml.$if) {
+    return visit$if(node, path, env);
+  } else if (node instanceof yaml.$eq) {
+    return visit$eq(node, path, env);
+  } else if (node instanceof yaml.$not) {
+    return visit$not(node, path, env);
   } else if (node instanceof yaml.$let) {
     return visit$let(node, path, env);
   } else if (node instanceof yaml.$map) {
@@ -802,6 +808,25 @@ function visit$include(node: yaml.$include, path: string, env: Env): AnyButUndef
   } else {
     return visitNode(lookupInEnv(node.data, path, env), path, env);
   }
+}
+
+function visit$if(node: yaml.$if, path: string, env: Env): AnyButUndefined {
+  if (visitNode(node.data.test, path, env)) {
+    return visitNode(node.data.then, path, env);
+  } else {
+    return visitNode(node.data.else, path, env);
+  }
+}
+
+function visit$eq(node: yaml.$eq, path: string, env: Env): AnyButUndefined {
+  return visitNode(node.data[0], path, env) == visitNode(node.data[1], path, env);
+}
+
+function visit$not(node: yaml.$not, path: string, env: Env): AnyButUndefined {
+  const expr = (_.isArray(node.data) && node.data.length === 1)
+    ? node.data[0]
+    : node.data;
+  return !visitNode(expr, path, env);
 }
 
 function visit$let(node: yaml.$let, path: string, env: Env): AnyButUndefined {

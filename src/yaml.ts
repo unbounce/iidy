@@ -139,6 +139,19 @@ export class $expand extends Tag {} // TODO narrow type
 addCustomTag('$expand', $expand); // mapping
 
 ////////////////////////////////////////////////////////////////////////////////
+// boolean / logical branching custom tags
+
+export type $IfParams = {test: any, then: any, else: any};
+export class $if extends Tag<$IfParams> {}
+addCustomTag('$if', $if); // mapping
+
+export class $not extends Tag<any> {}
+addCustomTag('$not', $not); // mapping
+
+export class $eq extends Tag<[any, any]> {}
+addCustomTag('$eq', $eq); // mapping
+
+////////////////////////////////////////////////////////////////////////////////
 // looping and data restructuring custom tags
 
 export type $MapParams = {template: any, items: any[], var?: string, filter?: any};
