@@ -336,7 +336,7 @@ MIT.
 
 ## Changelog
 * [v1.6.0-rc6](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc6)
-  notes are WIP -- December 10, 2017
+  a variety of new preprocessor features and `iidy init-stack-args` -- December 10, 2017
 
 * [v1.6.0-rc5](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc5)
   work around bug in aws-sdk re presence of ~/.aws & add support for
