@@ -998,7 +998,7 @@ export function visitSub(node: yaml.Sub, path: string, env: Env): yaml.Sub {
       env, _.merge({}, env.$envValues, {$globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))}),
       {path});
     const template = visitSubStringTemplate(visitNode(node.data[0], path, env), path, subEnv);
-    return new yaml.Sub([template, templateEnv]);
+    return new yaml.Sub([template, visitNode(templateEnv, path, env)]);
   } else if (_.isString(node.data)) {
     return new yaml.Sub(visitSubStringTemplate(node.data, path, env));
   } else {
