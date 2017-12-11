@@ -67,8 +67,8 @@ brew install iidy
 ### Binary Installation on Other Platforms
 ```
 # Grab the appropriate binary from the releases page.
-wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc5/iidy-linux-amd64.zip
-# or wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc5/iidy-macos-amd64.zip
+wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc6/iidy-linux-amd64.zip
+# or wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc6/iidy-macos-amd64.zip
 unzip iidy*.zip
 chmod +x iidy
 mv iidy /usr/local/bin/   # or somewhere more appropriate
@@ -335,6 +335,9 @@ commands in `package.json` for details about the build process.
 MIT.
 
 ## Changelog
+* [v1.6.0-rc6](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc6)
+  notes are WIP -- December 10, 2017
+
 * [v1.6.0-rc5](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc5)
   work around bug in aws-sdk re presence of ~/.aws & add support for
   reusing aws cli sts role cache -- November 22, 2017
