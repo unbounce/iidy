@@ -304,10 +304,11 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
   },
 
   cfn: async (location, baseLocation) => {
-    let resolvedLocation, StackName, field, fieldKey;
+    let resolvedLocationParts, StackName, field, fieldKey;
     let data: any, doc: any;
     const cfn = new aws.CloudFormation();
-    [, field, resolvedLocation] = location.split(':');
+    [, field, ...resolvedLocationParts] = location.split(':');
+    const resolvedLocation = resolvedLocationParts.join(':');
     if (field === 'export') {
       const exports0: aws.CloudFormation.Exports = await paginateAwsCall((args) => cfn.listExports(args), {}, 'Exports');
       const exports = _.fromPairs(_.map(exports0, (ex) => [ex.Name, ex]));
