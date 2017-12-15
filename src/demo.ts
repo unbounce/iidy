@@ -8,7 +8,7 @@ import * as tmp from 'tmp';
 import * as cli from 'cli-color';
 
 import timeout from './timeout';
-import {transform} from './index';
+import {transform} from './preprocess';
 import * as yaml from './yaml';
 
 type Banner = {

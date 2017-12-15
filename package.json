@@ -3,7 +3,6 @@
   "version": "1.6.0-rc6",
   "description": "A tool for working with CloudFormation and yaml templates.",
   "main": "lib/cli.js",
-  "types": "lib/index",
   "bin": "bin/iidy",
   "scripts": {
     "prepare": "npm run build",

@@ -6,7 +6,7 @@ import {Arguments} from 'yargs';
 
 import configureAWS from './configureAWS';
 import * as yaml from './yaml';
-import {transform} from './index';
+import {transform} from './preprocess';
 import {_loadStackArgs} from './cfn';
 import {logger} from './logger';
 

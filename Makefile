@@ -1,10 +1,9 @@
 rfind = $(shell find '$(1)' -name '$(2)')
 
 # TODO add this back in: Makefile
-SRC_FILES := src/index.ts \
-	$(call rfind,src,[^.]*.ts) \
-	$(call rfind,src,[^.]*.js) \
-	$(call rfind,src,[^.]*.json)
+SRC_FILES := $(call rfind,src,[^.]*.ts) \
+		$(call rfind,src,[^.]*.js) \
+		$(call rfind,src,[^.]*.json)
 
 EXAMPLE_FILES = $(shell find examples/ -type f)
 
@@ -75,7 +74,7 @@ $(PREREQS_STATEFILE) :
 	@which node
 	@touch $(PREREQS_STATEFILE)
 
-$(DEPS_STATEFILE) : $(PREREQS_STATEFILE) package.json
+$(DEPS_STATEFILE) : Makefile $(PREREQS_STATEFILE) package.json
 	@mkdir -p .make
 	npm install
 	@touch $(DEPS_STATEFILE)

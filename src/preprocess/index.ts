@@ -21,10 +21,10 @@ import * as request from 'request-promise-native';
 
 import * as tv4 from 'tv4';
 
-import * as yaml from './yaml';
-import {logger} from './logger';
-import paginateAwsCall from './paginateAwsCall';
-import {_getParamsByPath} from './params';
+import * as yaml from '../yaml';
+import {logger} from '../logger';
+import paginateAwsCall from '../paginateAwsCall';
+import {_getParamsByPath} from '../params';
 
 const HANDLEBARS_RE = /{{(.*?)}}/;
 const CFN_SUB_RE = /\${([^!].*?)}/g;
