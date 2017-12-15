@@ -10,7 +10,7 @@ export interface ParamCommands {
 }
 
 const lazyLoad = (fnname: keyof ParamCommands): Handler =>
-  (args) => require('./index')[fnname](args);
+  (args) => require('../preprocess')[fnname](args);
 
 const lazy: ParamCommands = {
   setParam: lazyLoad('setParam'),

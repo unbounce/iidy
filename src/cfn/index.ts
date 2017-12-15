@@ -33,7 +33,7 @@ import {AWSRegion} from '../aws-regions';
 import timeout from '../timeout';
 import def from '../default';
 
-import {readFromImportLocation, transform} from '../index';
+import {readFromImportLocation, transform} from '../preprocess';
 import {getKMSAliasForParameter} from '../params';
 
 export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' | 'EXECUTE_CHANGESET' | 'ESTIMATE_COST';

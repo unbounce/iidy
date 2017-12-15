@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 
-import * as pre from '../index';
+import * as pre from '../preprocess';
 import * as yaml from '../yaml';
 import * as jsyaml from 'js-yaml';
 
