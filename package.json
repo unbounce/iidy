@@ -12,7 +12,7 @@
     "dev-test-watch": "mocha-typescript-watch -p tsconfig.json lib/tests/**/*js",
     "lint": "tslint -p . src/*ts src/**/*ts",
     "pkg-binaries": "pkg --out-path dist -t node8-macos,node8-linux package.json",
-    "test": "make test"
+    "test": "mocha lib/tests/**/*js"
   },
   "author": "Tavis Rudd <tavis@unbounce.com>",
   "repository": "https://github.com/unbounce/iidy",
