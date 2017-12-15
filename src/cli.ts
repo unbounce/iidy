@@ -70,6 +70,7 @@ export interface CfnStackCommands {
 }
 
 export interface MiscCommands {
+  publishCfnTemplate: Handler;
   initStackArgs: Handler;
   renderMain: Handler;
   demoMain: Handler;
@@ -82,7 +83,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './index' | './demo' | './render' | './initStackArgs';
+type LazyLoadModules = './cfn' | './index' | './demo' | './render' | './initStackArgs' | './publishCfnTemplate';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -96,6 +97,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./render')[fnname](args);
     } else if (modName === './initStackArgs') {
       return require('./initStackArgs')[fnname](args);
+    } else if (modName === './publishCfnTemplate') {
+      return require('./publishCfnTemplate')[fnname](args);
     }
   }
 
@@ -119,6 +122,7 @@ const lazy: Commands = {
   demoMain: lazyLoad('demoMain', './demo'),
   convertStackToIIDY: lazyLoad('convertStackToIIDY'),
   initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
+  publishCfnTemplate: lazyLoad('publishCfnTemplate', './publishCfnTemplate'),
   // TODO example command pull down an examples dir
 
 };
@@ -358,6 +362,21 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
       }),
     wrapMainHandler(commands.convertStackToIIDY))
+
+    .command(
+    'pubish-cfn-template',
+    description('publish current ./cfn-template to s3 specified in the stack-args.yaml Template'),
+    (args) => args
+      .demandCommand(0, 0)
+      .option('cfn-template', {
+        type: 'string', default: null,
+        description: description('Specify the CloudFormation template to upload')
+      })
+      .option('s3-bucket', {
+        type: 'string', default: null,
+        description: description('Specify the s3 bucket path to be used')
+      }),
+      wrapMainHandler(commands.publishCfnTemplate))
 
     .command(
     'init-stack-args',
