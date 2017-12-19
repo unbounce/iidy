@@ -506,6 +506,42 @@ function runCommandSet(commands: string[]) {
   }
 }
 
+function parseS3HttpUrl(input: string) {
+  const error = new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
+  const uri = url.parse(input);
+
+  if (typeof uri === "undefined") {
+    throw error;
+  } else {
+    let bucket, key, region;
+    const hostname = uri.hostname || '';
+    const pathname = decodeURIComponent(uri.pathname || '');
+
+    if (/^s3[\.-](\w{2}-\w{4,9}-\d\.)?amazonaws\.com/.test(hostname)) {
+      bucket = pathname.split('/')[1];
+      key = pathname.split('/').slice(2).join('/');
+    } else if (/\.s3[\.-](\w{2}-\w{4,9}-\d\.)?amazonaws\.com/.test(hostname)) {
+      bucket = hostname.split('.')[0];
+      key = pathname.slice(1);
+    } else {
+      throw error;
+    }
+
+    if (/^s3\.amazonaws\.com/.test(uri.hostname || '')) {
+      region = 'us-east-1';
+    } else {
+      const match = hostname.match(/^s3-(\w{2}-\w{4,9}-\d)?.amazonaws\.com/) || [];
+      if (match[1]) {
+        region = match[1];
+      } else {
+        throw error;
+      }
+    }
+
+    return { bucket, key, region }
+  }
+}
+
 async function loadCFNStackPolicy(policy: string | object | undefined, baseLocation: string):
   Promise<{StackPolicyBody?: string, StackPolicyURL?: string}> {
 
@@ -545,6 +581,11 @@ async function loadCFNTemplate(location: string, baseLocation: string):
   Promise<{TemplateBody?: string, TemplateURL?: string}> {
   if (_.isUndefined(location)) {
     return {};
+  }
+  if (location.match(/^http/) !== null) {
+    const params = parseS3HttpUrl(location);
+    const s3 = new aws.S3({region: params.region});
+    location = s3.getSignedUrl('getObject', {Bucket: params.bucket, Key: params.key});
   }
   // TODO dry this and loadCFNStackPolicy up
   const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
