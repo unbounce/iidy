@@ -71,6 +71,7 @@ export interface CfnStackCommands {
 
 export interface MiscCommands {
   initStackArgs: Handler;
+  publishApprovedTemplate: Handler;
   renderMain: Handler;
   demoMain: Handler;
   convertStackToIIDY: Handler;
@@ -82,7 +83,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './index' | './demo' | './render' | './initStackArgs';
+type LazyLoadModules = './cfn' | './index' | './demo' | './render' | './initStackArgs' | './publishApprovedTemplate';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -96,6 +97,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./render')[fnname](args);
     } else if (modName === './initStackArgs') {
       return require('./initStackArgs')[fnname](args);
+    } else if (modName === './publishApprovedTemplate') {
+      return require('./publishApprovedTemplate')[fnname](args);
     }
   }
 
@@ -119,6 +122,7 @@ const lazy: Commands = {
   demoMain: lazyLoad('demoMain', './demo'),
   convertStackToIIDY: lazyLoad('convertStackToIIDY'),
   initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
+  publishApprovedTemplate: lazyLoad('publishApprovedTemplate', './publishApprovedTemplate'),
   // TODO example command pull down an examples dir
 
 };
@@ -358,6 +362,17 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
       }),
     wrapMainHandler(commands.convertStackToIIDY))
+
+    .command(
+    'publish-approved-template <argsfile>',
+    description('publish approved template to s3'),
+    (args) => args
+      .demandCommand(0, 0)
+      .option('publish-template', {
+        type: 'boolean', default: false,
+        description: description('create or update the stack')
+      }),
+    wrapMainHandler(commands.publishApprovedTemplate))
 
     .command(
     'init-stack-args',
