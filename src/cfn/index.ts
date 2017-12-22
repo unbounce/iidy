@@ -41,6 +41,7 @@ export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' 
 export type StackArgs = {
   StackName: string
   Template: string
+  ApprovedTemplateLocation?: string
   Region?: AWSRegion
   Profile?: string
   Capabilities?: aws.CloudFormation.Capabilities
@@ -1515,6 +1516,7 @@ export async function convertStackToIIDY(argv: Arguments): Promise<number> {
   const stackArgs: StackArgs = {
     Template: './cfn-template.yaml',
     StackName: StackNameArg,
+    ApprovedTemplateLocation: undefined,
     Parameters,
     Tags,
     StackPolicy: './stack-policy.json',

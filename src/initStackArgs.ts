@@ -7,11 +7,16 @@ export async function initStackArgs(argv: Arguments): Promise<number> {
     Type: "AWS::CloudFormation::WaitConditionHandle"
     Properties: {}`;
 
-  const stackArgs = `# REQUIRED SETTINGS:
+  const stackArgs = `# INITIALIZED STACK ARGS
+# $imports:
+#   environment: env:ENVIRONMENT
+
+# REQUIRED SETTINGS:
 StackName: <string>
 Template: ./cfn-template.yaml
 # optionally you can use the yaml pre-processor by prepending 'render:' to the filename
 # Template: render:<local file path or s3 path>
+# ApprovedTemplateLocation: s3://your-bucket/
 
 # OPTIONAL SETTINGS:
 # Region: <aws region name>
