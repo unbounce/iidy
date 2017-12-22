@@ -538,7 +538,18 @@ function parseS3HttpUrl(input: string) {
       }
     }
 
-    return { bucket, key, region }
+    return {bucket, key, region}
+  }
+}
+
+function maybeSignS3HttpUrl(location: string) {
+  const isUnsignedS3HttpUrl = location.match(/^http/) && location.match(/s3/) && !location.match(/Signature=/);
+  if (isUnsignedS3HttpUrl) {
+    const params = parseS3HttpUrl(location);
+    const s3 = new aws.S3({region: params.region});
+    return s3.getSignedUrl('getObject', {Bucket: params.bucket, Key: params.key});
+  } else {
+    return location;
   }
 }
 
@@ -548,18 +559,13 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
   if (_.isUndefined(policy)) {
     return {};
   } else if (_.isString(policy)) {
-    // TODO dry this and loadCfnTemplate up
-    const location = policy;
-    const shouldRender = (location.trim().indexOf('render:') === 0);
-    const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
+    const location0 = policy;
+    const shouldRender = (location0.trim().indexOf('render:') === 0);
+    const location = maybeSignS3HttpUrl(location0.trim().replace(/^ *render: */, ''));
+    const importData = await readFromImportLocation(location, baseLocation);
     if (!shouldRender && importData.importType === 's3') {
-      const s3 = new aws.S3();
-      const {host, path} = url.parse(importData.resolvedLocation);
-      if (!host || !path || path === '/') {
-        throw new Error(`Invalid S3 Template url: ${location}`);
-      } else {
-        return {StackPolicyURL: s3.getSignedUrl('getObject', {Bucket: host, Key: path.slice(1)})};
-      }
+      throw new Error(`Use https:// urls when using a plain (non-rendered) StackPolicy from S3: ${location}`);
+      // note, s3 urls are valid for the shouldRender case below
     } else if (!shouldRender && importData.importType === 'http') {
       return {StackPolicyURL: importData.resolvedLocation};
     } else {
@@ -577,38 +583,40 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
 }
 
 const TEMPLATE_MAX_BYTES = 51199
-async function loadCFNTemplate(location: string, baseLocation: string):
+async function loadCFNTemplate(location0: string, baseLocation: string):
   Promise<{TemplateBody?: string, TemplateURL?: string}> {
-  if (_.isUndefined(location)) {
+  if (_.isUndefined(location0)) {
     return {};
   }
-  if (location.match(/^http/) !== null) {
-    const params = parseS3HttpUrl(location);
-    const s3 = new aws.S3({region: params.region});
-    location = s3.getSignedUrl('getObject', {Bucket: params.bucket, Key: params.key});
-  }
-  // TODO dry this and loadCFNStackPolicy up
-  const importData = await readFromImportLocation(location.trim().replace(/^ *render:/, ''), baseLocation);
-  const shouldRender = (location.trim().indexOf('render:') === 0);
-  if (!shouldRender && importData.data.indexOf('$imports:') > -1) {
-    throw new Error(
-      `Your cloudformation Template from ${location} appears to`
-      + ' use iidy\'s yaml pre-processor syntax.\n'
-      + ' You need to prefix the template location with "render:".\n'
-      + ` e.g.   Template: "render:${location}"`
-    );
-  }
-  if (!shouldRender && importData.importType === 's3') {
-    const s3 = new aws.S3();
-    const {host, path} = url.parse(importData.resolvedLocation);
-    if (!host || !path || path === '/') {
-      throw new Error(`Invalid S3 Template url: ${location}`);
-    } else {
-      return {TemplateURL: s3.getSignedUrl('getObject', {Bucket: host, Key: path.slice(1)})};
-    }
-  } else if (!shouldRender && importData.importType === 'http') {
-    return {TemplateURL: importData.resolvedLocation};
+  const shouldRender = (location0.trim().indexOf('render:') === 0);
+  const location = maybeSignS3HttpUrl(location0.trim().replace(/^ *render: */, ''));
+  // We auto-sign any s3 http urls here ^ prior to reading from them
+  // (via readFromImportLocation below) or passing them to CFN via
+  // TemplateUrl. This allows iidy to handle cross-region
+  // TemplateUrls. s3:// urls don't provide any means of encoding
+  // the source region and CFN doesn't accept them.
+
+  // TODO maybeSignS3HttpUrl might need updating later if we add
+  // support for baseLocation here being an http url itself: i.e.
+  // relative imports. This is probably an edge-case we don't need to
+  // support but it's worth noting.
+
+  if (!shouldRender && location.match(/^s3:/)) {
+    throw new Error(`Use https:// urls when using a plain (non-rendered) Template from S3: ${location}`);
+    // note, s3 urls are valid for the shouldRender case below
+  } else if (!shouldRender && location.match(/^http/)) {
+    // note the handling of unsigned s3 http urls above in maybeSignS3HttpUrl ^
+    return {TemplateURL: location};
   } else {
+    const importData = await readFromImportLocation(location, baseLocation);
+    if (importData.data.indexOf('$imports:') > -1) {
+      throw new Error(
+        `Your cloudformation Template from ${location} appears to`
+        + ' use iidy\'s yaml pre-processor syntax.\n'
+        + ' You need to prefix the template location with "render:".\n'
+        + ` e.g.   Template: "render:${location}"`
+      );
+    }
     const body = shouldRender
       ? yaml.dump(await transform(importData.doc, importData.resolvedLocation))
       : importData.data;
