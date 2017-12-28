@@ -10,6 +10,7 @@ import configureAWS from '../configureAWS';
 import def from '../default';
 import {getKMSAliasForParameter} from '../params';
 
+import {GlobalArguments} from '../cli';
 
 function parameterizeEnv(s0: string, environments = ['development', 'integration', 'staging', 'production']): string {
   let s = s0;
@@ -96,8 +97,17 @@ function sortMapByWeights(node0: any, weights: any): any {
   return _.fromPairs(nodePairs);
 }
 
-export async function convertStackToIIDY(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export type ConvertStackArguments = GlobalArguments & {
+  outputDir: string;
+  stackname: string;
+  stage?: string;
+  sortkeys: boolean;
+  project?: string;
+  moveParamsToSsm: boolean;
+};
+
+export async function convertStackToIIDY(argv: ConvertStackArguments): Promise<number> {
+  await configureAWS(argv);
   const outputDir = argv.outputDir;
   const StackName = argv.stackname;
   const TemplateStage = def('Original', argv.stage);

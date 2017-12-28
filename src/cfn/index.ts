@@ -37,6 +37,9 @@ import {diff} from '../diff';
 
 import {readFromImportLocation, transform} from '../preprocess';
 import {getKMSAliasForParameter} from '../params';
+import {GlobalArguments} from '../cli';
+
+export type GenericCLIArguments = GlobalArguments & Arguments;
 
 export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' | 'EXECUTE_CHANGESET' | 'ESTIMATE_COST';
 
@@ -50,7 +53,9 @@ export type StackArgs = {
   Tags?: {[key: string]: string}
   Parameters?: {[key: string]: string}
   NotificationARNs?: aws.CloudFormation.NotificationARNs
-  RoleARN?: string
+  AssumeRoleARN?: string
+  ServiceRoleARN?: string
+  RoleARN?: string // DEPRECATED in favour of ServiceRoleArn
   TimeoutInMinutes?: number
   OnFailure?: 'ROLLBACK' | 'DELETE' | 'DO_NOTHING'
   DisableRollback?: boolean
@@ -799,16 +804,22 @@ export async function addDefaultNotificationArn(args: StackArgs): Promise<StackA
   return args;
 }
 
-export async function loadStackArgs(argv: Arguments): Promise<StackArgs> {
+export async function loadStackArgs(argv: GenericCLIArguments): Promise<StackArgs> {
   // TODO json schema validation
-  const args = await _loadStackArgs(argv.argsfile, argv.region, argv.profile, argv.environment);
+  const args = await _loadStackArgs(argv.argsfile, argv);
   if (argv.clientRequestToken) {
     args.ClientRequestToken = argv.clientRequestToken;
   }
   return addDefaultNotificationArn(args);
 }
 
-export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
+//export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
+export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments): Promise<StackArgs> {
+  const region: string | undefined = argv.region;
+  const profile: string | undefined = argv.profile;
+  const assumeRoleArn: string | undefined = argv.assumeRoleArn;
+  const environment: string | undefined = argv.environment;
+
   let argsdata: any; // tslint:disable-line
   if (!fs.existsSync(argsfile)) {
     throw new Error(`stack args file "${argsfile}" not found`);
@@ -836,7 +847,8 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
     }
   }
   // have to do it before the call to transform
-  await configureAWS(profile || argsdata.Profile, region || argsdata.Region); // tslint:disable-line
+  // note, the aws settings in argv trump those from argsdata
+  await configureAWS(_.merge({profile: argsdata.Profile, region: argsdata.Region}, argv)); // tslint:disable-line
 
   if (argsdata.CommandsBefore) {
     // TODO improve CLI output of this and think about adding
@@ -894,12 +906,15 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
   } else {
     logger.debug(`TemplateURL: ${TemplateURL}`);
   }
+  if (stackArgs.RoleARN) {
+    logger.warning('RoleARN in stack-args.yaml is deprecated. Use ServiceRoleARN');
+  }
 
   return {
     StackName: def(stackArgs.StackName, stackName),
     Capabilities: stackArgs.Capabilities,
     NotificationARNs: stackArgs.NotificationARNs,
-    RoleARN: stackArgs.RoleARN,
+    RoleARN: stackArgs.ServiceRoleARN || stackArgs.RoleARN,
     OnFailure,
     TimeoutInMinutes: stackArgs.TimeoutInMinutes,
     ResourceTypes: stackArgs.ResourceTypes,
@@ -959,7 +974,8 @@ function showFinalComandSummary(wasSuccessful: boolean): number {
 
 abstract class AbstractCloudFormationStackCommand {
   region: AWSRegion
-  readonly profile: string
+  readonly profile?: string
+  readonly assumeRoleArn?: string
   readonly stackName: string
   readonly argsfile: string
 
@@ -972,16 +988,18 @@ abstract class AbstractCloudFormationStackCommand {
   protected _previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>
   protected readonly _watchStackEvents: boolean = true;
 
-  constructor(readonly argv: Arguments, readonly stackArgs: StackArgs) {
-    this.region = this.argv.region || this.stackArgs.Region; // tslint:disable-line
+  constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
+    // note, this.region is set in _setup after the cal to configureAWS
     this.profile = this.argv.profile || this.stackArgs.Profile;// tslint:disable-line
+    this.assumeRoleArn = this.argv.assumeRoleArn || this.stackArgs.AssumeRoleARN;// tslint:disable-line
+
     this.stackName = this.argv.stackName || this.stackArgs.StackName;// tslint:disable-line
     this.argsfile = argv.argsfile;
   }
 
   async _setup() {
-    await configureAWS(this.profile, this.region)
-    this.region = def(getCurrentAWSRegion(), this.region);
+    await configureAWS(this);
+    this.region = def(getCurrentAWSRegion(), this.argv.region || this.stackArgs.Region);
     this._cfn = new aws.CloudFormation()
     if (this._showPreviousEvents) {
       this._previousStackEventsPromise = getAllStackEvents(this.stackName);
@@ -1278,8 +1296,8 @@ class EstimateStackCost extends AbstractCloudFormationStackCommand {
 }
 
 const wrapCommandCtor =
-  (Ctor: new (argv: Arguments, stackArgs: StackArgs) => AbstractCloudFormationStackCommand) =>
-    async function(argv: Arguments): Promise<number> {
+  (Ctor: new (argv: GenericCLIArguments, stackArgs: StackArgs) => AbstractCloudFormationStackCommand) =>
+    async function(argv: GenericCLIArguments): Promise<number> {
       return new Ctor(argv, await loadStackArgs(argv)).run();
     }
 
@@ -1316,7 +1334,7 @@ export async function diffStackTemplates(StackName: string, stackArgs: StackArgs
   }
 }
 
-export async function updateStackMain(argv: Arguments): Promise<number> {
+export async function updateStackMain(argv: GenericCLIArguments): Promise<number> {
   if (argv.changeset) {
     const stackArgs = await loadStackArgs(argv);
     const region = getCurrentAWSRegion();
@@ -1357,12 +1375,12 @@ export async function updateStackMain(argv: Arguments): Promise<number> {
 };
 
 
-export async function createChangesetMain(argv: Arguments): Promise<number> {
+export async function createChangesetMain(argv: GenericCLIArguments): Promise<number> {
   return new CreateChangeSet(argv, await loadStackArgs(argv)).run();
 };
 
-export async function listStacksMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export async function listStacksMain(argv: GenericCLIArguments): Promise<number> {
+  await configureAWS(argv);
   const tagsFilter: [string, string][] = _.map(argv.tagFilter, (tf: string) => {
     const [key, ...value] = tf.split('=');
     return [key, value.join('=')] as [string, string];
@@ -1371,8 +1389,8 @@ export async function listStacksMain(argv: Arguments): Promise<number> {
   return 0;
 }
 
-export async function watchStackMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export async function watchStackMain(argv: GenericCLIArguments): Promise<number> {
+  await configureAWS(argv);
   const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
   const startTime = await getReliableStartTime();
@@ -1392,8 +1410,8 @@ export async function watchStackMain(argv: Arguments): Promise<number> {
   return 0;
 }
 
-export async function describeStackMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export async function describeStackMain(argv: GenericCLIArguments): Promise<number> {
+  await configureAWS(argv);
   const region = getCurrentAWSRegion();
   const StackName = argv.stackname;
   const stackPromise = getStackDescription(StackName);
@@ -1412,8 +1430,8 @@ export async function describeStackMain(argv: Arguments): Promise<number> {
   return 0;
 }
 
-export async function getStackInstancesMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<number> {
+  await configureAWS(argv);
   const StackName = argv.stackname;
   const region = getCurrentAWSRegion();
 
@@ -1454,8 +1472,8 @@ export async function getStackInstancesMain(argv: Arguments): Promise<number> {
   return 0;
 }
 
-export async function getStackTemplateMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<number> {
+  await configureAWS(argv);
 
   const StackName = argv.stackname;
   const TemplateStage = def('Original', argv.stage);
@@ -1486,8 +1504,8 @@ export async function getStackTemplateMain(argv: Arguments): Promise<number> {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-export async function deleteStackMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+export async function deleteStackMain(argv: GenericCLIArguments): Promise<number> {
+  await configureAWS(argv);
   const region = getCurrentAWSRegion();
 
   const StackName = argv.stackname;

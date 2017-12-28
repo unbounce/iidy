@@ -3,6 +3,7 @@ import * as pathmod from 'path';
 
 import * as _ from 'lodash';
 import {Arguments} from 'yargs';
+import {search} from 'jmespath';
 
 import configureAWS from './configureAWS';
 import * as yaml from './yaml';
@@ -10,7 +11,7 @@ import {transform} from './preprocess';
 import {_loadStackArgs} from './cfn';
 import {logger} from './logger';
 
-import {search} from 'jmespath';
+import {GlobalArguments} from './cli';
 
 export function isStackArgsFile(location: string, doc: any): boolean {
   if (pathmod.basename(location).match(/stack-args/)) {
@@ -20,15 +21,24 @@ export function isStackArgsFile(location: string, doc: any): boolean {
   }
 }
 
-export async function renderMain(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region)
+export type RenderArguments = GlobalArguments & {
+  template: string;
+  outfile: string;
+  overwrite: boolean;
+  query?: string;
+  format?: string;
+};
+
+export async function renderMain(argv: RenderArguments): Promise<number> {
+  await configureAWS(argv);
   const rootDocLocation = pathmod.resolve(argv.template);
   const content = fs.readFileSync(rootDocLocation);
   const input = yaml.loadString(content, rootDocLocation);
 
   let outputDoc: any;
   if (isStackArgsFile(rootDocLocation, input)) {
-    outputDoc = await _loadStackArgs(rootDocLocation, argv.region, argv.profile, argv.environment);
+    // TODO remove the cast to any below after tightening the args on _loadStackArgs
+    outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
   } else {
     outputDoc = await transform(input, rootDocLocation);
   }

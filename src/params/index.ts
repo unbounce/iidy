@@ -52,7 +52,7 @@ export type GetParamArgs = GlobalArguments & {path: string, decrypt: boolean, fo
 export type GetParamsByPathArgs = GetParamArgs & {recursive: boolean};
 
 export async function setParam(argv: SetParamArgs): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+  await configureAWS(argv);
 
   const Name = argv.path;
   const Value = argv.value.toString();
@@ -76,7 +76,7 @@ async function mergeParamTags(param: aws.SSM.Parameter) {
 }
 
 export async function getParam(argv: GetParamArgs): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+  await configureAWS(argv);
   const ssm = new aws.SSM();
   const res = await ssm.getParameter({Name: argv.path, WithDecryption: argv.decrypt}).promise();
 
@@ -114,7 +114,7 @@ export async function _getParamsByPath(Path: string): Promise<aws.SSM.ParameterL
 }
 
 export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+  await configureAWS(argv);
   const ssm = new aws.SSM();
   const args = {
     Path: argv.path,
@@ -148,7 +148,7 @@ async function _getParameterHistory(Name: aws.SSM.ParameterName, WithDecryption:
 }
 
 export async function getParamHistory(argv: GetParamArgs): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
+  await configureAWS(argv);
   const ssm = new aws.SSM();
   const sorted = _.sortBy(await _getParameterHistory(argv.path, argv.decrypt), 'LastModifiedDate')
   const current = sorted[sorted.length - 1];
