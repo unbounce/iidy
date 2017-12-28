@@ -20,54 +20,48 @@ import * as aws from 'aws-sdk';
 import {logger} from './logger';
 import {AWSRegion} from './aws-regions';
 
-async function loadSharedIniFile(profile?: string) {
-  // note, profile might be undefined here and that's fine.
-  const credentials = new aws.SharedIniFileCredentials({profile});
-  //await credentials.refreshPromise();
-  aws.config.credentials = credentials;
+function getCredentialsProviderChain(profile?: string) {
+  const hasDotAWS = (awsUserDir && fs.existsSync(awsUserDir));
+  if (profile) {
+    if (profile.startsWith('arn:')) {
+      throw new Error('profile was set to a role ARN. Use AssumeRoleArn instead');
+    }
+    if (!hasDotAWS) {
+      throw new Error('AWS profile provided but ~/.aws/{config,credentials} not found.');
+    }
+    return new aws.CredentialProviderChain([() => new aws.SharedIniFileCredentials({profile})]);
+  } else {
+    return new aws.CredentialProviderChain();
+  }
 }
 
-async function configureAWS(profile?: string, region?: AWSRegion) {
-  const resolvedProfile: string | undefined = (
-    profile || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE);
-
-  if (process.env.AWS_ACCESS_KEY_ID && !resolvedProfile) {
-    logger.debug(`Using AWS env vars. AWS_ACCESS_KEY_ID: ${process.env.AWS_ACCESS_KEY_ID}.`);
-  } else if (awsUserDir && fs.existsSync(awsUserDir)) {
-    logger.debug(`Using AWS ~/.aws/{config,credentials} file: profile: ${resolvedProfile}.`);
-    const cliCacheDir = path.join(awsUserDir, 'cli', 'cache');
-    if (USE_AWS_CLI_STS_CACHE && resolvedProfile && fs.existsSync(cliCacheDir)) {
-      // look for a valid cache entry in ./aws/cli/cache/
-      const fileRE = new RegExp(`^${resolvedProfile}--`);
-      const profileCacheFiles = _.filter(fs.readdirSync(cliCacheDir), (filename) => fileRE.test(filename));
-      if (profileCacheFiles.length === 1) {
-        const cachedEntry = JSON.parse(fs.readFileSync(path.join(cliCacheDir, profileCacheFiles[0]), 'utf-8').toString());
-        await loadSharedIniFile(undefined); // load master credentials first
-        const sts = new aws.STS();
-        const credentialsFrom: any = _.get(sts, 'credentialsFrom'); // work around missing typedef
-        const assumedCreds: aws.TemporaryCredentials = credentialsFrom(cachedEntry);
-        const credentialsExpired = (new Date(cachedEntry.Credentials.Expiration) < new Date() || assumedCreds.needsRefresh());
-        if (credentialsExpired) {
-          await loadSharedIniFile(resolvedProfile);
-        } else {
-          aws.config.credentials = assumedCreds;
-        }
-      } else {
-        await loadSharedIniFile(resolvedProfile);
-      }
-    } else {
-      await loadSharedIniFile(resolvedProfile);
-    }
-  } else if (resolvedProfile) {
-    throw new Error('AWS profile provided but ~/.aws/{config,credentials} not found.')
+async function resolveCredentials(profile?: string, assumeRoleArn?: string) {
+  if (assumeRoleArn) {
+    const masterCreds = await getCredentialsProviderChain(profile).resolvePromise();
+    const tempCreds = new aws.TemporaryCredentials({RoleArn: assumeRoleArn, RoleSessionName: 'iidy'}, masterCreds);
+    await tempCreds.getPromise();
+    aws.config.credentials = tempCreds;
   } else {
-    logger.debug('Using AWS ec2 instance profile.');
+    // note, profile might be undefined here and that's fine.
+    aws.config.credentials = await getCredentialsProviderChain(profile).resolvePromise();
+    // TODO optionally cache the credentials here
   }
+}
 
+// TODO change to this interface
+export interface AWSConfig {
+  profile?: string;
+  region?: AWSRegion;
+  assumeRoleArn?: string;
+}
 
-  if (typeof region === 'string') {
-    logger.debug(`Setting AWS region: ${region}.`);
-    aws.config.update({region});
+async function configureAWS(config: AWSConfig) {
+  const resolvedProfile: string | undefined = (
+    config.profile || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE);
+  await resolveCredentials(resolvedProfile, config.assumeRoleArn);
+  if (typeof config.region === 'string') {
+    logger.debug(`Setting AWS region: ${config.region}.`);
+    aws.config.update({region: config.region});
   }
   aws.config.update({maxRetries: 10}); // default is undefined -> defaultRetryCount=3
   // the sdk will handle exponential backoff internally.

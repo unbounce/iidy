@@ -28,7 +28,10 @@ import {buildApprovalCommands} from './approval/cli'
 export interface GlobalArguments {
   region?: AWSRegion;
   profile?: string;
+  assumeRoleArn?: string;
   debug?: boolean;
+  environment?: string;
+  clientRequestToken?: string;
 }
 
 export type ExitCode = number;
@@ -406,6 +409,12 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       type: 'string', default: null,
       group: 'AWS Options',
       description: description('AWS profile. Can also be set via --environment & stack-args.yaml:Profile.')
+    })
+    .option('assume-role-arn', {
+      type: 'string', default: null,
+      group: 'AWS Options',
+      description: description(
+        'AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile')
     })
 
     .option('debug', {
