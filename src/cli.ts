@@ -71,6 +71,7 @@ export interface CfnStackCommands {
 
 export interface MiscCommands {
   initStackArgs: Handler;
+  requestApproveTemplate: Handler;
   renderMain: Handler;
   demoMain: Handler;
   convertStackToIIDY: Handler;
@@ -82,7 +83,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './preprocess' | './demo' | './render' | './initStackArgs';
+type LazyLoadModules = './cfn' | './preprocess' | './demo' | './render' | './initStackArgs' | './requestApproveTemplate';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -96,6 +97,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./render')[fnname](args);
     } else if (modName === './initStackArgs') {
       return require('./initStackArgs')[fnname](args);
+    } else if (modName === './requestApproveTemplate') {
+      return require('./requestApproveTemplate')[fnname](args);
     }
   }
 
@@ -119,6 +122,7 @@ const lazy: Commands = {
   demoMain: lazyLoad('demoMain', './demo'),
   convertStackToIIDY: lazyLoad('convertStackToIIDY'),
   initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
+  requestApproveTemplate: lazyLoad('requestApproveTemplate', './requestApproveTemplate'),
   // TODO example command pull down an examples dir
 
 };
@@ -358,6 +362,13 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
       }),
     wrapMainHandler(commands.convertStackToIIDY))
+
+    .command(
+    'request-approve-template <argsfile>',
+    description('request approval of cfn-template'),
+    (args) => args
+      .demandCommand(0,0),
+    wrapMainHandler(commands.requestApproveTemplate))
 
     .command(
     'init-stack-args',
