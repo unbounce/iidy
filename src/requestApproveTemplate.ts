@@ -7,6 +7,7 @@ import * as path from 'path';
 import { Arguments } from 'yargs';
 import { loadStackArgs, parseS3HttpUrl } from './cfn/index';
 import configureAWS from './configureAWS';
+import {logger} from './logger';
 
 export async function requestApproveTemplate(argv: Arguments): Promise<number> {
   const stackArgs = await loadStackArgs(argv);
@@ -17,14 +18,10 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
   const cfnTemplate = await fs.readFileSync(stackArgs.Template);
   const s3Url = parseS3HttpUrl(stackArgs.ApprovedTemplateLocation);
 
-  const hashedKey = path.join([
+  const hashedKey = path.join(
     s3Url.key,
     new Md5().appendStr(cfnTemplate.toString()).end().toString()
-  ]);
-
-  if (s3Url.key.length > 0) {
-    hashedKey = `${s3Url.key}/${hashedKey}`;
-  }
+  );
 
   try {
     await s3.headObject({
@@ -52,5 +49,5 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
 }
 
 function logSuccess(text: string) {
-  console.log(cli.green(text))
+  logger.info(cli.green(text));
 }
