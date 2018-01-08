@@ -27,7 +27,7 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
     await s3.headObject({
       Bucket: s3Url.bucket,
       Key: `${hashedKey}.yaml`
-    }, undefined).promise();
+    }).promise();
 
     logSuccess(`👍 Your template has already been approved`);
   } catch (e) {
@@ -36,7 +36,7 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
         Body: cfnTemplate,
         Bucket: s3Url.bucket,
         Key: `${hashedKey}.yaml.pending`
-      }, undefined).promise();
+      }).promise();
 
       logSuccess(`Successfully uploaded ${cfnTemplateFileName} to ${stackArgs.ApprovedTemplateLocation}`);
       logSuccess(`Approve template with \`iidy approve ${hashedKey}.yaml\``);
