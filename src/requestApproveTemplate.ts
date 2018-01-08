@@ -41,11 +41,11 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
       logSuccess(`Successfully uploaded ${cfnTemplateFileName} to ${stackArgs.ApprovedTemplateLocation}`);
       logSuccess(`Approve template with \`iidy approve ${hashedKey}.yaml\``);
     } else {
-      throw new Error(e)
+      throw new Error(e);
     }
   }
 
-  return 0
+  return 0;
 }
 
 function logSuccess(text: string) {
