@@ -35,7 +35,7 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
       await s3.putObject({
         Body: cfnTemplate,
         Bucket: s3Url.bucket,
-        Key: `${hashedKey}.yaml.pending`
+        Key: `${hashedKey}${path.extname(stackArgs.Template)}.pending`
       }).promise();
 
       logSuccess(`Successfully uploaded the cloudformation template to ${stackArgs.ApprovedTemplateLocation}`);
