@@ -14,7 +14,6 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
   await configureAWS(stackArgs.Profile, stackArgs.Region);
 
   const cfnTemplate = await fs.readFileSync(stackArgs.Template);
-  const cfnTemplateFileName = stackArgs.Template.match(/[a-zA-Z-_0-9]*\.yaml/)![0];
   const s3Url = parseS3HttpUrl(stackArgs.ApprovedTemplateLocation);
 
   let hashedKey = new Md5().appendStr(cfnTemplate.toString()).end().toString();
@@ -38,7 +37,7 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
         Key: `${hashedKey}.yaml.pending`
       }).promise();
 
-      logSuccess(`Successfully uploaded ${cfnTemplateFileName} to ${stackArgs.ApprovedTemplateLocation}`);
+      logSuccess(`Successfully uploaded the cloudformation template to ${stackArgs.ApprovedTemplateLocation}`);
       logSuccess(`Approve template with \`iidy approve ${hashedKey}.yaml\``);
     } else {
       throw new Error(e);
