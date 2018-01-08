@@ -1,7 +1,8 @@
 import { S3 } from 'aws-sdk';
+import { Md5 } from 'ts-md5/dist/md5';
 import * as fs from 'fs';
 import * as cli from 'cli-color';
-import { Md5 } from 'ts-md5/dist/md5';
+import * as path from 'path';
 
 import { Arguments } from 'yargs';
 import { loadStackArgs, parseS3HttpUrl } from './cfn/index';
@@ -16,7 +17,10 @@ export async function requestApproveTemplate(argv: Arguments): Promise<number> {
   const cfnTemplate = await fs.readFileSync(stackArgs.Template);
   const s3Url = parseS3HttpUrl(stackArgs.ApprovedTemplateLocation);
 
-  let hashedKey = new Md5().appendStr(cfnTemplate.toString()).end().toString();
+  const hashedKey = path.join([
+    s3Url.key,
+    new Md5().appendStr(cfnTemplate.toString()).end().toString()
+  ]);
 
   if (s3Url.key.length > 0) {
     hashedKey = `${s3Url.key}/${hashedKey}`;
