@@ -41,6 +41,7 @@ export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' 
 export type StackArgs = {
   StackName: string
   Template: string
+  ApprovedTemplateLocation?: string
   Region?: AWSRegion
   Profile?: string
   Capabilities?: aws.CloudFormation.Capabilities
@@ -506,7 +507,7 @@ function runCommandSet(commands: string[]) {
   }
 }
 
-function parseS3HttpUrl(input: string) {
+export function parseS3HttpUrl(input: string) {
   const error = new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
   const uri = url.parse(input);
 
@@ -1515,6 +1516,7 @@ export async function convertStackToIIDY(argv: Arguments): Promise<number> {
   const stackArgs: StackArgs = {
     Template: './cfn-template.yaml',
     StackName: StackNameArg,
+    ApprovedTemplateLocation: '',
     Parameters,
     Tags,
     StackPolicy: './stack-policy.json',
