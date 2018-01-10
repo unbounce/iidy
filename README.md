@@ -40,7 +40,7 @@ Yaml templates. It includes an optional yaml pre-processor that:
   expansion and validation happens as a pre-process step prior to
   invoking CloudFormation on the rendered output.
 
-## Pronunciation 
+## Pronunciation
 
 iidy is pronounced "eye-dee", like the audience's response to Cab Calloway in Minnie the
 Moocher: https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
@@ -318,6 +318,20 @@ Mappings: !$ mappings
 template or not. If it's not, the CloudFormation custom resource
 templates described above and some validation/normalization features
 are disabled. Everything else should work as described above.
+
+### Converting Deployed Stacks to `iidy`
+Converting current stacks to `iidy` can be done through the `iidy convert-stack-to-iidy` command,
+which accepts 2 parameters: `stackname` (the stack name of the project that you'd want to convert) and
+an `outputDir` (path where the output will be stored). For example:
+
+```sh
+iidy convert-stack-to-iidy my-cloudformation-stack-1 ./infrastructure
+
+# this should generate 3 files:
+# * _original-template.json
+# * stack-args.yaml
+# * cfn-template.yaml
+```
 
 ## Examples
 See the examples/ directory.
