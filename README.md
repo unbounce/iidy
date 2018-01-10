@@ -95,7 +95,6 @@ $ iidy help
 iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
 Commands:
-
   create-stack  <argsfile>                               create a cfn stack based on stack-args.yaml
   update-stack  <argsfile>                               update a cfn stack based on stack-args.yaml
   estimate-cost <argsfile>                               estimate aws costs based on stack-args.yaml
@@ -112,22 +111,23 @@ Commands:
 
   param                                                  sub commands for working with AWS SSM Parameter Store
 
-Additional Commands:
-  render <template>                                      pre-process and render cloudformation yaml template
-  demo <demoscript>                                      run a demo script
+  render <template>                                      pre-process and render yaml template
+  demo   <demoscript>                                    run a demo script
+  convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
+  init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
+
   completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
 AWS Options
-  --region   AWS region. Can also be set via --environment & stack-args.yaml:Region
-  --profile  AWS profile.  Can also be set via --environment & stack-args.yaml:Profile
-  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries
+  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.
+  --region                AWS region. Can also be set via --environment & stack-args.yaml:Region.
+  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile.
 
 Options:
   --environment, -e  used to load environment based settings: AWS Profile, Region, etc.
-  --debug            log debug information to stderr
-  -v, --version  show version number
-  -h, --help     show help
-
+  --debug            log debug information to stderr.
+  -v, --version      show version information
+  -h, --help         show help
 ```
 
 ### The `argsfile` (aka `stack-args.yaml`)
