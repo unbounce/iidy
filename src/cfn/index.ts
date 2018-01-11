@@ -6,6 +6,8 @@ import * as url from 'url';
 
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
+import { Md5 } from 'ts-md5/dist/md5';
+import * as request from 'request-promise-native';
 
 import * as dateformat from 'dateformat';
 
@@ -584,7 +586,7 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
 }
 
 const TEMPLATE_MAX_BYTES = 51199
-async function loadCFNTemplate(location0: string, baseLocation: string):
+export async function loadCFNTemplate(location0: string, baseLocation: string):
   Promise<{TemplateBody?: string, TemplateURL?: string}> {
   if (_.isUndefined(location0)) {
     return {};
@@ -865,14 +867,33 @@ export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profi
 
 async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, stackName?: string)
   : Promise<aws.CloudFormation.CreateStackInput> {
+  let templateLocation;
 
+  if(stackArgs.ApprovedTemplateLocation) {
+    const approvedLocation = await approvedTemplateVersionLocation(
+      stackArgs.ApprovedTemplateLocation,
+      stackArgs.Template,
+      argsFilePath
+    );
+    templateLocation = `https://s3.amazonaws.com/${approvedLocation.Bucket}/${approvedLocation.Key}`;
+  } else {
+    templateLocation = stackArgs.Template;
+  }
   // Template is optional for updates and update changesets
-  const {TemplateBody, TemplateURL} = await loadCFNTemplate(stackArgs.Template, argsFilePath);
+  const {TemplateBody, TemplateURL} = await loadCFNTemplate(templateLocation, argsFilePath);
   const {StackPolicyBody, StackPolicyURL} = await loadCFNStackPolicy(stackArgs.StackPolicy, argsFilePath);
 
   // TODO: DisableRollback
   // specify either DisableRollback or OnFailure, but not both
   const OnFailure = def('ROLLBACK', stackArgs.OnFailure)
+
+  if(stackArgs.ApprovedTemplateLocation) {
+    logger.debug(`ApprovedTemplateLocation: ${stackArgs.ApprovedTemplateLocation}`);
+    logger.debug(`Original Template: ${stackArgs.Template}`);
+    logger.debug(`TemplateURL with ApprovedTemplateLocation: ${TemplateURL}`);
+  } else {
+    logger.debug(`TemplateURL: ${TemplateURL}`);
+  }
 
   return {
     StackName: def(stackArgs.StackName, stackName),
@@ -996,6 +1017,7 @@ abstract class AbstractCloudFormationStackCommand {
 
     const iamIdent = await iamIdentPromise;
     printSectionEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
+
     console.log();
   }
 
@@ -1052,6 +1074,19 @@ class CreateStack extends AbstractCloudFormationStackCommand {
   }
 }
 
+async function isHttpTemplateAccessible(location?: string) {
+    if(location) {
+        try {
+          await request.get(location);
+          return true;
+        } catch (e) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
 class UpdateStack extends AbstractCloudFormationStackCommand {
   _cfnOperation: CfnOperation = 'UPDATE_STACK'
   _expectedFinalStackStatus = ['UPDATE_COMPLETE']
@@ -1059,6 +1094,12 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
   async _run() {
     try {
       let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
+      if(this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
+        logger.error('Template version is has not been approved or the current IAM principal does not have permission to access it. Run:');
+        logger.error(`  iidy template-approval request ${this.argsfile}`);
+        logger.error('to being the approval process.');
+        return 1;
+      }
       if (this.argv.stackPolicyDuringUpdate) {
         const {
           StackPolicyBody: StackPolicyDuringUpdateBody,
@@ -1618,5 +1659,30 @@ export async function deleteStackMain(argv: Arguments): Promise<number> {
     return showFinalComandSummary(StackStatus === 'DELETE_COMPLETE');
   } else {
     return 1
+  }
+}
+
+export async function approvedTemplateVersionLocation(
+  approvedTemplateLocation: string,
+  templatePath: string,
+  baseLocation: string): Promise<{Bucket: string, Key: string}> {
+  // const templatePath = path.resolve(path.dirname(location), templatePath);
+  // const cfnTemplate = await fs.readFileSync(path.resolve(path.dirname(location), templatePath));
+  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation);
+
+  if(cfnTemplate && cfnTemplate.TemplateBody) {
+    const s3Url = url.parse(approvedTemplateLocation);
+    const s3Path = s3Url.path ? s3Url.path : "";
+    const s3Bucket = s3Url.hostname ? s3Url.hostname : "";
+
+    const fileName = new Md5().appendStr(cfnTemplate.TemplateBody.toString()).end().toString()
+    const fullFileName = `${fileName}${pathmod.extname(templatePath)}`
+
+    return {
+      Bucket: s3Bucket,
+      Key: pathmod.join(s3Path.substring(1), fullFileName)
+    };
+  } else {
+    throw new Error('Unable to determine versioned template location');
   }
 }

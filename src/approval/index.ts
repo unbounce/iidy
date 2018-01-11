@@ -1,5 +1,4 @@
 import { S3 } from 'aws-sdk';
-import { Md5 } from 'ts-md5/dist/md5';
 import * as fs from 'fs';
 import * as cli from 'cli-color';
 import * as path from 'path';
@@ -8,47 +7,34 @@ import * as jsdiff from 'diff';
 import * as inquirer from 'inquirer';
 
 import { Arguments } from 'yargs';
-import { loadStackArgs } from '../cfn/index';
+import { loadStackArgs, loadCFNTemplate, approvedTemplateVersionLocation } from '../cfn/index';
 import configureAWS from '../configureAWS';
 import { logger } from '../logger';
 
-export async function requestApproveTemplate(argv: Arguments): Promise<number> {
+export async function request(argv: Arguments): Promise<number> {
     const stackArgs = await loadStackArgs(argv);
 
-    if (typeof stackArgs.ApprovedTemplateLocation === 'string' && stackArgs.ApprovedTemplateLocation.length > 0) {
+    if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
         const s3 = new S3();
 
         await configureAWS(stackArgs.Profile, stackArgs.Region);
-
-        const templatePath = path.resolve(path.dirname(argv.argsfile), stackArgs.Template);
-        const cfnTemplate = await fs.readFileSync(templatePath);
-
-        const s3Url = url.parse(stackArgs.ApprovedTemplateLocation);
-        const s3Path = s3Url.path ? s3Url.path : '';
-        const s3Bucket = s3Url.hostname ? s3Url.hostname : '';
-
-        const fileName = new Md5().appendStr(cfnTemplate.toString()).end().toString();
-        const fullFileName = `${fileName}${path.extname(stackArgs.Template)}.pending`;
-
-        const hashedKey = path.join(s3Path.substring(1), fullFileName);
+        const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile);
+        s3Args.Key = `${s3Args.Key}.pending`
 
         try {
-            await s3.headObject({
-                Bucket: s3Bucket,
-                Key: hashedKey
-            }).promise();
+            await s3.headObject(s3Args).promise();
 
             logSuccess(`👍 Your template has already been approved`);
         } catch (e) {
-            if (e.code === 'NotFound') {
+            if (e.code === "NotFound") {
+                const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile);
                 await s3.putObject({
-                    Body: cfnTemplate,
-                    Bucket: s3Bucket,
-                    Key: hashedKey
+                    Body: cfnTemplate.TemplateBody,
+                    ...s3Args
                 }).promise();
 
                 logSuccess(`Successfully uploaded the cloudformation template to ${stackArgs.ApprovedTemplateLocation}`);
-                logSuccess(`Approve template with:\n  iidy approve-template s3://${s3Bucket}/${hashedKey}`);
+                logSuccess(`Approve template with:\n  iidy template-approval review s3://${s3Args.Bucket}/${s3Args.Key}`);
             } else {
                 throw new Error(e);
             }
