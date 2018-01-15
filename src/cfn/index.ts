@@ -609,7 +609,7 @@ async function loadCFNTemplate(location0: string, baseLocation: string):
     return {TemplateURL: location};
   } else {
     const importData = await readFromImportLocation(location, baseLocation);
-    if (importData.data.indexOf('$imports:') > -1) {
+    if (importData.data.indexOf('$imports:') > -1 && ! shouldRender) {
       throw new Error(
         `Your cloudformation Template from ${location} appears to`
         + ' use iidy\'s yaml pre-processor syntax.\n'
