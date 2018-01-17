@@ -349,57 +349,61 @@ commands in `package.json` for details about the build process.
 MIT.
 
 ## Changelog
+* [v1.6.0-rc7](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc7)
+  - add `iidy template-approval` commands (#43)
+  - sign S3-hosted, http template URLs (#39)
+  - fix bug with `render:` template detection (#39)
+  - fix bug with `cfn:export` imports containing colon (#33)
+
 * [v1.6.0-rc6](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc6)
-  a variety of new preprocessor features and `iidy init-stack-args` -- December 10, 2017
+  - a variety of new preprocessor features and `iidy init-stack-args` -- December 10, 2017
 
 * [v1.6.0-rc5](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc5)
-  work around bug in aws-sdk re presence of ~/.aws & add support for
-  reusing aws cli sts role cache -- November 22, 2017
+  - work around bug in aws-sdk re presence of ~/.aws & add support for reusing
+    aws cli sts role cache -- November 22, 2017
 
 * [v1.6.0-rc4](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc4)
-  Minor bug fix & new `cfn:export:name` import type -- November 20, 2017
+  - Minor bug fix & new `cfn:export:name` import type -- November 20, 2017
 
 * [v1.6.0-rc3](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc3)
-  New features & a bug fix -- November 7, 2017
+  - New features & a bug fix -- November 7, 2017
 
 * [v1.6.0-rc2](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc2)
-  A few tweaks / enhancements on rc1 -- November 6, 2017
+  - A few tweaks / enhancements on rc1 -- November 6, 2017
 
 * [v1.6.0-rc1](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc1)
-  Getting ready for the biggest release yet -- November 5, 2017
+  - Getting ready for the biggest release yet -- November 5, 2017
 
 * [v1.5.0](https://github.com/unbounce/iidy/releases/tag/v1.5.0) A bit
-  of polish plus dependency updates -- September 1, 2017
+  - of polish plus dependency updates -- September 1, 2017
 
 * [v1.4.0](https://github.com/unbounce/iidy/releases/tag/v1.4.0)
-  get-stack-instances command, improved error reporting -- August 24,
-  2017
+  - get-stack-instances command, improved error reporting -- August 24, 2017
 
 * [v1.3.3](https://github.com/unbounce/iidy/releases/tag/v1.3.3) Bug
-  fixes and input validation -- August 22, 2017
+  - fixes and input validation -- August 22, 2017
 
 * [v1.3.2](https://github.com/unbounce/iidy/releases/tag/v1.3.2)
   Internal refactoring -- August 15, 2017
 
 * [v1.3.1](https://github.com/unbounce/iidy/releases/tag/v1.3.1) Added
-  time since last event to the event polling output. -- August 11,
-  2017
+  - time since last event to the event polling output. -- August 11, 2017
 
 * [v1.3.0](https://github.com/unbounce/iidy/releases/tag/v1.3.0) More
-  robust time handling / event filtering to protect against local
-  clock drift. Also there's now a Dockerfile for creating a small
-  Alpine based container image. -- August 10, 2017
+  - robust time handling / event filtering to protect against local clock drift.
+    Also there's now a Dockerfile for creating a small Alpine based container
+    image. -- August 10, 2017
 
 * [v1.2.0](https://github.com/unbounce/iidy/releases/tag/v1.2.0) CLI
-  output is prettier, new `demo` command, `--role-arn` option for
-  `delete-stack`, add missing `prepublish` entry to `package.json`,
-  improved handling of aws region in cli output. -- August 8, 2017
+  - output is prettier, new `demo` command, `--role-arn` option for
+    `delete-stack`, add missing `prepublish` entry to `package.json`, improved
+    handling of aws region in cli output. -- August 8, 2017
 
 * [v1.1.0](https://github.com/unbounce/iidy/releases/tag/v1.1.0) Docs,
-  examples, and improvements -- August 3, 2017
+  - examples, and improvements -- August 3, 2017
 
 * [v1.0.0](https://github.com/unbounce/iidy/releases/tag/v1.0.0)
-  Initial Release -- August 1, 2017
+  - Initial Release -- August 1, 2017
 
 
 ## Roadmap
