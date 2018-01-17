@@ -6,7 +6,7 @@ import * as jsyaml from 'js-yaml';
 
 export async function transform(input0: any, inputLoader = pre.readFromImportLocation) {
   const input = _.isString(input0) ? yaml.loadString(input0, 'root') : input0;
-  return pre.transform(input, "root", inputLoader);
+  return pre.transform(input, "root", false, inputLoader);
 }
 
 export function transformNoImport(input0: any, accumulatedImports = []) {
