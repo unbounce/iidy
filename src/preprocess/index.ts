@@ -1099,8 +1099,7 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
       for (const k2 in sub) {
         if (_.has(res, k2)) {
           // TODO consider allowing overwrites
-          throw new Error(
-            `Key "${k2}" is already present and cannot be $merge'd into path "${path}"`);
+          logger.warn(`Key "${k2}" is already present when $merge'ing into path "${path}"`);
         }
         res[visitString(k2, path, env)] = sub[k2];
       }
