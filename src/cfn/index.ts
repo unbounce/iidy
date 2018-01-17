@@ -20,7 +20,6 @@ import * as wrapAnsi from 'wrap-ansi';
 import * as ora from 'ora';
 import * as inquirer from 'inquirer';
 import * as nameGenerator from 'project-name-generator';
-import * as tmp from 'tmp';
 
 let getStrippedLength: (s: string) => number;
 // TODO declare module for this:
@@ -34,6 +33,7 @@ import configureAWS from '../configureAWS';
 import {AWSRegion} from '../aws-regions';
 import timeout from '../timeout';
 import def from '../default';
+import {diff} from '../diff';
 
 import {readFromImportLocation, transform} from '../preprocess';
 import {getKMSAliasForParameter} from '../params';
@@ -1312,24 +1312,7 @@ export async function diffStackTemplates(StackName: string, stackArgs: StackArgs
     }
 
     console.log();
-    const tmpdir = tmp.dirSync();
-    const oldName = pathmod.join(tmpdir.name, 'old');
-    const newName = pathmod.join(tmpdir.name, 'new');
-    try {
-      fs.writeFileSync(oldName, yaml.dump(oldTemplate));
-      fs.writeFileSync(newName, yaml.dump(newTemplate));
-      const res = child_process.spawnSync(
-        `git diff --no-index --color -- ${oldName} ${newName}`, {
-          shell: '/bin/bash',
-          stdio: [0, 1, 2]
-        });
-    } catch (e) {
-      throw e;
-    } finally {
-      fs.unlinkSync(oldName);
-      fs.unlinkSync(newName);
-      fs.rmdirSync(tmpdir.name)
-    }
+    diff(yaml.dump(oldTemplate), yaml.dump(newTemplate))
   }
 }
 

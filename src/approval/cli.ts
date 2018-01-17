@@ -34,6 +34,10 @@ export function buildApprovalCommands(args: yargs.Argv, commands = lazy): yargs.
         description('review pending template approval request'),
         (args) => args
             .demandCommand(0, 0)
+            .option('context', {
+              type: 'number', default: 100,
+              description: description('how many lines of diff context to show')
+            })
             .usage('Usage: iidy template-approval review s3://bucket/path.pending')
             .strict(),
         wrapCommandHandler(commands.review)

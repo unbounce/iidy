@@ -19,7 +19,7 @@ RUN apk update && apk add --no-cache binutils \
 
 FROM alpine:3.6
 
-RUN apk --no-cache add libstdc++
+RUN apk --no-cache add libstdc++ git
 
 COPY --from=0 /tmp/iidy/dist/iidy /usr/local/bin/iidy
 

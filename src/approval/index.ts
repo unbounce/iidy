@@ -3,13 +3,13 @@ import * as fs from 'fs';
 import * as cli from 'cli-color';
 import * as path from 'path';
 import * as url from 'url';
-import * as jsdiff from 'diff';
 import * as inquirer from 'inquirer';
 
 import { Arguments } from 'yargs';
 import { loadStackArgs, loadCFNTemplate, approvedTemplateVersionLocation } from '../cfn/index';
 import configureAWS from '../configureAWS';
 import { logger } from '../logger';
+import { diff } from '../diff';
 
 export async function request(argv: Arguments): Promise<number> {
     const stackArgs = await loadStackArgs(argv);
@@ -85,21 +85,11 @@ export async function review(argv: Arguments): Promise<number> {
                     return Buffer.from('');
                 });
 
-            const diff = jsdiff.diffLines(
-                previouslyApprovedTemplate!.toString(),
-                pendingTemplate!.toString(),
-                { context: 100000 }
+            diff(
+              previouslyApprovedTemplate!.toString(),
+              pendingTemplate!.toString(),
+              500
             );
-            let colorizedString = '';
-
-            diff.forEach(function(part) {
-                if (part.added) {
-                    colorizedString = colorizedString + cli.green(part.value);
-                } else if (part.removed) {
-                    colorizedString = colorizedString + cli.red(part.value);
-                }
-            });
-            console.log(colorizedString);
 
             const resp = await inquirer.prompt(
                 {
