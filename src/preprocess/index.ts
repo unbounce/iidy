@@ -1130,19 +1130,25 @@ export function visitString(node: string, path: string, env: Env): string {
 export function transformPostImports(
   root: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
-  accumulatedImports: ImportRecord[]
+  accumulatedImports: ImportRecord[],
+  omitMetadata = false
 )
-  : CfnDoc {
-  // TODO add the rootDoc to the Imports record
-  const globalAccum: CfnDoc = {
-    Metadata: {
-      iidy: {
-        Host: os.hostname(),
-        Imports: accumulatedImports,
-        User: os.userInfo().username
+: CfnDoc {
+    let globalAccum: CfnDoc;
+    if(omitMetadata) {
+      globalAccum = {};
+    } else {
+      // TODO add the rootDoc to the Imports record
+      globalAccum  = {
+        Metadata: {
+          iidy: {
+            Host: os.hostname(),
+            Imports: accumulatedImports,
+            User: os.userInfo().username
+          }
+        }
       }
-    }
-  };
+    };
 
   const seedOutput: CfnDoc = {};
   const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
@@ -1188,12 +1194,12 @@ export function transformPostImports(
 export async function transform(
   root0: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
+  omitMetadata = false,
   importLoader = readFromImportLocation // for mocking in tests
 )
   : Promise<CfnDoc> {
   const root = _.clone(root0);
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports, importLoader);
-  return transformPostImports(root, rootDocLocation, accumulatedImports);
+  return transformPostImports(root, rootDocLocation, accumulatedImports, omitMetadata);
 };
-

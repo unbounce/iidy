@@ -23,6 +23,7 @@ import {logger, setLogLevel} from './logger';
 import debug from './debug';
 import {AWSRegion} from './aws-regions';
 import {buildParamCommands} from './params/cli'
+import {buildApprovalCommands} from './approval/cli'
 
 export interface GlobalArguments {
   region?: AWSRegion;
@@ -303,6 +304,12 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .command('param',
     description('sub commands for working with AWS SSM Parameter Store'),
     buildParamCommands)
+
+    .command('\t', '') // fake command to add a line-break to the help output
+
+    .command('template-approval',
+             description('sub commands for template approval'),
+             buildApprovalCommands)
 
     .command('\t', '') // fake command to add a line-break to the help output
 
