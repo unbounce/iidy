@@ -3,12 +3,7 @@ node_modules/
 
 # output
 .make
-lib/cfn/*
-lib/tests/*
-lib/params/*
-lib/*js
-lib/*d.ts
-lib/*map
+lib/
 
 dist/
 tmp/
@@ -25,3 +20,5 @@ yarn-error.log*
 
 # Coverage directory used by tools like istanbul
 coverage
+
+!*/.keep
