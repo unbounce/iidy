@@ -586,7 +586,7 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
 }
 
 const TEMPLATE_MAX_BYTES = 51199
-export async function loadCFNTemplate(location0: string, baseLocation: string):
+export async function loadCFNTemplate(location0: string, baseLocation: string, omitMetadata = false):
   Promise<{TemplateBody?: string, TemplateURL?: string}> {
   if (_.isUndefined(location0)) {
     return {};
@@ -621,7 +621,7 @@ export async function loadCFNTemplate(location0: string, baseLocation: string):
       );
     }
     const body = shouldRender
-      ? yaml.dump(await transform(importData.doc, importData.resolvedLocation))
+      ? yaml.dump(await transform(importData.doc, importData.resolvedLocation, omitMetadata))
       : importData.data;
     if (body.length >= TEMPLATE_MAX_BYTES) {
       throw new Error('Your cloudformation template is larger than the max allowed size. '
@@ -1668,7 +1668,8 @@ export async function approvedTemplateVersionLocation(
   baseLocation: string): Promise<{Bucket: string, Key: string}> {
   // const templatePath = path.resolve(path.dirname(location), templatePath);
   // const cfnTemplate = await fs.readFileSync(path.resolve(path.dirname(location), templatePath));
-  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation);
+  const omitMetadata = true;
+  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, omitMetadata);
 
   if(cfnTemplate && cfnTemplate.TemplateBody) {
     const s3Url = url.parse(approvedTemplateLocation);

@@ -19,15 +19,15 @@ export async function request(argv: Arguments): Promise<number> {
 
         await configureAWS(stackArgs.Profile, stackArgs.Region);
         const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile);
-        s3Args.Key = `${s3Args.Key}.pending`
 
         try {
             await s3.headObject(s3Args).promise();
-
             logSuccess(`👍 Your template has already been approved`);
         } catch (e) {
             if (e.code === "NotFound") {
-                const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile);
+                s3Args.Key = `${s3Args.Key}.pending`
+                const omitMetdata = true;
+                const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, omitMetdata);
                 await s3.putObject({
                     Body: cfnTemplate.TemplateBody,
                     ...s3Args
@@ -48,11 +48,11 @@ export async function request(argv: Arguments): Promise<number> {
 
 }
 
-export async function approveTemplate(argv: Arguments): Promise<number> {
+export async function review(argv: Arguments): Promise<number> {
     await configureAWS(argv.profile, 'us-east-1');
     const s3 = new S3();
 
-    const s3Url = url.parse(argv.filename);
+    const s3Url = url.parse(argv.url);
     const s3Path = s3Url.path ? s3Url.path.replace(/^\//, '') : '';
     const s3Bucket = s3Url.hostname ? s3Url.hostname : '';
 
@@ -88,6 +88,7 @@ export async function approveTemplate(argv: Arguments): Promise<number> {
             const diff = jsdiff.diffLines(
                 previouslyApprovedTemplate!.toString(),
                 pendingTemplate!.toString(),
+                { context: 100000 }
             );
             let colorizedString = '';
 
@@ -104,7 +105,7 @@ export async function approveTemplate(argv: Arguments): Promise<number> {
                 {
                     name: 'confirmed',
                     type: 'confirm', default: false,
-                    message: `Do these changes look good for you?`
+                    message: `Would you like to approve these changes?`
                 });
 
             if (resp.confirmed) {
