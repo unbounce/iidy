@@ -406,6 +406,15 @@ MIT.
   - Initial Release -- August 1, 2017
 
 
+## Release
+
+- Update `version` in `package.json` and commit changes
+- Run `git tag -a v1.0.0 -m 'v1.0.0'` with correct version number
+- Run `git push origin v1.0.0` with correct version number
+- Run `make release-prepare`
+- Create [GitHub release](https://github.com/unbounce/iidy/releases)
+- Update [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb)
+
 ## Roadmap
 
 In priority order:
