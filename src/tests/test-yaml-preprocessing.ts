@@ -351,6 +351,23 @@ out: !$concat
 
   });
 
+  describe("!$merge", () => {
+    it("deep merge", async () => {
+      expect(await transform(`
+a:
+  a: 1
+  b: 2
+$merge:
+  a:
+    b: 22
+    c: 33
+`
+)).to.deep.equal({a: { a: 1, b: 22, c: 33}});
+
+    });
+
+  });
+
   describe("!$map", () => {
     const simpleMapRendered = {m: [{v: 1}, {v: 2}, {v: 3}]};
     it("basic forms", async () => {

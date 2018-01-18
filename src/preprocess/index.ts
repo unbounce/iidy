@@ -1097,11 +1097,7 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
     if (k.indexOf('$merge') === 0) {
       const sub: any = visitNode(node[k], appendPath(path, k), env);
       for (const k2 in sub) {
-        if (_.has(res, k2)) {
-          // TODO consider allowing overwrites
-          logger.warn(`Key "${k2}" is already present when $merge'ing into path "${path}"`);
-        }
-        res[visitString(k2, path, env)] = sub[k2];
+        _.merge(res, {[visitString(k2, path, env)]: sub[k2]});
       }
       // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions
       //} else if ( .. Fn:Ref, etc. ) {
