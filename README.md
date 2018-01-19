@@ -408,7 +408,10 @@ MIT.
 
 ## Release
 
-- Update `version` in `package.json` and commit changes
+- Update `version` in `package.json`
+- Run `npm install`
+- Run `git add package.json package-lock.json`
+- Run `git commit -m 'v1.0.0'` with correct version number
 - Run `git tag -a v1.0.0 -m 'v1.0.0'` with correct version number
 - Run `git push origin v1.0.0` with correct version number
 - Run `make release-prepare`
