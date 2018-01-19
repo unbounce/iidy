@@ -352,20 +352,7 @@ out: !$concat
   });
 
   describe("!$merge", () => {
-    it("deep merge", async () => {
-      expect(await transform(`
-a:
-  a: 1
-  b: 2
-$merge:
-  a:
-    b: 22
-    c: 33
-`
-)).to.deep.equal({a: { a: 1, b: 22, c: 33}});
-
-    });
-
+   // TODO
   });
 
   describe("!$map", () => {
@@ -513,9 +500,26 @@ out:
   b: v2`));
 
     });
-
-
   });
 
+  //////////////////////////////////////////////////////////////////////
+  // syntax elements that are not custom tags 
+  // (excluding $imports and $defs which are covered above)
+  describe("non-tag $merge", () => {
+    it("deep merge", async () => {
+      expect(await transform(`
+a:
+  a: 1
+  b: 2
+$merge:
+  a:
+    b: 22
+    c: 33
+`
+)).to.deep.equal({a: { a: 1, b: 22, c: 33}});
+
+    });
+
+  });
 
 });
