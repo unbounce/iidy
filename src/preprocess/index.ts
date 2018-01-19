@@ -770,6 +770,8 @@ function visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefin
     return visit$groupBy(node, path, env);
   } else if (node instanceof yaml.$fromPairs) {
     return visit$fromPairs(node, path, env);
+  } else if (node instanceof yaml.$split) {
+    return visit$split(node, path, env);
   } else if (node instanceof yaml.Ref) {
     return visitRef(node, path, env);
   } else if (node instanceof yaml.GetAtt) {
@@ -949,6 +951,16 @@ function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButU
     input = _.map(input, (i) => ({key: _.get(i, 'Key') as string, value: _.get(i, 'Value')}))
   }
   return visitNode(_liftKVPairs(input), path, env);
+}
+
+function visit$split(node: yaml.$split, path: string, env: Env): string[] {
+  if (_.isArray(node.data) && node.data.length === 2) {
+    const [char, str]: [string, string] = node.data;
+    return visitNode(str, path, env).toString().split(char);
+  } else {
+    throw new Error(`Invalid argument to $split at "${path}".`
+      + " Must be array with two elements: split character and a string to split");
+  }
 }
 
 function visit$mapListToHash(node: yaml.$mapListToHash, path: string, env: Env): AnyButUndefined {

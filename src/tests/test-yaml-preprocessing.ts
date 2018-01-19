@@ -351,6 +351,25 @@ out: !$concat
 
   });
 
+  describe("!$split", () => {
+    it("basic forms", async () => {
+      expect(await transform(`
+m: !$split [',', 'a,b,c']
+`)).to.deep.equal({m: ['a', 'b', 'c']});
+    });
+
+    it("newlines", async () => {
+      expect(await transform(`
+m: !$split
+  - "\\n"
+  - |-
+   a
+   b
+   c
+`)).to.deep.equal({m: ['a', 'b', 'c']});
+    });
+  });
+
   describe("!$merge", () => {
    // TODO
   });

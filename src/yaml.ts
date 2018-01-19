@@ -15,7 +15,7 @@ export class Tag<T = any> {
     // to this.constructor in plain js.
     return new this.ctor(data);
   }
-  
+
   get data(): T {
     // post-parsing / validation we can narrow the type to T
     return this._data
@@ -181,6 +181,9 @@ addCustomTag('$mapValues', $mapValues); // mapping
 
 export class $groupBy extends Tag<{items: any, key: any, var?: string, template?: any}> {}
 addCustomTag('$groupBy', $groupBy); // mapping
+
+export class $split extends Tag<[string, string]> {}
+addCustomTag('$split', $split); // sequence
 
 // TODO enumerate, zip, zipWith
 
