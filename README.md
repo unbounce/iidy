@@ -349,6 +349,9 @@ commands in `package.json` for details about the build process.
 MIT.
 
 ## Changelog
+* [v1.6.1](https://github.com/unbounce/iidy/releases/tag/v1.6.1)
+  - fix bug with `iidy param` commands (#50)
+
 * [v1.6.0-rc7](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc7)
   - add `iidy template-approval` commands (#43)
   - sign S3-hosted, http template URLs (#39)
@@ -408,7 +411,10 @@ MIT.
 
 ## Release
 
-- Update `version` in `package.json` and commit changes
+- Update `version` in `package.json`
+- Run `npm install`
+- Run `git add package.json package-lock.json`
+- Run `git commit -m 'v1.0.0'` with correct version number
 - Run `git tag -a v1.0.0 -m 'v1.0.0'` with correct version number
 - Run `git push origin v1.0.0` with correct version number
 - Run `make release-prepare`
