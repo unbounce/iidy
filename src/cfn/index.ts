@@ -631,7 +631,7 @@ export async function loadCFNTemplate(location0: string, baseLocation: string, o
   }
 }
 
-async function getStackDescription(StackName: string): Promise<aws.CloudFormation.Stack> {
+export async function getStackDescription(StackName: string): Promise<aws.CloudFormation.Stack> {
   const cfn = new aws.CloudFormation();
   const stacks = await cfn.describeStacks({StackName}).promise();
   if (_.isUndefined(stacks.Stacks) || stacks.Stacks.length < 1) {
@@ -1287,7 +1287,7 @@ export const createStackMain = wrapCommandCtor(CreateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
-function parseTemplateBody(TemplateBody: string): object {
+export function parseTemplateBody(TemplateBody: string): object {
   if (TemplateBody.match(/^ *\{/) !== null) {
     return JSON.parse(TemplateBody);
   } else {
@@ -1485,122 +1485,6 @@ export async function getStackTemplateMain(argv: Arguments): Promise<number> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-function parameterizeEnv(s0: string, environments = ['development', 'integration', 'staging', 'production']): string {
-  let s = s0;
-  for (const env of environments) {
-    s = s.replace(env, '{{environment}}');
-  }
-  return s;
-}
-
-export async function convertStackToIIDY(argv: Arguments): Promise<number> {
-  await configureAWS(argv.profile, argv.region);
-  const outputDir = argv.outputDir;
-  const StackName = argv.stackname;
-  const TemplateStage = def('Original', argv.stage);
-
-  const cfn = new aws.CloudFormation();
-  const {TemplateBody} = await cfn.getTemplate({StackName, TemplateStage: 'Original'}).promise();
-  if (!TemplateBody) {
-    throw new Error(`Invalid cfn template found for ${StackName}`);
-  }
-  const templateObj = parseTemplateBody(TemplateBody!);
-  const stack = await getStackDescription(StackName);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir);
-  }
-  const {StackPolicyBody} = await cfn.getStackPolicy({StackName}).promise();
-  let StackPolicy: object;
-  if (StackPolicyBody) {
-    StackPolicy = JSON.parse(StackPolicyBody);
-  } else {
-    StackPolicy = {
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Action": "Update:*",
-          "Principal": "*",
-          "Resource": "*"
-        }
-      ]
-    };
-  }
-  fs.writeFileSync(pathmod.join(outputDir, 'stack-policy.json'), JSON.stringify(StackPolicy, null, ' '));
-  const originalFileExt = (TemplateBody.match(/^ *\{/) !== null) ? 'json' : 'yaml';
-  fs.writeFileSync(pathmod.join(outputDir, '_original-template.' + originalFileExt), TemplateBody);
-  fs.writeFileSync(pathmod.join(outputDir, 'cfn-template.yaml'), yaml.dump(templateObj));
-
-  const Tags = _.fromPairs(_.map(stack.Tags, ({Key, Value}) => [Key, Value]));
-  const Parameters = _.fromPairs(_.map(stack.Parameters, ({ParameterKey, ParameterValue}) => [ParameterKey, ParameterValue]));
-  const project = argv.project || Tags.project;
-  Tags.project = '{{project}}';
-  const currentEnvironment = Tags.environment || argv.environment;
-  const StackNameArg = parameterizeEnv(StackName).replace(/-\d+$/, '-{{build_number}}').replace(project, '{{project}}');
-  const stackArgs: StackArgs = {
-    Template: './cfn-template.yaml',
-    StackName: StackNameArg,
-    ApprovedTemplateLocation: undefined,
-    Parameters,
-    Tags,
-    StackPolicy: './stack-policy.json',
-    Capabilities: stack.Capabilities,
-    TimeoutInMinutes: stack.TimeoutInMinutes,
-  };
-  if (stack.EnableTerminationProtection) {
-    stackArgs.EnableTerminationProtection = true;
-  }
-  if (!_.isEmpty(stack.NotificationARNs)) {
-    stackArgs.NotificationARNs = stack.NotificationARNs;
-  }
-  if (stack.RoleARN) {
-    stackArgs.RoleARN = stack.RoleARN;
-  }
-  if (stack.DisableRollback) {
-    stackArgs.DisableRollback = true;
-  }
-  if (stackArgs.Tags && stackArgs.Tags.environment) {
-    stackArgs.Tags.environment = '{{environment}}';
-  }
-  if (stackArgs.Tags && stackArgs.Tags.Environment) {
-    stackArgs.Tags.Environment = '{{environment}}';
-  }
-  if (stackArgs.Parameters && stackArgs.Parameters.Environment) {
-    stackArgs.Parameters.Environment = '{{environment}}';
-  }
-
-  // TODO validate the tags and warn about outdated ones
-  const outputDoc = _.merge(
-    {
-      $defs: {project},
-      $imports: {
-        build_number: 'env:build_number:0'
-      },
-    },
-    _.omitBy(stackArgs, _.isNil));
-  if (argv.moveParamsToSsm) {
-    // TODO move this to a separate command that can accomodate different target accounts
-    // and possibly writing to multiple environments/accounts
-    const ssmPrefix = `/${currentEnvironment}/${project}/`;
-    _.set(outputDoc, ['$imports', 'ssmParams'], `ssm-path:/{{environment}}/{{project}}/`);
-    const ssm = new aws.SSM();
-    const KeyId = await getKMSAliasForParameter(ssmPrefix);
-    for (const [key, value] of _.toPairs(stackArgs.Parameters)) {
-      if (_.includes(['Environment', 'environment'], key)) {
-        continue;
-      }
-      const Name = `${ssmPrefix}${key}`;
-      console.log(`Writing ssm param: ${Name}`)
-      const Overwrite = true;
-      await ssm.putParameter({Name, Value: value, Type: 'SecureString', KeyId, Overwrite}).promise();
-      _.set(outputDoc, ['Parameters', key], new yaml.customTags.$(`ssmParams.${key}`));
-    }
-  }
-
-  fs.writeFileSync(pathmod.join(outputDir, 'stack-args.yaml'), yaml.dump(outputDoc));
-  // TODO write iidy-environment.yaml and related files
-  return 0;
-}
 
 export async function deleteStackMain(argv: Arguments): Promise<number> {
   await configureAWS(argv.profile, argv.region);

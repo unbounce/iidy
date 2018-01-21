@@ -83,7 +83,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './preprocess' | './demo' | './render' | './initStackArgs';
+type LazyLoadModules = './cfn' | './cfn/convertStackToIidy' | './preprocess' | './demo' | './render' | './initStackArgs';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -91,6 +91,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./preprocess')[fnname](args);
     } else if (modName === './cfn') {
       return require('./cfn')[fnname](args);
+    } else if (modName === './cfn/convertStackToIidy') {
+      return require('./cfn/convertStackToIidy')[fnname](args);
     } else if (modName === './demo') {
       return require('./demo')[fnname](args);
     } else if (modName === './render') {
@@ -118,7 +120,7 @@ const lazy: Commands = {
   estimateCost: lazyLoad('estimateCost'),
 
   demoMain: lazyLoad('demoMain', './demo'),
-  convertStackToIIDY: lazyLoad('convertStackToIIDY'),
+  convertStackToIIDY: lazyLoad('convertStackToIIDY', './cfn/convertStackToIidy'),
   initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
   // TODO example command pull down an examples dir
 
@@ -359,6 +361,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('move-params-to-ssm', {
         type: 'boolean', default: false,
         description: description('automatically create an AWS SSM parameter namespace populated with the stack Parameters')
+      })
+      .option('sortkeys', {
+        type: 'boolean', default: true,
+        description: description('sort keys in cloudformation maps')
       })
       .option('project', {
         type: 'string', default: null,
