@@ -6,7 +6,7 @@ import * as url from 'url';
 
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
-import { Md5 } from 'ts-md5/dist/md5';
+import {Md5} from 'ts-md5/dist/md5';
 import * as request from 'request-promise-native';
 
 import * as dateformat from 'dateformat';
@@ -612,7 +612,7 @@ export async function loadCFNTemplate(location0: string, baseLocation: string, o
     return {TemplateURL: location};
   } else {
     const importData = await readFromImportLocation(location, baseLocation);
-    if (importData.data.indexOf('$imports:') > -1 && ! shouldRender) {
+    if (importData.data.indexOf('$imports:') > -1 && !shouldRender) {
       throw new Error(
         `Your cloudformation Template from ${location} appears to`
         + ' use iidy\'s yaml pre-processor syntax.\n'
@@ -869,7 +869,7 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
   : Promise<aws.CloudFormation.CreateStackInput> {
   let templateLocation;
 
-  if(stackArgs.ApprovedTemplateLocation) {
+  if (stackArgs.ApprovedTemplateLocation) {
     const approvedLocation = await approvedTemplateVersionLocation(
       stackArgs.ApprovedTemplateLocation,
       stackArgs.Template,
@@ -887,7 +887,7 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
   // specify either DisableRollback or OnFailure, but not both
   const OnFailure = def('ROLLBACK', stackArgs.OnFailure)
 
-  if(stackArgs.ApprovedTemplateLocation) {
+  if (stackArgs.ApprovedTemplateLocation) {
     logger.debug(`ApprovedTemplateLocation: ${stackArgs.ApprovedTemplateLocation}`);
     logger.debug(`Original Template: ${stackArgs.Template}`);
     logger.debug(`TemplateURL with ApprovedTemplateLocation: ${TemplateURL}`);
@@ -1075,16 +1075,16 @@ class CreateStack extends AbstractCloudFormationStackCommand {
 }
 
 async function isHttpTemplateAccessible(location?: string) {
-    if(location) {
-        try {
-          await request.get(location);
-          return true;
-        } catch (e) {
-            return false;
-        }
-    } else {
-        return false;
+  if (location) {
+    try {
+      await request.get(location);
+      return true;
+    } catch (e) {
+      return false;
     }
+  } else {
+    return false;
+  }
 }
 
 class UpdateStack extends AbstractCloudFormationStackCommand {
@@ -1094,7 +1094,7 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
   async _run() {
     try {
       let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
-      if(this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
+      if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
         logger.error('Template version is has not been approved or the current IAM principal does not have permission to access it. Run:');
         logger.error(`  iidy template-approval request ${this.argsfile}`);
         logger.error('to being the approval process.');
@@ -1654,7 +1654,7 @@ export async function approvedTemplateVersionLocation(
   const omitMetadata = true;
   const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, omitMetadata);
 
-  if(cfnTemplate && cfnTemplate.TemplateBody) {
+  if (cfnTemplate && cfnTemplate.TemplateBody) {
     const s3Url = url.parse(approvedTemplateLocation);
     const s3Path = s3Url.path ? s3Url.path : "";
     const s3Bucket = s3Url.hostname ? s3Url.hostname : "";
