@@ -194,6 +194,6 @@ export const loadString = (content: string | Buffer, filename: string): any =>
   jsyaml.safeLoad(content.toString(), {schema: schema, filename: filename});
 
 export const dump = (doc: object): string =>
-  jsyaml.safeDump(doc, {schema: schema})
+  jsyaml.safeDump(doc, {schema: schema, lineWidth: 999})
     .replace(/!<!([^>]+?)>/g, '!$1')
     .replace(/ !\$include /g, ' !$ ');
