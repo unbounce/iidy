@@ -3,7 +3,8 @@
 (Note: this is written assuming an Unbounce developer is the reader and we
 previously used Ansible for orchestrating CloudFormation.)
 
-`iidy` improves the developer experience with CloudFormation.
+`iidy` improves the developer experience with CloudFormation and
+CloudFormation templates.
 
 * It provides immediate, readable feedback about what CloudFormation
   is doing and any errors it encounters.
@@ -24,21 +25,15 @@ previously used Ansible for orchestrating CloudFormation.)
 * It provides seemless integration with AWS ParameterStore, our choice
   for secret management going forward and our replacement for Ansible
   Vault.
+* It includes an optional YAML pre-processor which allows
+  CloudFormation templates to be abstracted and simplified in ways not
+  possible with vanilla CloudFormation templates. The pre-processor
+  language supports importing data from a variety of external sources
+  and this allows a better separation of concerns than is possible
+  with stock CloudFormation without resorting to Lambda-backed custom
+  resources. See the [pre-processor documentation
+  below](#yaml-pre-processing) for more details.
 * It has bash command completion support.
-
-`iidy` also improves the developer experience working with CloudFormation
-Yaml templates. It includes an optional yaml pre-processor that:
-
-* allows values to be imported from a range of sources, including
-  local files, s3, https, ParameterStore, and environment variables.
-  It parses json or yaml imports. The imported data can be stitched
-  into the target template as yaml subtrees, as literal strings, or as
-  single values.
-* can be used to define custom resource templates that expand out
-  to a set of real AWS resources. These templates can be parameterized
-  and can even do input validation on the parameters. The template
-  expansion and validation happens as a pre-process step prior to
-  invoking CloudFormation on the rendered output.
 
 ## Pronunciation
 
@@ -58,14 +53,14 @@ when you run into errors with a CloudFormation stack:
 
 Use Unbounce's custom Homebrew Tap to install iidy.  This is the preferred method for macos.
 
-```
+```Shell
 brew tap unbounce/homebrew-taps
 brew update
 brew install iidy
 ```
 
 ### Binary Installation on Other Platforms
-```
+```Shell
 # Grab the appropriate binary from the releases page.
 wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc6/iidy-linux-amd64.zip
 # or wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc6/iidy-macos-amd64.zip
@@ -79,7 +74,7 @@ mv iidy /usr/local/bin/   # or somewhere more appropriate
 Counter-intuitively, this requires more disk space than the binary
 install. You need Node 7+ and npm 4+ installed.
 
-```
+```Shell
 git clone git@github.com:unbounce/iidy.git
 cd iidy
 npm install . && npm run build # to compile our source first
@@ -111,7 +106,7 @@ Commands:
 
   param                                                  sub commands for working with AWS SSM Parameter Store
 
-  render <template>                                      pre-process and render yaml template
+  render <template>                                      pre-process and render YAML template
   demo   <demoscript>                                    run a demo script
   convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
   init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
@@ -132,7 +127,7 @@ Options:
 
 ### The `argsfile` (aka `stack-args.yaml`)
 
-```
+```YAML
 ####################
 # Required settings:
 
@@ -140,7 +135,7 @@ StackName: <string>
 
 Template: <local file path or s3 path>
 
-# optionally you can use the yaml pre-processor by prepending 'render:' to the filename
+# optionally you can use the YAML pre-processor by prepending 'render:' to the filename
 #Template: render:<local file path or s3 path>
 
 
@@ -189,8 +184,16 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
 ### AWS IAM Settings
 
 `iidy` supports loading AWS IAM credentials/profiles from a) the cli
-    options shown above, b) `Region` or `Profile` settings in
-    `stack-args.yaml`, or c) the standard environment variables.
+options shown above, b) `Region` or `Profile` settings in
+`stack-args.yaml`, or c) the standard AWS environment variables. You
+will also need the correct level of IAM permissions for `iidy` to
+perform CloudFormation API calls.
+
+Additionally, the [YAML pre-processing](#yaml-pre-processing)
+`$imports` that pull data from AWS (`cfn`, `s3`, `ssm`, and
+`ssm-path`) depend on `iidy` being wired to the correct AWS user /
+role and region. You will also need the correct level of IAM
+permissions for `iidy` to make the API calls these `$imports` rely on.
 
 ### Listing and Describing Live Stacks
 
@@ -200,7 +203,7 @@ CommandsBefore: # shell commands to run prior the cfn stack operation
 
 [![asciicast](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E.png)](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E)
 
-```
+```Shell
 $ tree examples/hello-world
 examples/hello-world
 ├── stack-args.yaml         # see above
@@ -249,7 +252,7 @@ $ iidy delete-stack iidy-demo
 ### Using Parameter Store for secrets and ARNs
 
 Here's an example of importing a single secret from Parameter Store.
-```
+```YAML
 # example stack-args.yaml
 $imports:
   dbPasswd: ssm:/staging/lp-webapp/dbPasswd
@@ -261,11 +264,11 @@ Parameters:
   DbPasswd: !$ dbPasswd
   ...
 ```
-See below for more on `$imports` and `includes` (i.e. the `!$` yaml tag).
+See below for more on `$imports` and `includes` (i.e. the `!$` YAML tag).
 
 
 You can also import the full set of parameters under a path prefix:
-```
+```YAML
 # example stack-args.yaml
 $imports:
   secrets: ssm-path:/staging/lp-webapp/
@@ -282,49 +285,320 @@ Parameters:
 
 
 
-## Yaml Pre-Processing
-...
+## YAML Pre-Processing
 
-### Imports and Includes
+In additional to wrapping the Cloudformation API / workflow, `iidy`
+provides an optional YAML pre-processor, which
+
+* allows CloudFormation templates to be abstracted and simplified in
+  ways not possible with vanilla CloudFormation templates
+* allows values to be imported from a range of sources, including
+  local files, s3, https, ParameterStore, and environment variables.
+  It parses json or YAML imports. The imported data can be stitched
+  into the target template as YAML subtrees, as literal strings, or as
+  single values.
+* can be used to define custom resource templates that expand out
+  to a set of real AWS resources. These templates can be parameterized
+  and can even do input validation on the parameters. The template
+  expansion and validation happens as a pre-process step prior to
+  invoking CloudFormation on the rendered output.
+
+It can be used on CloudFormation template files, `stack-args.yaml`,
+and any other YAML file. The pre-processor is applied automatically to
+`stack-args.yaml` and optionally to CloudFormation templates by
+prefixing the Template value in `stack-args.yaml` with `render:` as
+shown below.
+
+```YAML
+StackName: iidy-demo
+Template: "render:./cfn-template.yaml"
+Parameters:
+  Foo: bar
+```
+
+
+
+The pre-processor can also be invoked directly on any YAML file via the
+`iidy render` cli command.
+
+### Basic Syntax
+
+The pre-processor language is valid YAML with some [custom
+tags](http://yaml.org/spec/1.0/#id2490971). These tags all start with
+the characters `!$`. There are also a few special map keys, starting
+with `$`. Both sets of YAML extensions are explained below.
+
+This documentation assumes you already know YAML syntax well. See
+https://en.wikipedia.org/wiki/YAML#Syntax or
+http://www.yaml.org/spec/1.2/spec.html for help.
+
+### `$imports`, `$defs`, and Includes
+
+Each YAML document is treated as a module with a distinct namespace.
+Values in a namespace are defined via the `$defs:` entry at the root
+of the document or are imported via the `$imports:` entry.
+
+These values can be accessed and stitched into the output using either
+the `!$` (pronounced "include") custom tag or with handlebarsjs syntax
+inside a string entry.
+
+```YAML
+# input document
+$defs:
+  hello: "world"
+
+output:
+  by-tag: !$ hello
+  by-handlebars: "{{hello}}"
+
+---
+# output document
+output:
+  by-tag: "world"
+  by-handlebars: "world"
 
 ```
-# Example of stitching in values from another yaml file
+
+Note that the braces used with the handlebars syntax must be enclosed
+in a quoted string or the YAML parser will treat them as a YAML map node.
+
+If the value being included is a map or list rather than a simple
+scalar value, it is spliced into the output rather than being
+collapsed in any way.
+
+```YAML
+# input document
+$defs:
+  a-list:
+    - 1
+    - 2
+  a-map:
+    k1: v1
+    k2: v2
+  a-string: "foo"
+  a-number: 1
+  a-bool: false
+
+output:
+  a-list: !$ a-list
+  a-map: !$ a-map
+  a-string: !$ a-string
+  a-number: !$ a-number
+  a-bool: !$ a-bool
+
+---
+# output document
+output:
+  a-list:
+    - 1
+    - 2
+  a-map:
+    k1: v1
+    k2: v2
+  a-string: "foo"
+  a-number: 1
+  a-bool: false
+
+```
+
+The entries in `$defs:` may use values from `$imports:` and an import
+source may contain handlebars syntax which refers to either values
+that have come from `$defs` or from previous `$imports`.
+
+For example, `values` in this set of imports depends on `other`:
+```YAML
 $imports:
-  # <importName>: <importSource>
-  mappings: ./mappings.yaml
-
-Mappings: !$ mappings
+  other: "env:other:default"
+  values: "{{other}}.yaml"
 ```
 
-#### Import Source Options
+This example is simillar to the previous but `other` is defined as a fixed value.
+```YAML
+$defs:
+  other: blah
+$imports:
+  values: "{{other}}.yaml"
+```
 
-* file
-* filehash
-* s3
-* https
-* git
+#### Sources for `$imports`
+
+Imports are specified per YAML document under the special
+document-level key `$imports`. Its value is map from import names to
+import sources.
+
+For example, if we had the following file:
+```YAML
+# names.yaml
+mundi: world
+#...
+```
+
+We could import it into another file and use the values it contains:
+```YAML
+# input document
+$imports:
+  # <an arbitrary import name>: <importSource>
+  names: ./names.yaml
+
+output:
+  hello: !$ names.mundi
+---
+# output document
+outputs:
+  hello: world
+
+```
+
+`iidy` supports a wide range of import sources:
+
+* local file paths (relative or absolute): e.g. `./some-file.yaml`
+* filehash: e.g. `filehash:./some-file.yaml`
+* https or http: e.g. `https://example.com/some-file.yaml`
+* environment variables: e.g. `env:FOO` or with an optional default value `env:FOO:bar`
+* s3 (tied to an AWS account / region): e.g.
+  `s3://somebucket/some-file.yaml`. Requires `s3:GetObject` IAM
+  permissions.
+* CloudFormation stacks (tied to an AWS account / region). These
+  require requires IAM `cloudformation:ListExports` and
+  `cloudformation:DescribeStack` permissions.
+  * `cfn:export:someExportName`
+  * `cfn:output:stackName:anOutputName` or `cfn:output:stackName` imports all outputs
+  * `cfn:resource:stackName:resourceName` or `cfn:resource:stackName` imports all resources
+  * `cfn:parameter:stackName:parameterName` or `cfn:parameter:stackName` imports all parameters
+  * `cfn:tag:stackName:tagName` or `cfn:tag:stackName` imports all tags
+  * `cfn:stack:stackName` imports all stack details from the CloudFormation API
+* AWS SSM ParameterStore (tied to an AWS account / region). These
+  require IAM `ssm:GetParameters`, `ssm:GetParameter`, and
+  `ssm:DescribeParameter` permissions.
+  * a single entry: `ssm:/some-path-prefix/foo`
+  * all entries under a path prefix: `ssm-path:/some-path-prefix/`
 * random
-* environment variables
-* CloudFormation stacks
-* AWS SSM ParameterStore
+  * `random:int`
+  * `random:dashed-name`
+  * `random:name`
+* git
+  * `git:branch`
+  * `git:describe`
+  * `git:sha`
 
-### Working With CloudFormation Yaml
+`iidy` parses `.yaml` or `.json` imports and makes them available as a
+map. It uses either the file extension or the mime-type of remote
+files to detect these file types.
 
-#### Custom CloudFormation Resource Types
-...
+Relative imports are supported for local files, http, and s3.
 
-### Working with *Non*-CloudFormation Yaml
-`iidy` autodetects whether a Yaml document is a CloudFormation
-template or not. If it's not, the CloudFormation custom resource
-templates described above and some validation/normalization features
-are disabled. Everything else should work as described above.
+### Boolean / Logical Branching Tags
+TODO: see the test suite for now
+* `!$if`
+* `!$eq`
+* `!$not`
+
+
+### Looping and Data Restructuring Tags
+TODO: see the test suite for now
+* `!$concat` concatenate lists of lists
+* `!$map` map a YAML template over a list of input arguments
+* `!$concatMap` same as `!$map` followed by `!$concat` on the output
+* `!$merge` merge a list of maps together, similar to lodash [`_.merge`](https://lodash.com/docs/4.17.4#merge)
+* `!$mergeMap` same as `!$map` followed by `!$merge` on the output
+* `!$fromPairs` convert a list of pairs into a map
+* `!$groupBy` similar to lodash [`_.merge`](https://lodash.com/docs/4.17.4#groupBy)
+* `!$split` split a string into a list
+
+### String manipulation Tags
+TODO: see the test suite for now
+* `!$parseYaml` parse a string
+
+### Working With CloudFormation YAML
+`iidy` autodetects whether a YAML document is a CloudFormation
+template or not. If it is, the [`custom resource templates`](#custom-resource-templates) (described
+below) and some validation/normalization features are enabled.
+
+#### Custom Resource Templates
+
+
+NOTE: this section is work in progress
+
+Before we get into the details here's a simple -- and rather pointless
+-- example. We define a custom template `demo-custom-template.yaml`
+which has two `$params` and outputs two `Resources`. Then in
+`demo-cnf-template.yaml` we import the custom template and use it as
+the `Type:` in the `Demo` resource.
+
+```YAML
+# demo-custom-template.yaml
+$params:
+  - Name: Foo
+    Type: string
+  - Name: Bar
+    Type: string
+Resources:
+  Topic1:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "Hello {{Foo}}"
+  Topic2:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "Hello {{Bar}}"
+
+```
+
+```YAML
+# demo-cfn-template.yaml
+$imports:
+  DemoTmpl: demo-custom-template.yaml
+  # ^ the name is arbitrary
+Resources:
+  Demo:
+    Type: DemoTmpl # use it here
+    Properties:
+      # these are threaded in as the $params defined in demo-custom-template.yaml
+      Foo: 123
+      Bar: 456
+  SomeOtherResource:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "non-custom"
+```
+
+We can use `iidy render demo-cfn-template.yaml` to see the final
+template:
+
+```YAML
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  DemoTopic1:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: Hello 123
+  DemoTopic2:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: Hello 456
+  SomeOtherResource:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: non-custom
+Metadata: # ... elided ...
+```
+
+TODO: more examples and cover the details
+TODO: This section is best explained with an worked example / executable demonstration
+
+### Working with *Non*-CloudFormation YAML
+
+`iidy render` can be used to invoke the pre-processor on any YAML
+document. All features are available other than [`custom resource
+templates`](#custom-resource-templates). See `iidy render --help` for
+some more information.
 
 ### Converting Deployed Stacks to `iidy`
 Converting current stacks to `iidy` can be done through the `iidy convert-stack-to-iidy` command,
 which accepts 2 parameters: `stackname` (the stack name of the project that you'd want to convert) and
 an `outputDir` (path where the output will be stored). For example:
 
-```sh
+```Shell
 iidy convert-stack-to-iidy my-cloudformation-stack-1 ./infrastructure
 
 # this should generate 3 files:
@@ -343,7 +617,8 @@ iidy is coded in Typescript and compiles to es2015 Javascript using
 commonjs modules (what Node uses). See the `Makefile` and the script
 commands in `package.json` for details about the build process.
 
-...
+Please format all files with `tsfmt` and remove extra whitespace
+before submitting a PR.
 
 ## License
 MIT.
@@ -427,5 +702,4 @@ In priority order:
 
 * More examples and documentation.
 
-* Unit tests of the pre-processor code. I've been relying on types and
-  functional tests to date.
+* Unit tests of the pre-processor code. Our current coverage is minimal.
