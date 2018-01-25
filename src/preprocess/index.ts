@@ -955,11 +955,14 @@ function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButU
 
 function visit$split(node: yaml.$split, path: string, env: Env): string[] {
   if (_.isArray(node.data) && node.data.length === 2) {
-    const [char, str]: [string, string] = node.data;
-    return visitNode(str, path, env).toString().split(char);
+    const [delimiter, str]: [string, string] = node.data;
+      return visitNode(str, path, env)
+          .toString()
+          .replace(new RegExp(`${delimiter}+$`), '')
+          .split(delimiter);
   } else {
     throw new Error(`Invalid argument to $split at "${path}".`
-      + " Must be array with two elements: split character and a string to split");
+      + " Must be array with two elements: a delimiter to split on and a string to split");
   }
 }
 
@@ -1110,7 +1113,7 @@ const visitMapNode = (node: any, path: string, env: Env): AnyButUndefined => {
       const sub: any = visitNode(node[k], appendPath(path, k), env);
       for (const k2 in sub) {
         // mutate in place to acheive a deep merge
-        _.merge(res, {[visitString(k2, path, env)]: sub[k2]}); 
+        _.merge(res, {[visitString(k2, path, env)]: sub[k2]});
       }
       // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions
       //} else if ( .. Fn:Ref, etc. ) {
