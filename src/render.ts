@@ -13,10 +13,10 @@ import {logger} from './logger';
 import {search} from 'jmespath';
 
 export function isStackArgsFile(location: string, doc: any): boolean {
-  if (_.includes(['stack-args.yaml', 'stack-args.yml'], pathmod.basename(location))) {
+  if (pathmod.basename(location).match(/stack-args/)) {
     return true;
   } else {
-    return doc.Template && (doc.Parameters || doc.Tags || doc.StackName);
+    return doc && doc.Template && (doc.Parameters || doc.Tags || doc.StackName);
   }
 }
 
