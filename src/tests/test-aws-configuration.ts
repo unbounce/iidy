@@ -24,7 +24,7 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
   });
   const availableProfileNames = awsConfigIni.getProfiles();
 
-  describe.only("AWS configuration", () => {
+  describe("AWS configuration", () => {
 
     describe("configureAWS", () => {
       const awsRegionEnvVars = ['AWS_REGION', 'AWS_DEFAULT_REGION'];

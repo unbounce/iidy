@@ -587,7 +587,7 @@ output: !$merge maps
       });
 
       describe('!$mergeMap', () => {
-        it.only('with three maps in a list', async () => {
+        it('with three maps in a list', async () => {
           const map1 = {a: 1, b: 2};
           const map2 = {a: 91, c: 3};
           const map3 = {c: 4, d: 99};
