@@ -1367,7 +1367,7 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
     } else {
       console.log(`You can do so later using\n`
         + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner._changeSetName}`);
-      return 0;
+      return 130;
     }
   } else {
     return new UpdateStack(argv, await loadStackArgs(argv)).run();
@@ -1543,7 +1543,7 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
     const {StackStatus} = await getStackDescription(StackId);
     return showFinalComandSummary(StackStatus === 'DELETE_COMPLETE');
   } else {
-    return 1
+    return 130;
   }
 }
 

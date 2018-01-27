@@ -135,7 +135,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
         logSuccess(`Template has been successfully approved!`);
         return 0;
       } else {
-        return 0;
+        return 130;
       }
 
     } else {
