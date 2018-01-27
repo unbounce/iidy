@@ -1,3 +1,4 @@
+require('./_init'); // for side-effect
 import * as _ from 'lodash';
 
 import * as pre from '../preprocess';

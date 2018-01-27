@@ -59,9 +59,14 @@ async function configureAWS(config: AWSConfig) {
   const resolvedProfile: string | undefined = (
     config.profile || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE);
   await resolveCredentials(resolvedProfile, config.assumeRoleArn);
-  if (typeof config.region === 'string') {
-    logger.debug(`Setting AWS region: ${config.region}.`);
-    aws.config.update({region: config.region});
+
+  const resolvedRegion = (
+    config.region
+    || process.env.AWS_REGION
+    || process.env.AWS_DEFAULT_REGION);
+  if (!_.isEmpty(resolvedRegion)) {
+    logger.debug(`Setting AWS region: ${resolvedRegion}. aws.config.region was previously ${aws.config.region}`);
+    aws.config.update({region: resolvedRegion});
   }
   aws.config.update({maxRetries: 10}); // default is undefined -> defaultRetryCount=3
   // the sdk will handle exponential backoff internally.
