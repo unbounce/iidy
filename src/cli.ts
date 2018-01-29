@@ -147,6 +147,10 @@ const stackNameOpt: yargs.Options = {
 export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler) {
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
     + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
+  const epilogue = ('Status Codes:\n'
+    + '  Success (0)       Command successfully completed\n'
+    + '  Error (1)         An error was encountered while executing command\n'
+    + '  Cancelled (130)   User responded \'No\' to iidy prompt or interrupt (CTRL-C) was received');
 
   return yargs
     .env('IIDY')
@@ -397,22 +401,22 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .option('environment', environmentOpt)
     .option('client-request-token', {
       type: 'string', default: null,
-      group: 'AWS Options',
+      group: 'AWS Options:',
       description: description('a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.')
     })
     .option('region', {
       type: 'string', default: null,
-      group: 'AWS Options',
+      group: 'AWS Options:',
       description: description('AWS region. Can also be set via --environment & stack-args.yaml:Region.')
     })
     .option('profile', {
       type: 'string', default: null,
-      group: 'AWS Options',
+      group: 'AWS Options:',
       description: description('AWS profile. Can also be set via --environment & stack-args.yaml:Profile.')
     })
     .option('assume-role-arn', {
       type: 'string', default: null,
-      group: 'AWS Options',
+      group: 'AWS Options:',
       description: description(
         'AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile')
     })
@@ -432,14 +436,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .alias('h', 'help')
     .completion('completion', description('generate bash completion script. To use: "source <(iidy completion)"'))
     .recommendCommands()
-    // .completion('completion', (current, argv, done) => {
-    //   console.log('-----')
-    //   console.log(current);
-    //   console.log('-----')
-    //   console.log(argv);
-    //   return []//yargs.getCompletion(argv, done)
-    // })
-
+    .epilogue(epilogue)
     .strict()
     .wrap(yargs.terminalWidth());
 }
