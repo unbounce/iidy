@@ -253,12 +253,14 @@ export type ImportLoader = (location: ImportLocation, baseLocation: ImportLocati
 export const importLoaders: {[key in ImportType]: ImportLoader} = {
 
   file: async (location, baseLocation) => {
-    if (_.some(_.filter(importTypes, 'file')), (typ: string) => baseLocation.startsWith(`${typ}:`)) {
-      logger.debug(`non file: import on baseLocation=${baseLocation} for location=${location}`)
-    }
     const resolvedLocation = pathmod.resolve(pathmod.dirname(baseLocation.replace('file:', '')), location.replace('file:', ''));
-    const data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
-    return {resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
+    try {
+      const data = (await bluebird.promisify(fs.readFile)(resolvedLocation)).toString();
+      return {resolvedLocation, data, doc: resolveDocFromImportData(data, resolvedLocation)}
+    } catch (e) {
+      throw new Error(
+        `"${baseLocation}" has a bad import "$imports: ... ${location}". ${e}`);
+    }
   },
 
   filehash: async (location, baseLocation) => {
@@ -472,6 +474,10 @@ async function loadImports(
 
     for (const asKey in doc.$imports) {
       let loc = doc.$imports[asKey];
+      if (! _.isString(loc)) {
+        throw new Error(`"${baseLocation}" has a bad import "$imports: ... ${asKey}".\n`
+                        +` Import values must be strings but ${asKey}=${JSON.stringify(loc, null, ' ')}".`)
+      }
       if (loc.search(/{{(.*?)}}/) > -1) {
         loc = interpolateHandlebarsString(loc, doc.$envValues, `${baseLocation}: ${asKey}`);
       }
