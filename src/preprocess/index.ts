@@ -635,6 +635,63 @@ function validateTemplateParameter(param: $param, mergedParams: any, name: strin
     if (!(typeof paramValue === 'string' && paramValue.match(patternRegex))) {
       throw new Error(`Invalid value "${param.Name}" in ${name}. AllowedPattern: ${param.AllowedPattern}.`)
     }
+  } else if (typeof param.Type === 'string') {
+    const throwParamTypeError = () => {
+      throw new Error(`Invalid parameter value "${JSON.stringify(paramValue, null, ' ')}". Expected a ${param.Type}`);
+    };
+    switch (param.Type) {
+      case 'string':
+      case 'String':
+        if (!_.isString(paramValue)) {
+          throwParamTypeError();
+        }
+        break;
+      case 'number':
+      case 'Number':
+        if (!_.isNumber(paramValue)) {
+          throwParamTypeError();
+        }
+        break;
+      case 'object':
+      case 'Object':
+        if (!_.isObject(paramValue)) {
+          throwParamTypeError();
+        }
+        break;
+      // see the full list of AWS CFN params here
+      // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+      case 'CommaDelimitedList':
+      case 'List<Number>':
+      case 'AWS::EC2::AvailabilityZone::Name':
+      case 'AWS::EC2::Image::Id':
+      case 'AWS::EC2::Instance::Id':
+      case 'AWS::EC2::KeyPair::KeyName':
+      case 'AWS::EC2::SecurityGroup::GroupName':
+      case 'AWS::EC2::SecurityGroup::Id':
+      case 'AWS::EC2::Subnet::Id':
+      case 'AWS::EC2::Volume::Id':
+      case 'AWS::EC2::VPC::Id':
+      case 'AWS::Route53::HostedZone::Id':
+      case 'List<AWS::EC2::AvailabilityZone::Name>':
+      case 'List<AWS::EC2::Image::Id>':
+      case 'List<AWS::EC2::Instance::Id>':
+      case 'List<AWS::EC2::SecurityGroup::GroupName>':
+      case 'List<AWS::EC2::SecurityGroup::Id>':
+      case 'List<AWS::EC2::Subnet::Id>':
+      case 'List<AWS::EC2::Volume::Id>':
+      case 'List<AWS::EC2::VPC::Id>':
+      case 'List<AWS::Route53::HostedZone::Id>':
+      case 'AWS::SSM::Parameter::Name':
+      case 'AWS::SSM::Parameter::Value<String>':
+      case 'AWS::SSM::Parameter::Value<List<String>>':
+      case 'AWS::SSM::Parameter::Value<CommaDelimitedList>':
+        // TODO validate these
+        break
+      default:
+        if (!(param.Type.startsWith('AWS:') || param.Type.startsWith('List<'))) {
+          throw new Error(`Unknown parameter type: ${param.Type}`);
+        }
+    }
   }
 }
 
