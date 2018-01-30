@@ -10,7 +10,7 @@ import * as yaml from './yaml';
 import {transform} from './preprocess';
 import {_loadStackArgs} from './cfn';
 import {logger} from './logger';
-
+import getCurrentAWSRegion from './getCurrentAWSRegion';
 import {GlobalArguments} from './cli';
 
 export function isStackArgsFile(location: string, doc: any): boolean {
@@ -40,6 +40,8 @@ export async function renderMain(argv: RenderArguments): Promise<number> {
     // TODO remove the cast to any below after tightening the args on _loadStackArgs
     outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
   } else {
+    // injection of $region / $environment is handled by _loadStackArgs in the if branch above
+    input.$envValues = _.merge({}, input.$envValues, {iidy: {environment: argv.environment, region: getCurrentAWSRegion()}});
     outputDoc = await transform(input, rootDocLocation);
   }
   if (argv.query) {

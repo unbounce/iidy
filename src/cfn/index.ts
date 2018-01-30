@@ -863,14 +863,19 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
     runCommandSet(argsdata.CommandsBefore);
   }
   if (environment) {
-    argsdata.$envValues = _.merge({}, argsdata.$envValues, {environment});
     if (!_.get(argsdata, ['Tags', 'environment'])) {
       argsdata.Tags = _.merge({environment}, argsdata.Tags);
     }
   }
-  if (getCurrentAWSRegion()) {
-    argsdata.$envValues = _.merge({}, argsdata.$envValues, {region: getCurrentAWSRegion()});
-  }
+  const finalRegion = getCurrentAWSRegion();
+  argsdata.$envValues = _.merge(
+    {}, argsdata.$envValues, {
+      // TODO deprecate bare region/environment:
+      region: finalRegion,
+      environment,
+      // new style with namespace to avoid clashes:
+      iidy: {environment, region: finalRegion}});
+
   const stackArgs = await transform(argsdata, argsfile) as StackArgs;
   logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgs);
   return stackArgs;
