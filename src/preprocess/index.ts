@@ -795,9 +795,19 @@ function visit$expand(node: yaml.$expand, path: string, env: Env): AnyButUndefin
     const {template: templateName, params} = node.data;
     // TODO remove the need for this cast
     const template: ExtendedCfnDoc = _.clone(lookupInEnv(templateName, path, env)) as ExtendedCfnDoc;
-    // TODO validate the params
-    // TODO expand template.$params defaults
-    const subEnv = mkSubEnv(env, _.merge({}, params, env.$envValues), {path});
+    const stackFrame = {location: template.$location, path: appendPath(path, '!$expand')};
+    const $paramDefaultsEnv = mkSubEnv(env, _.merge(template.$envValues), stackFrame);
+    const $paramDefaults = _.fromPairs(
+      _.filter(
+        _.map(
+          template.$params,
+          (v) => [v.Name,
+                  visitNode(v.Default, appendPath(path, `$params.${v.Name}`), $paramDefaultsEnv)]),
+        ([k, v]) => !_.isUndefined(v)));
+    const providedParams = visitNode(params, appendPath(path, 'params'), env);
+    const mergedParams = _.assign({}, $paramDefaults, providedParams);
+    _.forEach(template.$params, (param) => validateTemplateParameter(param, mergedParams, '!$expand', env));
+    const subEnv = mkSubEnv(env, _.merge({}, mergedParams, template.$envValues), stackFrame);
     delete template.$params;
     // TODO might also need to delete template.$imports, template.$envValues, and template.$defs
     return visitNode(template, path, subEnv);
