@@ -72,7 +72,8 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
         if (roleAssumed) {
           expect(roleAssumed).to.equal(roleToAssume);
         }
-        expect(aws.config.credentials!.sessionToken).to.be.a('string');
+        expect(aws.config.credentials!.sessionToken)
+          .to.be.a('string', 'aws.config.credentials.sessionToken is missing');
 
         // const sts = new aws.STS();
         // const ident = await sts.getCallerIdentity().promise();
