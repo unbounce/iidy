@@ -834,7 +834,7 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
   // There is chicken-and-egg situation between use of imports for
   // profile or region and the call to configureAWS. We need to
   // enforce that they be plain strings with no pre-processor magic.
-  for (const key of ['Profile', 'Region']) {
+  for (const key of ['Profile', 'AssumeRoleARN', 'Region']) {
     if (_.isObject(argsdata[key])) {
       if (environment && argsdata[key][environment]) {
         argsdata[key] = argsdata[key][environment];
@@ -848,7 +848,9 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
   }
   // have to do it before the call to transform
   // note, the aws settings in argv trump those from argsdata
-  await configureAWS(_.merge({profile: argsdata.Profile, region: argsdata.Region}, argv)); // tslint:disable-line
+  await configureAWS(_.merge(
+    {profile: argsdata.Profile, assumeRoleArn: argsdata.AssumeRoleARN, region: argsdata.Region},
+    argv)); // tslint:disable-line
 
   if (argsdata.CommandsBefore) {
     // TODO improve CLI output of this and think about adding
