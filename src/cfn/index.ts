@@ -1200,6 +1200,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
   _watchStackEvents = false
   _changeSetName: string;
   _showPreviousEvents = false;
+  _hasChanges: undefined | boolean;
 
   async _run() {
     // TODO remove argv as an arg here. Too general
@@ -1219,6 +1220,9 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const _changeSetResult = await this._cfn.createChangeSet(createChangeSetInput).promise();
     await this._waitForChangeSetCreateComplete().catch(() => null); // catch for failed changesets
     const changeSet = await this._cfn.describeChangeSet({ChangeSetName, StackName}).promise();
+
+    this._hasChanges = !_.isEmpty(changeSet.Changes);
+
     if (changeSet.Status === 'FAILED') {
       logger.error(changeSet.StatusReason as string, 'Deleting failed changeset.');
       await this._cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
@@ -1358,7 +1362,12 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
 
     const createChangesetResult = await changeSetRunner.run();
     if (createChangesetResult > 0) {
-      return createChangesetResult;
+      if (changeSetRunner._hasChanges) {
+        return createChangesetResult;
+      } else {
+        logger.info('No changes to apply');
+        return 0;
+      }
     }
     console.log()
 
