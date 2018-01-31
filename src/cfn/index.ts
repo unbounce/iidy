@@ -980,20 +980,21 @@ function showFinalComandSummary(wasSuccessful: boolean): number {
 }
 
 abstract class AbstractCloudFormationStackCommand {
-  region: AWSRegion
+  public region: AWSRegion
+
   readonly profile?: string
   readonly assumeRoleArn?: string
   readonly stackName: string
   readonly argsfile: string
 
-  protected readonly _cfnOperation: CfnOperation
-  protected _startTime: Date
-  protected _cfn: aws.CloudFormation
-  protected readonly _expectedFinalStackStatus: string[]
-  protected readonly _showTimesInSummary: boolean = true;
-  protected readonly _showPreviousEvents: boolean = true;
-  protected _previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>
-  protected readonly _watchStackEvents: boolean = true;
+  protected readonly cfnOperation: CfnOperation
+  protected startTime: Date
+  protected cfn: aws.CloudFormation
+  protected readonly expectedFinalStackStatus: string[]
+  protected readonly showTimesInSummary: boolean = true;
+  protected readonly showPreviousEvents: boolean = true;
+  protected previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>
+  protected readonly watchStackEvents: boolean = true;
 
   constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
     // note, this.region is set in _setup after the cal to configureAWS
@@ -1007,9 +1008,9 @@ abstract class AbstractCloudFormationStackCommand {
   async _setup() {
     await configureAWS(this);
     this.region = def(getCurrentAWSRegion(), this.argv.region || this.stackArgs.Region);
-    this._cfn = new aws.CloudFormation()
-    if (this._showPreviousEvents) {
-      this._previousStackEventsPromise = getAllStackEvents(this.stackName);
+    this.cfn = new aws.CloudFormation()
+    if (this.showPreviousEvents) {
+      this.previousStackEventsPromise = getAllStackEvents(this.stackName);
     }
   }
 
@@ -1029,7 +1030,7 @@ abstract class AbstractCloudFormationStackCommand {
 
     console.log(); // blank line
     console.log(formatSectionHeading('Command Metadata:'))
-    printSectionEntry('CFN Operation:', cli.magenta(this._cfnOperation));
+    printSectionEntry('CFN Operation:', cli.magenta(this.cfnOperation));
     printSectionEntry('Region:', cli.magenta(this.region));
     if (!_.isEmpty(this.profile)) {
       printSectionEntry('Profile:', cli.magenta(this.profile));
@@ -1049,7 +1050,7 @@ abstract class AbstractCloudFormationStackCommand {
   async run(): Promise<number> {
     await this._setup()
     await this._showCommandSummary()
-    this._startTime = await getReliableStartTime();
+    this.startTime = await getReliableStartTime();
     return this._run()
   }
 
@@ -1059,23 +1060,23 @@ abstract class AbstractCloudFormationStackCommand {
 
     // we use StackId below rather than StackName to be resilient to deletions
     const stackPromise = getStackDescription(stackId);
-    await summarizeStackDefinition(stackId, this.region, this._showTimesInSummary, stackPromise);
+    await summarizeStackDefinition(stackId, this.region, this.showTimesInSummary, stackPromise);
 
-    if (this._showPreviousEvents) {
+    if (this.showPreviousEvents) {
       console.log();
       console.log(formatSectionHeading('Previous Stack Events (max 10):'))
-      await showStackEvents(stackId, 10, this._previousStackEventsPromise);
+      await showStackEvents(stackId, 10, this.previousStackEventsPromise);
     }
 
     console.log();
-    if (this._watchStackEvents) {
-      await watchStack(stackId, this._startTime);
+    if (this.watchStackEvents) {
+      await watchStack(stackId, this.startTime);
     }
 
     console.log();
     const stack = await summarizeCompletedStackOperation(stackId);
 
-    return showFinalComandSummary(_.includes(this._expectedFinalStackStatus, stack.StackStatus));
+    return showFinalComandSummary(_.includes(this.expectedFinalStackStatus, stack.StackStatus));
   }
   async _run(): Promise<number> {
     throw new Error('Not implemented');
@@ -1083,17 +1084,17 @@ abstract class AbstractCloudFormationStackCommand {
 }
 
 class CreateStack extends AbstractCloudFormationStackCommand {
-  _cfnOperation: CfnOperation = 'CREATE_STACK'
-  _expectedFinalStackStatus = ['CREATE_COMPLETE']
-  _showTimesInSummary = false;
-  _showPreviousEvents = false;
+  cfnOperation: CfnOperation = 'CREATE_STACK'
+  expectedFinalStackStatus = ['CREATE_COMPLETE']
+  showTimesInSummary = false;
+  showPreviousEvents = false;
 
   async _run() {
     if (_.isEmpty(this.stackArgs.Template)) {
       throw new Error('For create-stack you must provide at Template: parameter in your argsfile')
     };
     const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
-    const createStackOutput = await this._cfn.createStack(createStackInput).promise();
+    const createStackOutput = await this.cfn.createStack(createStackInput).promise();
     await this._updateStackTerminationPolicy();
     return this._watchAndSummarize(createStackOutput.StackId as string);
   }
@@ -1113,8 +1114,8 @@ async function isHttpTemplateAccessible(location?: string) {
 }
 
 class UpdateStack extends AbstractCloudFormationStackCommand {
-  _cfnOperation: CfnOperation = 'UPDATE_STACK'
-  _expectedFinalStackStatus = ['UPDATE_COMPLETE']
+  cfnOperation: CfnOperation = 'UPDATE_STACK'
+  expectedFinalStackStatus = ['UPDATE_COMPLETE']
 
   async _run() {
     try {
@@ -1134,7 +1135,7 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
       }
       await this._updateStackTerminationPolicy();
       // TODO consider conditionally calling setStackPolicy if the policy has changed
-      const updateStackOutput = await this._cfn.updateStack(updateStackInput).promise();
+      const updateStackOutput = await this.cfn.updateStack(updateStackInput).promise();
       return this._watchAndSummarize(updateStackOutput.StackId as string);
     } catch (e) {
       if (e.message === 'No updates are to be performed.') {
@@ -1195,37 +1196,38 @@ function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutpu
 }
 
 class CreateChangeSet extends AbstractCloudFormationStackCommand {
-  _cfnOperation: CfnOperation = 'CREATE_CHANGESET'
-  _expectedFinalStackStatus = terminalStackStates
-  _watchStackEvents = false
-  _changeSetName: string;
-  _showPreviousEvents = false;
-  _hasChanges: undefined | boolean;
+  public changeSetName: string;
+  public hasChanges: undefined | boolean;
+
+  cfnOperation: CfnOperation = 'CREATE_CHANGESET'
+  expectedFinalStackStatus = terminalStackStates
+  watchStackEvents = false
+  showPreviousEvents = false;
 
   async _run() {
     // TODO remove argv as an arg here. Too general
 
     const ChangeSetName = this.argv.changesetName || nameGenerator().dashed; // TODO parameterize
-    this._changeSetName = ChangeSetName;
+    this.changeSetName = ChangeSetName;
     const createChangeSetInput =
       await stackArgsToCreateChangeSetInput(ChangeSetName, this.stackArgs, this.argsfile, this.stackName);
     const StackName = createChangeSetInput.StackName;
     createChangeSetInput.Description = this.argv.description;
 
-    const stackExists = await this._cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
+    const stackExists = await this.cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
     createChangeSetInput.ChangeSetType = stackExists ? 'UPDATE' : 'CREATE';
 
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
 
-    const _changeSetResult = await this._cfn.createChangeSet(createChangeSetInput).promise();
+    const _changeSetResult = await this.cfn.createChangeSet(createChangeSetInput).promise();
     await this._waitForChangeSetCreateComplete().catch(() => null); // catch for failed changesets
-    const changeSet = await this._cfn.describeChangeSet({ChangeSetName, StackName}).promise();
+    const changeSet = await this.cfn.describeChangeSet({ChangeSetName, StackName}).promise();
 
-    this._hasChanges = !_.isEmpty(changeSet.Changes);
+    this.hasChanges = !_.isEmpty(changeSet.Changes);
 
     if (changeSet.Status === 'FAILED') {
       logger.error(changeSet.StatusReason as string, 'Deleting failed changeset.');
-      await this._cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
+      await this.cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
       return 1;
     }
     console.log();
@@ -1251,7 +1253,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const StackName = this.stackName;
 
     const pollInterval = 1;     // seconds
-    const startTime = this._startTime;
+    const startTime = this.startTime;
     const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
 
     const tty: any = process.stdout; // tslint:disable-line
@@ -1262,7 +1264,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     });
 
     while (true) {
-      const {Status, StatusReason} = await this._cfn.describeChangeSet({ChangeSetName: this._changeSetName, StackName}).promise();
+      const {Status, StatusReason} = await this.cfn.describeChangeSet({ChangeSetName: this.changeSetName, StackName}).promise();
       spinner.stop();
       if (Status === 'CREATE_COMPLETE') {
         break;
@@ -1280,11 +1282,11 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
 
 
 class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
-  _cfnOperation: CfnOperation = 'EXECUTE_CHANGESET'
-  _expectedFinalStackStatus = ['UPDATE_COMPLETE', 'CREATE_COMPLETE']
+  cfnOperation: CfnOperation = 'EXECUTE_CHANGESET'
+  expectedFinalStackStatus = ['UPDATE_COMPLETE', 'CREATE_COMPLETE']
 
   async _run() {
-    await this._cfn.executeChangeSet(
+    await this.cfn.executeChangeSet(
       {
         ChangeSetName: this.argv.changesetName,
         ClientRequestToken: this.argv.clientRequestToken,
@@ -1295,12 +1297,12 @@ class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
 }
 
 class EstimateStackCost extends AbstractCloudFormationStackCommand {
-  _cfnOperation: CfnOperation = 'ESTIMATE_COST'
+  cfnOperation: CfnOperation = 'ESTIMATE_COST'
 
   async _run() {
     const {TemplateBody, TemplateURL, Parameters} =
       await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
-    const estimateResp = await this._cfn.estimateTemplateCost({TemplateBody, TemplateURL, Parameters}).promise();
+    const estimateResp = await this.cfn.estimateTemplateCost({TemplateBody, TemplateURL, Parameters}).promise();
     console.log('Stack cost estimator: ', estimateResp.Url);
     return 0;
   }
@@ -1362,7 +1364,7 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
 
     const createChangesetResult = await changeSetRunner.run();
     if (createChangesetResult > 0) {
-      if (changeSetRunner._hasChanges) {
+      if (changeSetRunner.hasChanges) {
         return createChangesetResult;
       } else {
         logger.info('No changes to apply');
@@ -1378,11 +1380,11 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
         message: `Do you want to execute this changeset now?`
       })
     if (resp.confirmed) {
-      argv.changesetName = changeSetRunner._changeSetName;
+      argv.changesetName = changeSetRunner.changeSetName;
       return new ExecuteChangeSet(argv, stackArgs).run();
     } else {
       console.log(`You can do so later using\n`
-        + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner._changeSetName}`);
+        + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`);
       return 130;
     }
   } else {
