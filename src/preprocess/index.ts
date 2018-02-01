@@ -1137,11 +1137,23 @@ const visitArray = (node: AnyButUndefined[], path: string, env: Env): AnyButUnde
   _.map(node, (v, i) => visitNode(v, appendPath(path, i.toString()), env));
 
 export function visitString(node: string, path: string, env: Env): string {
+  let res: string;
   if (node.search(HANDLEBARS_RE) > -1) {
-    return interpolateHandlebarsString(node, env.$envValues, path);
+    res = interpolateHandlebarsString(node, env.$envValues, path);
   } else {
-    return node;
+    res = node;
   }
+  if (res.match(/^(0\d+)$/)) {
+    // this encoding works around non-octal numbers with leading 0s
+    // not being quoted by jsyaml.dump which then causes issues with
+    // CloudFormation mis-parsing those as octal numbers. The encoding
+    // is removed in ../yaml.ts:dump
+
+    // js-yaml devs don't want to change the behaviour so we need this
+    // workaround https://github.com/nodeca/js-yaml/issues/394
+    res = `$0string ${res}`;
+  }
+  return res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
