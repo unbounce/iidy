@@ -196,4 +196,6 @@ export const loadString = (content: string | Buffer, filename: string): any =>
 export const dump = (doc: object): string =>
   jsyaml.safeDump(doc, {schema: schema, lineWidth: 999})
     .replace(/!<!([^>]+?)>/g, '!$1')
-    .replace(/ !\$include /g, ' !$ ');
+    .replace(/ !\$include /g, ' !$ ')
+    .replace(/\$0string \s*(0\d+)/g, "'$1'");
+// $0string ^ is an encoding added in preprocess/index.ts:visitString
