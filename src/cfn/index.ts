@@ -914,7 +914,7 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
     logger.debug(`TemplateURL: ${TemplateURL}`);
   }
   if (stackArgs.RoleARN) {
-    logger.warning('RoleARN in stack-args.yaml is deprecated. Use ServiceRoleARN');
+    logger.warn('RoleARN in stack-args.yaml is deprecated. Use ServiceRoleARN');
   }
 
   return {
