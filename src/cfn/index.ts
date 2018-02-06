@@ -1006,8 +1006,9 @@ abstract class AbstractCloudFormationStackCommand {
   }
 
   async _setup() {
-    await configureAWS(this);
-    this.region = def(getCurrentAWSRegion(), this.argv.region || this.stackArgs.Region);
+    const regionArg = this.argv.region || this.stackArgs.Region;
+    await configureAWS(_.merge({}, this, {region: regionArg}));
+    this.region = def(getCurrentAWSRegion(), regionArg);
     this.cfn = new aws.CloudFormation()
     if (this.showPreviousEvents) {
       this.previousStackEventsPromise = getAllStackEvents(this.stackName);
