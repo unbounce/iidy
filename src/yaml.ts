@@ -72,6 +72,7 @@ addCFNTagType('ImportValue', 'scalar');
 addCFNTagType('ImportValue', 'mapping');
 
 addCFNTagType('Join', 'sequence');
+addCFNTagType('Split', 'sequence');
 
 export class Ref extends Tag<string> {}
 customTags.Ref = Ref;
