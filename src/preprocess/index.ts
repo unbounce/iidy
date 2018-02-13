@@ -15,6 +15,7 @@ import * as bluebird from 'bluebird';
 global.Promise = bluebird;
 
 import * as aws from 'aws-sdk'
+import {ServiceConfigurationOptions} from 'aws-sdk/lib/service';
 import * as url from 'url';
 
 import * as request from 'request-promise-native';
@@ -308,8 +309,19 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
   cfn: async (location, baseLocation) => {
     let resolvedLocationParts, StackName, field, fieldKey;
     let data: any, doc: any;
-    const cfn = new aws.CloudFormation();
-    [, field, ...resolvedLocationParts] = location.split(':');
+
+    const cfnOptions: ServiceConfigurationOptions = {};
+    const uri = url.parse(location);
+    const queryParameters = new url.URLSearchParams(uri.search);
+    const region = queryParameters.get('region');
+
+    if(region) {
+      cfnOptions.region = region;
+    }
+
+    const cfn = new aws.CloudFormation(cfnOptions);
+
+    [, field, ...resolvedLocationParts] = location.replace(/\?.*$/, '').split(':');
     const resolvedLocation = resolvedLocationParts.join(':');
     if (field === 'export') {
       const exports0: aws.CloudFormation.Exports = await paginateAwsCall((args) => cfn.listExports(args), {}, 'Exports');
