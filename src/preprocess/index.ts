@@ -10,6 +10,8 @@ import * as crypto from 'crypto';
 import * as handlebars from 'handlebars';
 
 import * as nameGenerator from 'project-name-generator';
+import * as escapeStringRegexp from 'escape-string-regexp';
+
 
 import * as bluebird from 'bluebird';
 global.Promise = bluebird;
@@ -972,9 +974,10 @@ function visit$fromPairs(node: yaml.$fromPairs, path: string, env: Env): AnyButU
 function visit$split(node: yaml.$split, path: string, env: Env): string[] {
   if (_.isArray(node.data) && node.data.length === 2) {
     const [delimiter, str]: [string, string] = node.data;
+    const escapedDelimiter = escapeStringRegexp(delimiter);
       return visitNode(str, path, env)
           .toString()
-          .replace(new RegExp(`${delimiter}+$`), '')
+          .replace(new RegExp(`${escapedDelimiter}+$`), '') // Remove trailing delimiters
           .split(delimiter);
   } else {
     throw new Error(`Invalid argument to $split at "${path}".`
