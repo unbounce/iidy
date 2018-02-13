@@ -55,7 +55,7 @@ export class FindInMap extends Tag<string[]> {}
 customTags.FindInMap = FindInMap;
 addCFNTagType('FindInMap', 'sequence');
 
-export class GetAtt extends Tag<string> {}
+export class GetAtt extends Tag<string | string[]> {}
 customTags.GetAtt = GetAtt;
 addCFNTagType('GetAtt', 'scalar');
 addCFNTagType('GetAtt', 'sequence');

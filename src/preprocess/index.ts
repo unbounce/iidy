@@ -1004,8 +1004,15 @@ function maybeRewriteRef(ref0: string, path: string, env: Env) {
 export const visitRef = (node: yaml.Ref, path: string, env: Env): yaml.Ref =>
   new yaml.Ref(maybeRewriteRef(node.data, path, env));
 
-export const visitGetAtt = (node: yaml.GetAtt, path: string, env: Env): yaml.GetAtt =>
-  new yaml.GetAtt(maybeRewriteRef(node.data, path, env));
+export const visitGetAtt = (node: yaml.GetAtt, path: string, env: Env): yaml.GetAtt => {
+  if (_.isArray(node.data)) {
+    const argsArray = _.clone(node.data);
+    argsArray[0] = maybeRewriteRef(argsArray[0], path, env);
+    return new yaml.GetAtt(argsArray);
+  } else { // it's a string
+    return new yaml.GetAtt(maybeRewriteRef(node.data, path, env));
+  }
+}
 
 export function visitSubStringTemplate(template0: string, path: string, env: Env) {
   let template = visitString(template0, path, env);
