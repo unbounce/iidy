@@ -823,7 +823,9 @@ function visit$expand(node: yaml.$expand, path: string, env: Env): AnyButUndefin
 function visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
   if (node.data.indexOf('.') > -1) {
     const reduce: any = _.reduce; // HACK work around broken lodash typedefs
-    const lookupRes: any = reduce(node.data.split('.'), (result: any, subKey: string) => {
+    const lookupRes: any = reduce(node.data.split('.'), (result0: any, subKey: string) => {
+      const result = visitNode(result0, path, env); // calling visitNode here fixes issue #75
+      // the result0 might contain pre-processor constructs that need evaluation before continuing
       const subEnv = _.isUndefined(result) ? env : mkSubEnv(env, _.merge({}, env.$envValues, result), {path});
       return lookupInEnv(subKey.trim(), path, subEnv);
     }, undefined);
