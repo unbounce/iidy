@@ -41,7 +41,7 @@ function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
     instanceOf: kls,
     resolve: resolve,
     construct: (data: any) => new kls(data),
-    represent: (node: Tag) => node.data
+    represent: (node: any) => node.data
   }));
 }
 
