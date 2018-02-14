@@ -655,8 +655,20 @@ async function summarizeStackDefinition(StackName: string, region: string, showT
   const stackPolicyPromise = cfn.getStackPolicy({StackName}).promise();
   const stack = await stackPromise;
   const StackId = stack.StackId as string
+  const tagsAsMap = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
 
-  printSectionEntry('Name:', cli.magenta(stack.StackName));
+  if (tagsAsMap.StackSetName) {
+    printSectionEntry(
+      'Name (StackSet):',
+      `${cli.blackBright(stack.StackName)} ${cli.magenta(tagsAsMap.StackSetName)}`);
+  } else {
+    printSectionEntry('Name:', cli.magenta(stack.StackName));
+  }
+
+  if (stack.Description) {
+    const descriptionColor = stack.StackName.startsWith('StackSet') ? cli.magenta : cli.blackBright;
+    printSectionEntry('Description:', descriptionColor(stack.Description));
+  }
   printSectionEntry('Status', colorizeResourceStatus(stack.StackStatus));
   printSectionEntry('Capabilities:', cli.blackBright(_.isEmpty(stack.Capabilities) ? 'None' : stack.Capabilities));
   printSectionEntry('Service Role:', cli.blackBright(def('None', stack.RoleARN)));
@@ -761,15 +773,18 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
     } else if (lifecyle === 'short') {
       lifecyleIcon = '♺ ';
     }
+    const baseStackName = stack.StackName.startsWith('StackSet-')
+      ? `${cli.blackBright(stack.StackName)} ${tags.StackSetName || stack.Description || 'Unknown stack set instance'}`
+      : stack.StackName;
     let stackName: string;
     if (stack.StackName.includes('production') || tags.environment === 'production') {
-      stackName = cli.red(stack.StackName);
+      stackName = cli.red(baseStackName);
     } else if (stack.StackName.includes('integration') || tags.environment === 'integration') {
-      stackName = cli.xterm(75)(stack.StackName);
+      stackName = cli.xterm(75)(baseStackName);
     } else if (stack.StackName.includes('development') || tags.environment === 'development') {
-      stackName = cli.xterm(194)(stack.StackName);
+      stackName = cli.xterm(194)(baseStackName);
     } else {
-      stackName = stack.StackName;
+      stackName = baseStackName;
     }
     process.stdout.write(
       sprintf('%s %s %s %s\n',
@@ -876,7 +891,8 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
       region: finalRegion,
       environment,
       // new style with namespace to avoid clashes:
-      iidy: {environment, region: finalRegion}});
+      iidy: {environment, region: finalRegion}
+    });
 
   const stackArgs = await transform(argsdata, argsfile) as StackArgs;
   logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgs);
