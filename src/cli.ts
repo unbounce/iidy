@@ -429,7 +429,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
 
     .demandCommand(1)
     .usage(usage)
-    .version(() => require('../package').version)
+    .version()
     .alias('v', 'version')
     .describe('version', description('show version information'))
     .help('help', description('show help'))
