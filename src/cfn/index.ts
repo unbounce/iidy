@@ -1057,6 +1057,7 @@ abstract class AbstractCloudFormationStackCommand {
   async _showCommandSummary() {
     const sts = new aws.STS();
     const iamIdentPromise = sts.getCallerIdentity().promise();
+    const roleARN = this.stackArgs.ServiceRoleARN || this.stackArgs.RoleARN;
 
     console.log(); // blank line
     console.log(formatSectionHeading('Command Metadata:'))
@@ -1069,7 +1070,7 @@ abstract class AbstractCloudFormationStackCommand {
       'CLI Arguments:',
       cli.blackBright(prettyFormatSmallMap(_.pick(this.argv, ['region', 'profile', 'argsfile']))));
 
-    printSectionEntry('IAM Service Role:', cli.blackBright(def('None', this.stackArgs.RoleARN)));
+    printSectionEntry('IAM Service Role:', cli.blackBright(def('None', roleARN)));
 
     const iamIdent = await iamIdentPromise;
     printSectionEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
