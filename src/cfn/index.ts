@@ -35,7 +35,7 @@ import timeout from '../timeout';
 import def from '../default';
 import {diff} from '../diff';
 
-import {readFromImportLocation, transform} from '../preprocess';
+import {readFromImportLocation, transform, PreprocessOptions} from '../preprocess';
 import {getKMSAliasForParameter} from '../params';
 import {GlobalArguments} from '../cli';
 
@@ -591,7 +591,7 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
 }
 
 const TEMPLATE_MAX_BYTES = 51199
-export async function loadCFNTemplate(location0: string, baseLocation: string, omitMetadata = false):
+export async function loadCFNTemplate(location0: string, baseLocation: string, environment: string, options: PreprocessOptions = {}):
   Promise<{TemplateBody?: string, TemplateURL?: string}> {
   if (_.isUndefined(location0)) {
     return {};
@@ -625,8 +625,10 @@ export async function loadCFNTemplate(location0: string, baseLocation: string, o
         + ` e.g.   Template: "render:${location}"`
       );
     }
+
+    importData.doc.$envValues = _.merge({}, importData.doc.$envValues, {iidy: {environment: environment, region: getCurrentAWSRegion()}});
     const body = shouldRender
-      ? yaml.dump(await transform(importData.doc, importData.resolvedLocation, omitMetadata))
+      ? yaml.dump(await transform(importData.doc, importData.resolvedLocation, options))
       : importData.data;
     if (body.length >= TEMPLATE_MAX_BYTES) {
       throw new Error('Your cloudformation template is larger than the max allowed size. '
@@ -900,7 +902,7 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
   // ... do the normalization here
 };
 
-async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, stackName?: string)
+async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, environment: string, stackName?: string)
   : Promise<aws.CloudFormation.CreateStackInput> {
   let templateLocation;
 
@@ -908,14 +910,15 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
     const approvedLocation = await approvedTemplateVersionLocation(
       stackArgs.ApprovedTemplateLocation,
       stackArgs.Template,
-      argsFilePath
+      argsFilePath,
+      environment
     );
     templateLocation = `https://s3.amazonaws.com/${approvedLocation.Bucket}/${approvedLocation.Key}`;
   } else {
     templateLocation = stackArgs.Template;
   }
   // Template is optional for updates and update changesets
-  const {TemplateBody, TemplateURL} = await loadCFNTemplate(templateLocation, argsFilePath);
+  const {TemplateBody, TemplateURL} = await loadCFNTemplate(templateLocation, argsFilePath, environment);
   const {StackPolicyBody, StackPolicyURL} = await loadCFNStackPolicy(stackArgs.StackPolicy, argsFilePath);
 
   // TODO: DisableRollback
@@ -951,9 +954,13 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
   };
 }
 
-async function stackArgsToUpdateStackInput(stackArgs: StackArgs, argsFilePath: string, stackName?: string)
+async function stackArgsToUpdateStackInput(
+  stackArgs: StackArgs,
+  argsFilePath: string,
+  environment: string,
+  stackName?: string)
   : Promise<aws.CloudFormation.UpdateStackInput> {
-  const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, stackName);
+  const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, environment, stackName);
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
   const input = input0 as aws.CloudFormation.UpdateStackInput;
@@ -962,10 +969,14 @@ async function stackArgsToUpdateStackInput(stackArgs: StackArgs, argsFilePath: s
 }
 
 async function stackArgsToCreateChangeSetInput(
-  changeSetName: string, stackArgs: StackArgs, argsFilePath: string, stackName?: string)
+  changeSetName: string,
+  stackArgs: StackArgs,
+  argsFilePath: string,
+  environment: string,
+  stackName?: string)
   : Promise<aws.CloudFormation.CreateChangeSetInput> {
   // TODO: ResourceTypes optionally locked down for changeset
-  const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, stackName);
+  const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, environment, stackName);
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
   delete input0.StackPolicyBody;
@@ -1002,6 +1013,7 @@ abstract class AbstractCloudFormationStackCommand {
   readonly assumeRoleArn?: string
   readonly stackName: string
   readonly argsfile: string
+  readonly environment: string
 
   protected readonly cfnOperation: CfnOperation
   protected startTime: Date
@@ -1019,6 +1031,7 @@ abstract class AbstractCloudFormationStackCommand {
 
     this.stackName = this.argv.stackName || this.stackArgs.StackName;// tslint:disable-line
     this.argsfile = argv.argsfile;
+    this.environment = argv.environment;
   }
 
   async _setup() {
@@ -1110,7 +1123,7 @@ class CreateStack extends AbstractCloudFormationStackCommand {
     if (_.isEmpty(this.stackArgs.Template)) {
       throw new Error('For create-stack you must provide at Template: parameter in your argsfile')
     };
-    const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
+    const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
     if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(createStackInput.TemplateURL)) {
       logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
       logger.error(`  iidy template-approval request ${this.argsfile}`);
@@ -1142,7 +1155,7 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
 
   async _run() {
     try {
-      let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
+      let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
       if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
         logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
         logger.error(`  iidy template-approval request ${this.argsfile}`);
@@ -1233,7 +1246,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const ChangeSetName = this.argv.changesetName || nameGenerator().dashed; // TODO parameterize
     this.changeSetName = ChangeSetName;
     const createChangeSetInput =
-      await stackArgsToCreateChangeSetInput(ChangeSetName, this.stackArgs, this.argsfile, this.stackName);
+      await stackArgsToCreateChangeSetInput(ChangeSetName, this.stackArgs, this.argsfile, this.environment, this.stackName);
     const StackName = createChangeSetInput.StackName;
     createChangeSetInput.Description = this.argv.description;
 
@@ -1324,7 +1337,7 @@ class EstimateStackCost extends AbstractCloudFormationStackCommand {
 
   async _run() {
     const {TemplateBody, TemplateURL, Parameters} =
-      await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
+      await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName)
     const estimateResp = await this.cfn.estimateTemplateCost({TemplateBody, TemplateURL, Parameters}).promise();
     console.log('Stack cost estimator: ', estimateResp.Url);
     return 0;
@@ -1349,12 +1362,12 @@ export function parseTemplateBody(TemplateBody: string): object {
   }
 }
 
-export async function diffStackTemplates(StackName: string, stackArgs: StackArgs, argsfile: string) {
+export async function diffStackTemplates(StackName: string, stackArgs: StackArgs, argsfile: string, environment: string) {
   const cfn = new aws.CloudFormation();
   const {TemplateBody} = await cfn.getTemplate({StackName, TemplateStage: 'Original'}).promise();
   if (TemplateBody) {
     let oldTemplate = parseTemplateBody(TemplateBody);
-    const {TemplateBody: newTemplateBody, TemplateURL: newTemplateURL} = await loadCFNTemplate(stackArgs.Template, argsfile);
+    const {TemplateBody: newTemplateBody, TemplateURL: newTemplateURL} = await loadCFNTemplate(stackArgs.Template, argsfile, environment);
     let newTemplate: object;
     if (newTemplateURL) {
       const importData = await readFromImportLocation(newTemplateURL, argsfile);
@@ -1381,7 +1394,7 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
     if (argv.diff) {
       console.log()
       console.log(formatSectionHeading('Stack Template Diff:'))
-      await diffStackTemplates(changeSetRunner.stackName, stackArgs, argv.argsfile);
+      await diffStackTemplates(changeSetRunner.stackName, stackArgs, argv.argsfile, argv.environment!);
       console.log()
     }
 
@@ -1591,11 +1604,11 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
 export async function approvedTemplateVersionLocation(
   approvedTemplateLocation: string,
   templatePath: string,
-  baseLocation: string): Promise<{Bucket: string, Key: string}> {
+  baseLocation: string,
+  environment: string): Promise<{Bucket: string, Key: string}> {
   // const templatePath = path.resolve(path.dirname(location), templatePath);
   // const cfnTemplate = await fs.readFileSync(path.resolve(path.dirname(location), templatePath));
-  const omitMetadata = true;
-  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, omitMetadata);
+  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, environment, { omitMetadata: true });
 
   if (cfnTemplate && cfnTemplate.TemplateBody) {
     const s3Url = url.parse(approvedTemplateLocation);
