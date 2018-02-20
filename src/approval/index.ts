@@ -23,7 +23,7 @@ export async function request(argv: RequestArguments): Promise<number> {
 
   if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
     const s3 = new S3();
-    const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile);
+    const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile, argv.environment);
 
     try {
       await s3.headObject(s3Args).promise();
@@ -31,8 +31,7 @@ export async function request(argv: RequestArguments): Promise<number> {
     } catch (e) {
       if (e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
-        const omitMetdata = true;
-        const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, omitMetdata);
+        const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true});
         await s3.putObject({
           Body: cfnTemplate.TemplateBody,
           ...s3Args

@@ -50,6 +50,10 @@ function interpolateHandlebarsString(templateString: string, env: object, errorC
 
 export type SHA256Digest = string;
 
+export type PreprocessOptions = {
+  omitMetadata?: boolean
+};
+
 export interface CfnDoc {
   AWSTemplateFormatVersion?: '2010-09-09',
   Description?: string,
@@ -1195,11 +1199,11 @@ export function transformPostImports(
   root: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
   accumulatedImports: ImportRecord[],
-  omitMetadata = false
+  options: PreprocessOptions = {}
 )
 : CfnDoc {
     let globalAccum: CfnDoc;
-    if(omitMetadata) {
+    if(options.omitMetadata) {
       globalAccum = {};
     } else {
       // TODO add the rootDoc to the Imports record
@@ -1258,12 +1262,12 @@ export function transformPostImports(
 export async function transform(
   root0: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
-  omitMetadata = false,
+  options: PreprocessOptions = {},
   importLoader = readFromImportLocation // for mocking in tests
 )
   : Promise<CfnDoc> {
   const root = _.clone(root0);
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports, importLoader);
-  return transformPostImports(root, rootDocLocation, accumulatedImports, omitMetadata);
+  return transformPostImports(root, rootDocLocation, accumulatedImports, options);
 };
