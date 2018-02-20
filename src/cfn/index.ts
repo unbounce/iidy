@@ -1074,6 +1074,7 @@ abstract class AbstractCloudFormationStackCommand {
 
     const iamIdent = await iamIdentPromise;
     printSectionEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
+    printSectionEntry('iidy Version:', cli.blackBright(require('../../package.json').version));
 
     console.log();
   }
