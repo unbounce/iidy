@@ -30,15 +30,19 @@ export interface GlobalArguments {
   profile?: string;
   assumeRoleArn?: string;
   debug?: boolean;
-  environment?: string;
+  environment: string;
   clientRequestToken?: string;
 }
 
 export type ExitCode = number;
-export type Handler = (args: GlobalArguments) => Promise<ExitCode>
+export type Handler = (args: GlobalArguments & yargs.Arguments) => Promise<ExitCode>
 
 export const wrapCommandHandler = (handler: Handler) =>
-  function(args: GlobalArguments & yargs.Arguments) {
+  function(args0: yargs.Arguments) {
+    const args: GlobalArguments & yargs.Arguments = args0 as any; // coerce type
+    if (!args.environment) {
+      args.environment = 'development';
+    }
     if (args.debug) {
       process.env.DEBUG = 'true';
       setLogLevel('debug');
