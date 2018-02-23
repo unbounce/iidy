@@ -1112,7 +1112,7 @@ class CreateStack extends AbstractCloudFormationStackCommand {
     };
     const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.stackName)
     if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(createStackInput.TemplateURL)) {
-      logger.error('Template version is has not been approved or the current IAM principal does not have permission to access it. Run:');
+      logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
       logger.error(`  iidy template-approval request ${this.argsfile}`);
       logger.error('to being the approval process.');
       return 1;
@@ -1144,7 +1144,7 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
     try {
       let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.stackName);
       if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
-        logger.error('Template version is has not been approved or the current IAM principal does not have permission to access it. Run:');
+        logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
         logger.error(`  iidy template-approval request ${this.argsfile}`);
         logger.error('to being the approval process.');
         return 1;
