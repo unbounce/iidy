@@ -203,6 +203,14 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     description('create a cfn changeset based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
+      .option('watch', {
+        type: 'boolean', default: false,
+        description: 'Watch stack after creating changeset. This is useful when exec-changeset is called by others.'
+      })
+      .option('watch-inactivity-timeout', {
+        type: 'number', default: (60 * 3),
+        description: description('how long to wait for events when the stack is in a terminal state')
+      })
       .option('description', {
         type: 'string', default: undefined,
         description: description('optional description of changeset')
