@@ -1432,7 +1432,17 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
 
 
 export async function createChangesetMain(argv: GenericCLIArguments): Promise<number> {
-  return new CreateChangeSet(argv, await loadStackArgs(argv)).run();
+  const changesetRunner = new CreateChangeSet(argv, await loadStackArgs(argv));
+  const changesetExitCode = await changesetRunner.run();
+  if (argv.watch && changesetExitCode === 0) {
+    console.log();
+    await watchStack(changesetRunner.stackName, new Date(), DEFAULT_EVENT_POLL_INTERVAL, argv.watchInactivityTimeout);
+    console.log();
+    await summarizeCompletedStackOperation(changesetRunner.stackName);
+    return 0;
+  } else {
+    return changesetExitCode;
+  }
 };
 
 export async function listStacksMain(argv: GenericCLIArguments): Promise<number> {
