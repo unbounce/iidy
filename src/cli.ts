@@ -321,8 +321,8 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .command('\t', '') // fake command to add a line-break to the help output
 
     .command('template-approval',
-             description('sub commands for template approval'),
-             buildApprovalCommands)
+    description('sub commands for template approval'),
+    buildApprovalCommands)
 
     .command('\t', '') // fake command to add a line-break to the help output
 

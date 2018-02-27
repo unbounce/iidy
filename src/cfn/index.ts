@@ -1610,7 +1610,7 @@ export async function approvedTemplateVersionLocation(
   environment: string): Promise<{Bucket: string, Key: string}> {
   // const templatePath = path.resolve(path.dirname(location), templatePath);
   // const cfnTemplate = await fs.readFileSync(path.resolve(path.dirname(location), templatePath));
-  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, environment, { omitMetadata: true });
+  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, environment, {omitMetadata: true});
 
   if (cfnTemplate && cfnTemplate.TemplateBody) {
     const s3Url = url.parse(approvedTemplateLocation);

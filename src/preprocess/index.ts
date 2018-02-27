@@ -321,7 +321,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     const queryParameters = new url.URLSearchParams(uri.search);
     const region = queryParameters.get('region');
 
-    if(region) {
+    if (region) {
       cfnOptions.region = region;
     }
 
@@ -492,9 +492,9 @@ async function loadImports(
 
     for (const asKey in doc.$imports) {
       let loc = doc.$imports[asKey];
-      if (! _.isString(loc)) {
+      if (!_.isString(loc)) {
         throw new Error(`"${baseLocation}" has a bad import "$imports: ... ${asKey}".\n`
-                        +` Import values must be strings but ${asKey}=${JSON.stringify(loc, null, ' ')}".`)
+          + ` Import values must be strings but ${asKey}=${JSON.stringify(loc, null, ' ')}".`)
       }
       if (loc.search(/{{(.*?)}}/) > -1) {
         loc = interpolateHandlebarsString(loc, doc.$envValues, `${baseLocation}: ${asKey}`);
@@ -882,8 +882,9 @@ function visit$expand(node: yaml.$expand, path: string, env: Env): AnyButUndefin
       _.filter(
         _.map(
           template.$params,
-          (v) => [v.Name,
-                  visitNode(v.Default, appendPath(path, `$params.${v.Name}`), $paramDefaultsEnv)]),
+          (v) => [
+            v.Name,
+            visitNode(v.Default, appendPath(path, `$params.${v.Name}`), $paramDefaultsEnv)]),
         ([k, v]) => !_.isUndefined(v)));
     const providedParams = visitNode(params, appendPath(path, 'params'), env);
     const mergedParams = _.assign({}, $paramDefaults, providedParams);
@@ -1050,10 +1051,10 @@ function visit$split(node: yaml.$split, path: string, env: Env): string[] {
   if (_.isArray(node.data) && node.data.length === 2) {
     const [delimiter, str]: [string, string] = node.data;
     const escapedDelimiter = escapeStringRegexp(delimiter);
-      return visitNode(str, path, env)
-          .toString()
-          .replace(new RegExp(`${escapedDelimiter}+$`), '') // Remove trailing delimiters
-          .split(delimiter);
+    return visitNode(str, path, env)
+      .toString()
+      .replace(new RegExp(`${escapedDelimiter}+$`), '') // Remove trailing delimiters
+      .split(delimiter);
   } else {
     throw new Error(`Invalid argument to $split at "${path}".`
       + " Must be array with two elements: a delimiter to split on and a string to split");
@@ -1257,23 +1258,22 @@ export function transformPostImports(
   rootDocLocation: ImportLocation,
   accumulatedImports: ImportRecord[],
   options: PreprocessOptions = {}
-)
-: CfnDoc {
-    let globalAccum: CfnDoc;
-    if(options.omitMetadata) {
-      globalAccum = {};
-    } else {
-      // TODO add the rootDoc to the Imports record
-      globalAccum  = {
-        Metadata: {
-          iidy: {
-            Host: os.hostname(),
-            Imports: accumulatedImports,
-            User: os.userInfo().username
-          }
+): CfnDoc {
+  let globalAccum: CfnDoc;
+  if (options.omitMetadata) {
+    globalAccum = {};
+  } else {
+    // TODO add the rootDoc to the Imports record
+    globalAccum = {
+      Metadata: {
+        iidy: {
+          Host: os.hostname(),
+          Imports: accumulatedImports,
+          User: os.userInfo().username
         }
       }
-    };
+    }
+  };
 
   const seedOutput: CfnDoc = {};
   const isCFNDoc = root.AWSTemplateFormatVersion || root.Resources;
@@ -1321,8 +1321,7 @@ export async function transform(
   rootDocLocation: ImportLocation,
   options: PreprocessOptions = {},
   importLoader = readFromImportLocation // for mocking in tests
-)
-  : Promise<CfnDoc> {
+): Promise<CfnDoc> {
   const root = _.clone(root0);
   const accumulatedImports: ImportRecord[] = [];
   await loadImports(root, rootDocLocation, accumulatedImports, importLoader);

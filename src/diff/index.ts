@@ -21,9 +21,9 @@ export function diff(a: string, b: string, context = 3): void {
       }
     );
 
-    if(res.status === 0) {
+    if (res.status === 0) {
       logger.info('Templates are the same');
-    } else if(res.status !== 1) {
+    } else if (res.status !== 1) {
       throw new Error(`Error producing diff "${cmd}"`);
     }
   } catch (e) {
