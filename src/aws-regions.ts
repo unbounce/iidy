@@ -1,5 +1,6 @@
 export type AWSRegion =
   "ap-south-1" |
+  "eu-west-3" |
   "eu-west-2" |
   "eu-west-1" |
   "ap-northeast-2" |
@@ -16,6 +17,7 @@ export type AWSRegion =
 
 export const AWSRegions: AWSRegion[] = [
   "ap-south-1",
+  "eu-west-3",
   "eu-west-2",
   "eu-west-1",
   "ap-northeast-2",
