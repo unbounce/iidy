@@ -435,16 +435,16 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
       describe('!$concat', () => {
         // TODO rename to !$concat
         it('basic forms', async () => {
-
           expect(await transform(`
+$defs:
+  a: [7,8,9]
 out: !$concat
   - [1,2,3]
   - [4,5,6]
+  - !$ a
 `
-          )).to.deep.equal(jsyaml.load(`out: [1,2,3,4,5,6]`));
-
+          )).to.deep.equal(jsyaml.load(`out: [1,2,3,4,5,6,7,8,9]`));
         });
-
       });
 
       describe('!$map', () => {

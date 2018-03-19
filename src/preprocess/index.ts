@@ -999,12 +999,20 @@ function visit$mergeMap(node: yaml.$mergeMap, path: string, env: Env): AnyButUnd
 }
 
 function visit$concat(node: yaml.$concat, path: string, env: Env): AnyButUndefined[] {
+  const error = new Error(`Invalid argument to $concat at "${path}".`
+      + " Must be array of arrays.")
 
-  if (!_.isArray(node.data) && _.every(node.data, _.isArray)) {
-    throw new Error(`Invalid argument to $concat at "${path}".`
-      + " Must be array of arrays.");
+  if (!_.isArray(node.data)) {
+    throw error;
   }
-  return visitNode(_flatten(node.data), path, env);
+
+  const data = _.map(node.data, (d) => visitNode(d, path, env));
+
+  if (!_.every(data, _.isArray)) {
+    throw error;
+  }
+
+  return _flatten(data);
 }
 
 function visit$parseYaml(node: yaml.$parseYaml, path: string, env: Env): AnyButUndefined {
