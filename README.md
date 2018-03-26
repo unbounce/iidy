@@ -470,8 +470,8 @@ outputs:
 * AWS SSM ParameterStore (tied to an AWS account / region). These
   require IAM `ssm:GetParameters`, `ssm:GetParameter`, and
   `ssm:DescribeParameter` permissions.
-  * a single entry: `ssm:/some-path-prefix/foo`
-  * all entries under a path prefix: `ssm-path:/some-path-prefix/`
+  * `ssm:/some-path-prefix/foo`: a single entry
+  * `ssm-path:/some-path-prefix/`: all entries under a path prefix
 * random
   * `random:int`
   * `random:dashed-name`
