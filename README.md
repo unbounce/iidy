@@ -164,7 +164,7 @@ NotificationARNs:
   - <sns arn>
 
 # CloudFormation ServiceRole
-RoleARN: arn:aws:iam::<acount>:role/<rolename>
+ServiceRoleARN: arn:aws:iam::<acount>:role/<rolename>
 
 TimeoutInMinutes: <number>
 
