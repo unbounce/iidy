@@ -1006,23 +1006,36 @@ function showFinalComandSummary(wasSuccessful: boolean): number {
   }
 }
 
+async function isHttpTemplateAccessible(location?: string) {
+  if (location) {
+    try {
+      await request.get(location);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 abstract class AbstractCloudFormationStackCommand {
   public region: AWSRegion
 
-  readonly profile?: string
-  readonly assumeRoleArn?: string
-  readonly stackName: string
-  readonly argsfile: string
-  readonly environment: string
+  readonly profile?: string;
+  readonly assumeRoleArn?: string;
+  readonly stackName: string;
+  readonly argsfile: string;
+  readonly environment: string;
 
-  protected readonly cfnOperation: CfnOperation
-  protected startTime: Date
-  protected cfn: aws.CloudFormation
-  protected readonly expectedFinalStackStatus: string[]
-  protected readonly showTimesInSummary: boolean = true;
-  protected readonly showPreviousEvents: boolean = true;
-  protected previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>
-  protected readonly watchStackEvents: boolean = true;
+  protected cfnOperation: CfnOperation;
+  protected startTime: Date;
+  protected cfn: aws.CloudFormation;
+  protected expectedFinalStackStatus: string[];
+  protected showTimesInSummary: boolean = true;
+  protected showPreviousEvents: boolean = true;
+  protected previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>;
+  protected watchStackEvents: boolean = true;
 
   constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
     // note, this.region is set in _setup after the cal to configureAWS
@@ -1080,10 +1093,10 @@ abstract class AbstractCloudFormationStackCommand {
   }
 
   async run(): Promise<number> {
-    await this._setup()
-    await this._showCommandSummary()
+    await this._setup();
+    await this._showCommandSummary();
     this.startTime = await getReliableStartTime();
-    return this._run()
+    return this._run();
   }
 
   async _watchAndSummarize(stackId: string): Promise<number> {
@@ -1110,18 +1123,11 @@ abstract class AbstractCloudFormationStackCommand {
 
     return showFinalComandSummary(_.includes(this.expectedFinalStackStatus, stack.StackStatus));
   }
+
   async _run(): Promise<number> {
     throw new Error('Not implemented');
   }
-}
-
-class CreateStack extends AbstractCloudFormationStackCommand {
-  cfnOperation: CfnOperation = 'CREATE_STACK'
-  expectedFinalStackStatus = ['CREATE_COMPLETE']
-  showTimesInSummary = false;
-  showPreviousEvents = false;
-
-  async _run() {
+  async _runCreate() {
     if (_.isEmpty(this.stackArgs.Template)) {
       throw new Error('For create-stack you must provide at Template: parameter in your argsfile')
     };
@@ -1136,26 +1142,8 @@ class CreateStack extends AbstractCloudFormationStackCommand {
     await this._updateStackTerminationPolicy();
     return this._watchAndSummarize(createStackOutput.StackId as string);
   }
-}
 
-async function isHttpTemplateAccessible(location?: string) {
-  if (location) {
-    try {
-      await request.get(location);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  } else {
-    return false;
-  }
-}
-
-class UpdateStack extends AbstractCloudFormationStackCommand {
-  cfnOperation: CfnOperation = 'UPDATE_STACK'
-  expectedFinalStackStatus = ['UPDATE_COMPLETE']
-
-  async _run() {
+  async _runUpdate() {
     try {
       let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
       if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
@@ -1182,6 +1170,55 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
       } else {
         throw e;
       }
+    }
+  }
+}
+
+class CreateStack extends AbstractCloudFormationStackCommand {
+  cfnOperation: CfnOperation = 'CREATE_STACK';
+  expectedFinalStackStatus = ['CREATE_COMPLETE'];
+  showTimesInSummary = false;
+  showPreviousEvents = false;
+
+  async _run() {
+    return this._runCreate();
+  }
+}
+
+class UpdateStack extends AbstractCloudFormationStackCommand {
+  cfnOperation: CfnOperation = 'UPDATE_STACK';
+  expectedFinalStackStatus = ['UPDATE_COMPLETE'];
+
+  async _run() {
+    return this._runUpdate();
+  }
+}
+
+class CreateOrUpdateStack extends AbstractCloudFormationStackCommand {
+  stackExists: boolean;
+  showPreviousEvents = false;
+
+  async _setup() {
+    await super._setup();
+    this.stackExists = await this.cfn.describeStacks({StackName: this.stackName}).promise()
+      .return(true).catchReturn(false);
+    if (this.stackExists) {
+      this.cfnOperation = 'UPDATE_STACK';
+      this.expectedFinalStackStatus = ['UPDATE_COMPLETE'];
+      this.previousStackEventsPromise = getAllStackEvents(this.stackName);
+      this.showPreviousEvents = true;
+    } else {
+      this.cfnOperation = 'CREATE_STACK';
+      this.expectedFinalStackStatus = ['CREATE_COMPLETE'];
+      this.showTimesInSummary = false;
+    }
+  }
+
+  async _run() {
+    if (this.stackExists) {
+      return this._runUpdate();
+    } else {
+      return this._runCreate();
     }
   }
 }
@@ -1353,6 +1390,7 @@ const wrapCommandCtor =
     }
 
 export const createStackMain = wrapCommandCtor(CreateStack);
+export const createOrUpdateStackMain = wrapCommandCtor(CreateOrUpdateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
