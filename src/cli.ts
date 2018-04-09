@@ -53,7 +53,7 @@ export const wrapCommandHandler = (handler: Handler) =>
         if (error.message) {
           logger.error(error.message);
         }
-        if (debug()) {
+        if (debug() || process.env.LOG_IIDY_ERROR) {
           logger.error(error);
         }
         process.exit(1);
