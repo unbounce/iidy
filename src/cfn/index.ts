@@ -1576,6 +1576,18 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
 
   const StackName = argv.stackname;
 
+  const stackPromise = getStackDescription(StackName);
+  try {
+    await stackPromise;
+  } catch (e) {
+    if (argv.failIfAbsent) {
+      logger.error(`The stack ${StackName} is absent.`);
+      return 1;
+    } else {
+      logger.info(`The stack ${StackName} is absent.`);
+      return 0;
+    }
+  }
   console.log();
   const stack = await summarizeStackDefinition(StackName, region, true);
   const StackId = stack.StackId as string;
