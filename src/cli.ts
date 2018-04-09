@@ -271,6 +271,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'boolean', default: false,
         description: 'Confirm deletion of stack'
       })
+      .option('fail-if-absent', {
+        type: 'boolean', default: false,
+        description: 'Fail if stack is absent (exit code = 1). Default is to tolerate absence.'
+      })
       .usage('Usage: iidy delete-stack <stackname>'),
     wrapMainHandler(commands.deleteStackMain))
 
