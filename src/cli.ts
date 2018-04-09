@@ -62,6 +62,7 @@ export const wrapCommandHandler = (handler: Handler) =>
 
 export interface CfnStackCommands {
   createStackMain: Handler;
+  createOrUpdateStackMain: Handler;
   updateStackMain: Handler;
   listStacksMain: Handler;
   watchStackMain: Handler;
@@ -111,6 +112,7 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
 
 const lazy: Commands = {
   createStackMain: lazyLoad('createStackMain'),
+  createOrUpdateStackMain: lazyLoad('createOrUpdateStackMain'),
   updateStackMain: lazyLoad('updateStackMain'),
   listStacksMain: lazyLoad('listStacksMain'),
   watchStackMain: lazyLoad('watchStackMain'),
@@ -159,7 +161,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
   return yargs
     .env('IIDY')
     .command(
-    'create-stack  <argsfile>',
+    'create-stack     <argsfile>',
     description('create a cfn stack based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
@@ -168,7 +170,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     wrapMainHandler(commands.createStackMain))
 
     .command(
-    'update-stack  <argsfile>',
+    'update-stack     <argsfile>',
     description('update a cfn stack based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
@@ -189,7 +191,16 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     wrapMainHandler(commands.updateStackMain))
 
     .command(
-    'estimate-cost <argsfile>',
+    'create-or-update <argsfile>',
+    description('create or update a cfn stack based on stack-args.yaml'),
+    (args) => args
+      .demandCommand(0, 0)
+      .usage('Usage: iidy create-or-update <stack-args.yaml>')
+      .option('stack-name', stackNameOpt),
+    wrapMainHandler(commands.createOrUpdateStackMain))
+
+    .command(
+    'estimate-cost    <argsfile>',
     description('estimate aws costs based on stack-args.yaml'),
     (args) => args
       .demandCommand(0, 0)
