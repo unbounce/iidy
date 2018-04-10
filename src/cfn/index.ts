@@ -1455,10 +1455,21 @@ export async function listStacksMain(argv: GenericCLIArguments): Promise<number>
   return 0;
 }
 
+
+export async function getStackNameFromArgsAndConfigureAWS(argv: GenericCLIArguments): Promise<string> {
+  let StackName: string;
+  if (/.*\.(yaml|yml)$/.test(argv.stackname) && fs.existsSync(argv.stackname)) {
+    const stackArgs = await _loadStackArgs(argv.stackname, argv);
+    return stackArgs.StackName;
+  } else {
+    await configureAWS(argv);
+    return argv.stackname;
+  }
+}
+
 export async function watchStackMain(argv: GenericCLIArguments): Promise<number> {
-  await configureAWS(argv);
+  const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
   const region = getCurrentAWSRegion();
-  const StackName = argv.stackname;
   const startTime = await getReliableStartTime();
 
   console.log();
@@ -1477,9 +1488,8 @@ export async function watchStackMain(argv: GenericCLIArguments): Promise<number>
 }
 
 export async function describeStackMain(argv: GenericCLIArguments): Promise<number> {
-  await configureAWS(argv);
+  const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
   const region = getCurrentAWSRegion();
-  const StackName = argv.stackname;
   const stackPromise = getStackDescription(StackName);
   await stackPromise; // we wait here in case the stack doesn't exist: better error messages this way.
   const stackEventsPromise = getAllStackEvents(StackName);
@@ -1497,8 +1507,7 @@ export async function describeStackMain(argv: GenericCLIArguments): Promise<numb
 }
 
 export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<number> {
-  await configureAWS(argv);
-  const StackName = argv.stackname;
+  const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
   const region = getCurrentAWSRegion();
 
   const ec2 = new aws.EC2();
@@ -1539,9 +1548,7 @@ export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<
 }
 
 export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<number> {
-  await configureAWS(argv);
-
-  const StackName = argv.stackname;
+  const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
   const TemplateStage = def('Original', argv.stage);
 
   const cfn = new aws.CloudFormation();

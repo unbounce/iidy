@@ -238,7 +238,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'number', default: 50,
         description: description('how many stack events to display')
       })
-      .usage('Usage: iidy describe-stack <stackname>'),
+      .usage('Usage: iidy describe-stack <stackname-or-argsfile>'),
     wrapMainHandler(commands.describeStackMain))
 
     .command(
@@ -250,7 +250,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'number', default: (60 * 3),
         description: description('how long to wait for events when the stack is in a terminal state')
       })
-      .usage('Usage: iidy watch-stack <stackname>'),
+      .usage('Usage: iidy watch-stack <stackname-or-argsfile>'),
     wrapMainHandler(commands.watchStackMain))
 
     .command(
@@ -275,7 +275,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'boolean', default: false,
         description: 'Fail if stack is absent (exit code = 1). Default is to tolerate absence.'
       })
-      .usage('Usage: iidy delete-stack <stackname>'),
+      .usage('Usage: iidy delete-stack <stackname-or-argsfile>'),
     wrapMainHandler(commands.deleteStackMain))
 
     .command(
@@ -293,7 +293,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         choices: ['Original', 'Processed'],
         description: description('Template stage to show')
       })
-      .usage('Usage: iidy get-stack-template <stackname>'),
+      .usage('Usage: iidy get-stack-template <stackname-or-argsfile>'),
     wrapMainHandler(commands.getStackTemplateMain))
 
     .command(
@@ -305,7 +305,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'boolean', default: false,
         description: description('Show only instance dns names')
       })
-      .usage('Usage: iidy get-stack-instances <stackname>'),
+      .usage('Usage: iidy get-stack-instances <stackname-or-argsfile>'),
     wrapMainHandler(commands.getStackInstancesMain))
 
     .command(
