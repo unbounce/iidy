@@ -863,11 +863,10 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
       throw new Error(`The ${key} setting in stack-args.yaml must be a plain string or an environment map of strings.`);
     }
   }
-  // have to do it before the call to transform
-  // note, the aws settings in argv trump those from argsdata
-  await configureAWS(_.merge(
-    {profile: argsdata.Profile, assumeRoleArn: argsdata.AssumeRoleARN, region: argsdata.Region},
-    argv)); // tslint:disable-line
+  // have to configureAws  before the call to transform
+  const cliOptionOverrides = _.pickBy(argv, (v: any, k: string) => !_.isEmpty(v) && _.includes(['region', 'profile', 'assumeRoleArn'], k));
+  const argsfileSettings = {profile: argsdata.Profile, assumeRoleArn: argsdata.AssumeRoleARN, region: argsdata.Region};
+  await configureAWS(_.merge(argsfileSettings, cliOptionOverrides)); // cliOptionOverrides trump argsfile
 
   if (argsdata.CommandsBefore) {
     // TODO improve CLI output of this and think about adding
