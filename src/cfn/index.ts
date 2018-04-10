@@ -1074,6 +1074,7 @@ abstract class AbstractCloudFormationStackCommand {
     console.log(); // blank line
     console.log(formatSectionHeading('Command Metadata:'))
     printSectionEntry('CFN Operation:', cli.magenta(this.cfnOperation));
+    printSectionEntry('iidy Environment:', cli.magenta(this.environment));
     printSectionEntry('Region:', cli.magenta(this.region));
     if (!_.isEmpty(this.profile)) {
       printSectionEntry('Profile:', cli.magenta(this.profile));
