@@ -1616,20 +1616,24 @@ export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<n
 ////////////////////////////////////////////////////////////////////////////////
 
 export async function deleteStackMain(argv: GenericCLIArguments): Promise<number> {
-  await configureAWS(argv);
+  const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
   const region = getCurrentAWSRegion();
-
-  const StackName = argv.stackname;
 
   const stackPromise = getStackDescription(StackName);
   try {
     await stackPromise;
   } catch (e) {
+    const sts = new aws.STS();
+    const iamIdent = await sts.getCallerIdentity().promise();
+    const msg = `The stack ${cli.magenta(StackName)} is absent in env = ${cli.yellow(argv.environment)}:
+      region = ${cli.blackBright(region)}
+      account = ${cli.blackBright(iamIdent.Account)}
+      auth_arn = ${cli.blackBright(iamIdent.Arn)}`;
     if (argv.failIfAbsent) {
-      logger.error(`The stack ${StackName} is absent.`);
+      logger.error(msg);
       return 1;
     } else {
-      logger.info(`The stack ${StackName} is absent.`);
+      logger.info(msg);
       return 0;
     }
   }
