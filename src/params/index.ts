@@ -11,6 +11,7 @@ import {GlobalArguments} from '../cli';
 import configureAWS from '../configureAWS';
 import def from '../default';
 import paginateAwsCall from '../paginateAwsCall';
+import {Dictionary} from 'lodash';
 
 const MESSAGE_TAG = 'iidy:message';
 
@@ -194,8 +195,7 @@ export async function _getParamsByPath(Path: string): Promise<aws.SSM.ParameterL
     Path,
     WithDecryption: true
   };
-  const parameters: aws.SSM.ParameterList = await paginateAwsCall(
-    (args) => ssm.getParametersByPath(args), args, 'Parameters');
+  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath, args, 'Parameters');
   return parameters;
 }
 
@@ -207,7 +207,7 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
     Recursive: argv.recursive,
     WithDecryption: argv.decrypt
   };
-  const parameters: aws.SSM.ParameterList = await paginateAwsCall((args) => ssm.getParametersByPath(args), args, 'Parameters');
+  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath, args, 'Parameters');
 
   if (!parameters) {
     console.log('No parameters found');
@@ -228,7 +228,8 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
   return 0;
 }
 
-async function _getParameterHistory(Name: aws.SSM.ParameterName, WithDecryption: boolean): Promise<aws.SSM.ParameterHistoryList> {
+async function _getParameterHistory(Name: aws.SSM.ParameterName,
+                                    WithDecryption: boolean): Promise<aws.SSM.ParameterHistoryList> {
   const ssm = new aws.SSM();
   return paginateAwsCall(args => ssm.getParameterHistory(args), {Name, WithDecryption}, 'Parameters');
 }
@@ -236,14 +237,28 @@ async function _getParameterHistory(Name: aws.SSM.ParameterName, WithDecryption:
 export async function getParamHistory(argv: GetParamArgs): Promise<number> {
   await configureAWS(argv);
   const ssm = new aws.SSM();
-  const sorted = _.sortBy(await _getParameterHistory(argv.path, argv.decrypt), 'LastModifiedDate')
+  const history = await Promise.all(_.map(await _getParameterHistory(argv.path, argv.decrypt),
+                                          async (p) => mergeParamTags(ssm, p)));
+  const sorted = _.sortBy(history, 'LastModifiedDate')
   const current = sorted[sorted.length - 1];
-  const previous = sorted.slice(0, sorted.length - 2);
+  const previous = sorted.slice(0, sorted.length - 1);
+
   if (argv.format === 'simple') {
-    console.log(jsyaml.dump({Current: current.Value, Previous: _.map(previous, (param) => param.Value)}));
+    const formatSimple = (p: aws.SSM.ParameterHistory & { Tags: Dictionary<string> }) => {
+      return {
+        Value: p.Value,
+        LastModifiedDate: p.LastModifiedDate,
+        LastModifiedUser: p.LastModifiedUser,
+        Message: p.Tags ? p.Tags[MESSAGE_TAG] : ''
+      };
+    };
+    console.log(jsyaml.dump({
+      Current: formatSimple(current),
+      Previous: _.map(previous, formatSimple)
+    }));
   } else {
     const output = {
-      Current: await mergeParamTags(ssm, current),
+      Current: current,
       Previous: previous
     };
     if (argv.format === 'json') {
