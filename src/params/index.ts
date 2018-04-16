@@ -8,6 +8,7 @@ import {Arguments} from 'yargs';
 
 import {GlobalArguments} from '../cli';
 
+import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import configureAWS from '../configureAWS';
 import def from '../default';
 import paginateAwsCall from '../paginateAwsCall';
@@ -73,12 +74,13 @@ export async function setParam(argv: SetParamArgs): Promise<number> {
   const KeyId = Type === 'SecureString' ? await getKMSAliasForParameter(Name) : undefined;
   const res = await ssm.putParameter({Name, Value, Type, KeyId, Overwrite}).promise();
 
-  if(argv.withApproval) {
+  if (argv.withApproval) {
+    const region = getCurrentAWSRegion();
     console.log('Parameter change is pending approval. Review change with:');
-    console.log(`  iidy --region ${argv.region} param review ${argv.path}`);
+    console.log(`  iidy --region ${region} param review ${argv.path}`);
   }
 
-  if(argv.message) {
+  if (argv.message) {
     await setParamTags(ssm, Name, [{Key: MESSAGE_TAG, Value: argv.message}]);
   }
 
@@ -92,12 +94,12 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
   const pendingName = `${Name}.pending`;
   const pendingParam = await maybeFetchParam(ssm, {Name: pendingName, WithDecryption: true});
 
-  if(!_.isUndefined(pendingParam)) {
+  if (!_.isUndefined(pendingParam)) {
     const currentParam = await maybeFetchParam(ssm, {Name, WithDecryption: true})
     const pendingTags = await getParamTags(ssm, pendingName);
     const Value = pendingParam.Value || '';
     const currentValue = currentParam ? currentParam.Value : '<not set>';
-    const Type =  pendingParam.Type || 'SecureString';
+    const Type = pendingParam.Type || 'SecureString';
     const Overwrite = true;
     const KeyId = Type === 'SecureString' ? await getKMSAliasForParameter(Name) : undefined;
 
@@ -105,7 +107,7 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
     console.log(`Pending: ${Value}`);
     console.log('');
 
-    if(pendingTags[MESSAGE_TAG]) {
+    if (pendingTags[MESSAGE_TAG]) {
       console.log(`Message: ${pendingTags[MESSAGE_TAG]}`);
       console.log('');
     }
@@ -117,7 +119,7 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
       message: 'Would you like to approve these changes?'
     });
 
-    if(resp.confirmed) {
+    if (resp.confirmed) {
       await ssm.putParameter({Name, Value, Type, KeyId, Overwrite}).promise();
       await ssm.deleteParameter({Name: pendingName}).promise();
 
@@ -133,13 +135,14 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
   }
 }
 
-async function maybeFetchParam(ssm: aws.SSM, req: aws.SSM.GetParameterRequest): Promise<aws.SSM.Parameter|undefined> {
+async function maybeFetchParam(ssm: aws.SSM, req: aws.SSM.GetParameterRequest): Promise<aws.SSM.Parameter | undefined> {
   try {
     const res = await ssm.getParameter(req).promise();
     return res && res.Parameter;
-  } catch(e) {
-    // Return undefined if parameter does not exist
-    if(!(e.code && e.code === 'ParameterNotFound')) {
+  } catch (e) {
+    if (e.code && e.code === 'ParameterNotFound') {
+      return undefined;
+    } else {
       throw e;
     }
   }
@@ -159,7 +162,7 @@ async function getParamTags(ssm: aws.SSM, path: aws.SSM.ParameterName) {
     .then((res) => _.fromPairs(_.map(res.TagList, (tag) => [tag.Key, tag.Value])));
 }
 
-async function mergeParamTags<T extends aws.SSM.Parameter|aws.SSM.ParameterHistory>(ssm: aws.SSM, param: T) {
+async function mergeParamTags<T extends aws.SSM.Parameter | aws.SSM.ParameterHistory>(ssm: aws.SSM, param: T) {
   return _.merge({}, param, {Tags: await getParamTags(ssm, param.Name as string)});
 }
 
@@ -196,7 +199,7 @@ export async function _getParamsByPath(Path: string): Promise<aws.SSM.ParameterL
     Path,
     WithDecryption: true
   };
-  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath, args, 'Parameters');
+  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath.bind(ssm), args, 'Parameters');
   return parameters;
 }
 
@@ -208,7 +211,7 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
     Recursive: argv.recursive,
     WithDecryption: argv.decrypt
   };
-  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath, args, 'Parameters');
+  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath.bind(ssm), args, 'Parameters');
 
   if (!parameters) {
     console.log('No parameters found');
@@ -230,9 +233,9 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
 }
 
 async function _getParameterHistory(Name: aws.SSM.ParameterName,
-                                    WithDecryption: boolean): Promise<aws.SSM.ParameterHistoryList> {
+  WithDecryption: boolean): Promise<aws.SSM.ParameterHistoryList> {
   const ssm = new aws.SSM();
-  return paginateAwsCall(args => ssm.getParameterHistory(args), {Name, WithDecryption}, 'Parameters');
+  return paginateAwsCall(ssm.getParameterHistory.bind(ssm), {Name, WithDecryption}, 'Parameters');
 }
 
 export async function getParamHistory(argv: GetParamArgs): Promise<number> {
@@ -251,7 +254,7 @@ export async function getParamHistory(argv: GetParamArgs): Promise<number> {
         LastModifiedUser: current.LastModifiedUser,
         Message: current.Tags ? current.Tags[MESSAGE_TAG] : ''
       },
-      Previous: _.map(previous, (p: aws.SSM.ParameterHistory & { Tags: Dictionary<string> }) => {
+      Previous: _.map(previous, (p: aws.SSM.ParameterHistory & {Tags: Dictionary<string>}) => {
         return {
           Value: p.Value,
           LastModifiedDate: p.LastModifiedDate,
