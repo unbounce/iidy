@@ -12,6 +12,7 @@ import configureAWS from '../configureAWS';
 import def from '../default';
 import paginateAwsCall from '../paginateAwsCall';
 import {Dictionary} from 'lodash';
+import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 
 const MESSAGE_TAG = 'iidy:message';
 
@@ -81,7 +82,7 @@ export async function setParam(argv: SetParamArgs): Promise<number> {
     await setParamTags(ssm, Name, [{Key: MESSAGE_TAG, Value: argv.message}]);
   }
 
-  return 0;
+  return SUCCESS;
 }
 
 export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
@@ -122,13 +123,13 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
 
       const tags = _.reduce(pendingTags, (acc: aws.SSM.Tag[], Value, Key) => acc.concat({Key, Value}), []);
       await setParamTags(ssm, Name, tags);
-      return 0;
+      return SUCCESS;
     } else {
-      return 130;
+      return INTERRUPT;
     }
   } else {
     console.log(`There is no pending change for parameter ${argv.path}`);
-    return 1;
+    return FAILURE;
   }
 }
 
@@ -179,7 +180,7 @@ export async function getParam(argv: GetParamArgs): Promise<number> {
       console.log(jsyaml.dump(output));
     }
   }
-  return 0;
+  return SUCCESS;
 }
 
 const paramsToSortedMap = (params: aws.SSM.ParameterList) =>
@@ -211,7 +212,7 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
 
   if (!parameters) {
     console.log('No parameters found');
-    return 1;
+    return FAILURE;
   } else if (argv.format === 'simple') {
     console.log(jsyaml.dump(
       _.mapValues(paramsToSortedMap(parameters),
@@ -225,7 +226,7 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
       console.log(jsyaml.dump(taggedParams));
     }
   }
-  return 0;
+  return SUCCESS;
 }
 
 async function _getParameterHistory(Name: aws.SSM.ParameterName,
@@ -267,5 +268,5 @@ export async function getParamHistory(argv: GetParamArgs): Promise<number> {
       console.log(jsyaml.dump(output));
     }
   }
-  return 0;
+  return SUCCESS;
 }

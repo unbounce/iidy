@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import {Arguments} from 'yargs';
+import {SUCCESS} from './statusCodes';
 
 export async function initStackArgs(argv: Arguments): Promise<number> {
 
@@ -83,5 +84,5 @@ NotificationARNs:
     console.log("cfn-template.yaml has been created!");
   }
 
-  return 0;
+  return SUCCESS;
 }

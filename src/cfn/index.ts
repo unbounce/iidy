@@ -34,6 +34,7 @@ import {AWSRegion} from '../aws-regions';
 import timeout from '../timeout';
 import def from '../default';
 import {diff} from '../diff';
+import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 
 import {readFromImportLocation, transform, PreprocessOptions} from '../preprocess';
 import {getKMSAliasForParameter} from '../params';
@@ -752,7 +753,7 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
   spinner.stop();
   if (stacks.length === 0) {
     console.log('No stacks found');
-    return 0;
+    return SUCCESS;
   }
 
   const timePadding = 24;
@@ -993,7 +994,7 @@ function showFinalComandSummary(wasSuccessful: boolean): number {
     console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Command Summary:')),
       cli.black(cli.bgGreenBright('Success')),
       '👍')
-    return 0;
+    return SUCCESS;
   } else {
     console.log(
       formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Command Summary:')),
@@ -1001,7 +1002,7 @@ function showFinalComandSummary(wasSuccessful: boolean): number {
       ' (╯°□°）╯︵ ┻━┻ ',
       'Fix and try again.'
     )
-    return 1;
+    return FAILURE;
   }
 }
 
@@ -1136,7 +1137,7 @@ abstract class AbstractCloudFormationStackCommand {
       logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
       logger.error(`  iidy template-approval request ${this.argsfile}`);
       logger.error('to begin the approval process.');
-      return 1;
+      return FAILURE;
     }
     const createStackOutput = await this.cfn.createStack(createStackInput).promise();
     await this._updateStackTerminationPolicy();
@@ -1150,7 +1151,7 @@ abstract class AbstractCloudFormationStackCommand {
         logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
         logger.error(`  iidy template-approval request ${this.argsfile}`);
         logger.error('to being the approval process.');
-        return 1;
+        return FAILURE;
       }
       if (this.argv.stackPolicyDuringUpdate) {
         const {
@@ -1166,7 +1167,7 @@ abstract class AbstractCloudFormationStackCommand {
     } catch (e) {
       if (e.message === 'No updates are to be performed.') {
         logger.info('No changes detected so no stack update needed.');
-        return 0;
+        return SUCCESS;
       } else {
         throw e;
       }
@@ -1303,7 +1304,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     if (changeSet.Status === 'FAILED') {
       logger.error(changeSet.StatusReason as string, 'Deleting failed changeset.');
       await this.cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
-      return 1;
+      return FAILURE;
     }
     console.log();
 
@@ -1321,7 +1322,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
       console.log();
     }
     showFinalComandSummary(true);
-    return 0;
+    return SUCCESS;
   }
 
   async _waitForChangeSetCreateComplete() {
@@ -1379,7 +1380,7 @@ class EstimateStackCost extends AbstractCloudFormationStackCommand {
       await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName)
     const estimateResp = await this.cfn.estimateTemplateCost({TemplateBody, TemplateURL, Parameters}).promise();
     console.log('Stack cost estimator: ', estimateResp.Url);
-    return 0;
+    return SUCCESS;
   }
 }
 
@@ -1444,7 +1445,7 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
         return createChangesetResult;
       } else {
         logger.info('No changes to apply');
-        return 0;
+        return SUCCESS;
       }
     }
     console.log()
@@ -1461,7 +1462,7 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
     } else {
       console.log(`You can do so later using\n`
         + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`);
-      return 130;
+      return INTERRUPT;
     }
   } else {
     return new UpdateStack(argv, await loadStackArgs(argv)).run();
@@ -1477,7 +1478,7 @@ export async function createChangesetMain(argv: GenericCLIArguments): Promise<nu
     await watchStack(changesetRunner.stackName, new Date(), DEFAULT_EVENT_POLL_INTERVAL, argv.watchInactivityTimeout);
     console.log();
     await summarizeCompletedStackOperation(changesetRunner.stackName);
-    return 0;
+    return SUCCESS;
   } else {
     return changesetExitCode;
   }
@@ -1490,7 +1491,7 @@ export async function listStacksMain(argv: GenericCLIArguments): Promise<number>
     return [key, value.join('=')] as [string, string];
   });
   await listStacks(argv.tags, tagsFilter);
-  return 0;
+  return SUCCESS;
 }
 
 
@@ -1522,7 +1523,7 @@ export async function watchStackMain(argv: GenericCLIArguments): Promise<number>
   await watchStack(StackId, startTime, DEFAULT_EVENT_POLL_INTERVAL, argv.inactivityTimeout);
   console.log();
   await summarizeCompletedStackOperation(StackId);
-  return 0;
+  return SUCCESS;
 }
 
 export async function describeStackMain(argv: GenericCLIArguments): Promise<number> {
@@ -1541,7 +1542,7 @@ export async function describeStackMain(argv: GenericCLIArguments): Promise<numb
   await showStackEvents(StackName, eventCount, stackEventsPromise);
   console.log();
   await summarizeCompletedStackOperation(StackId, stackPromise);
-  return 0;
+  return SUCCESS;
 }
 
 export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<number> {
@@ -1582,7 +1583,7 @@ export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<
   console.log(
     cli.blackBright(
       `https://console.aws.amazon.com/ec2/v2/home?region=${region}#Instances:tag:aws:cloudformation:stack-name=${StackName};sort=desc:launchTime`));
-  return 0;
+  return SUCCESS;
 }
 
 export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<number> {
@@ -1610,7 +1611,7 @@ export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<n
     default:
       console.log(output.TemplateBody);
   }
-  return 0;
+  return SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1631,10 +1632,10 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
       auth_arn = ${cli.blackBright(iamIdent.Arn)}`;
     if (argv.failIfAbsent) {
       logger.error(msg);
-      return 1;
+      return FAILURE;
     } else {
       logger.info(msg);
-      return 0;
+      return SUCCESS;
     }
   }
   console.log();
@@ -1670,7 +1671,7 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
     const {StackStatus} = await getStackDescription(StackId);
     return showFinalComandSummary(StackStatus === 'DELETE_COMPLETE');
   } else {
-    return 130;
+    return INTERRUPT;
   }
 }
 

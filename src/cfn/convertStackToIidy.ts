@@ -11,6 +11,7 @@ import def from '../default';
 import {getKMSAliasForParameter} from '../params';
 
 import {GlobalArguments} from '../cli';
+import {SUCCESS} from '../statusCodes';
 
 function parameterizeEnv(s0: string, environments = ['development', 'integration', 'staging', 'production']): string {
   let s = s0;
@@ -219,5 +220,5 @@ export async function convertStackToIIDY(argv: ConvertStackArguments): Promise<n
 
   fs.writeFileSync(pathmod.join(outputDir, 'stack-args.yaml'), yaml.dump(outputDoc));
   // TODO write iidy-environment.yaml and related files
-  return 0;
+  return SUCCESS;
 }

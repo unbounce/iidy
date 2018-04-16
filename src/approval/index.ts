@@ -13,6 +13,7 @@ import configureAWS from '../configureAWS';
 import {logger} from '../logger';
 import {diff} from '../diff';
 import {GlobalArguments} from '../cli';
+import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 
 export type RequestArguments = GlobalArguments & {
   argsfile: string;
@@ -44,10 +45,10 @@ export async function request(argv: RequestArguments): Promise<number> {
       }
     }
 
-    return 0;
+    return SUCCESS;
   } else {
     logError(`\`ApprovedTemplateLocation\` must be provided in ${argv.argsfile}`);
-    return 1;
+    return FAILURE;
   }
 
 }
@@ -132,9 +133,9 @@ export async function review(argv: ReviewArguments): Promise<number> {
 
         console.log();
         logSuccess(`Template has been successfully approved!`);
-        return 0;
+        return SUCCESS;
       } else {
-        return 130;
+        return INTERRUPT;
       }
 
     } else {
@@ -142,7 +143,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
     }
   }
 
-  return 0;
+  return SUCCESS;
 }
 
 function logSuccess(text: string) {
