@@ -159,8 +159,8 @@ async function getParamTags(ssm: aws.SSM, path: aws.SSM.ParameterName) {
     .then((res) => _.fromPairs(_.map(res.TagList, (tag) => [tag.Key, tag.Value])));
 }
 
-async function mergeParamTags(ssm: aws.SSM, param: aws.SSM.Parameter) {
-  return _.merge({}, param, {Tags: await getParamTags(ssm, param.Name!)});
+async function mergeParamTags<T extends aws.SSM.Parameter|aws.SSM.ParameterHistory>(ssm: aws.SSM, param: T) {
+  return _.merge({}, param, {Tags: await getParamTags(ssm, param.Name as string)});
 }
 
 export async function getParam(argv: GetParamArgs): Promise<number> {
@@ -238,24 +238,26 @@ async function _getParameterHistory(Name: aws.SSM.ParameterName,
 export async function getParamHistory(argv: GetParamArgs): Promise<number> {
   await configureAWS(argv);
   const ssm = new aws.SSM();
-  const history = await Promise.all(_.map(await _getParameterHistory(argv.path, argv.decrypt),
-                                          async (p) => mergeParamTags(ssm, p)));
+  const history = await _getParameterHistory(argv.path, argv.decrypt);
   const sorted = _.sortBy(history, 'LastModifiedDate')
-  const current = sorted[sorted.length - 1];
+  const current = await mergeParamTags(ssm, sorted[sorted.length - 1]);
   const previous = sorted.slice(0, sorted.length - 1);
 
   if (argv.format === 'simple') {
-    const formatSimple = (p: aws.SSM.ParameterHistory & { Tags: Dictionary<string> }) => {
-      return {
-        Value: p.Value,
-        LastModifiedDate: p.LastModifiedDate,
-        LastModifiedUser: p.LastModifiedUser,
-        Message: p.Tags ? p.Tags[MESSAGE_TAG] : ''
-      };
-    };
     console.log(jsyaml.dump({
-      Current: formatSimple(current),
-      Previous: _.map(previous, formatSimple)
+      Current: {
+        Value: current.Value,
+        LastModifiedDate: current.LastModifiedDate,
+        LastModifiedUser: current.LastModifiedUser,
+        Message: current.Tags ? current.Tags[MESSAGE_TAG] : ''
+      },
+      Previous: _.map(previous, (p: aws.SSM.ParameterHistory & { Tags: Dictionary<string> }) => {
+        return {
+          Value: p.Value,
+          LastModifiedDate: p.LastModifiedDate,
+          LastModifiedUser: p.LastModifiedUser
+        };
+      })
     }));
   } else {
     const output = {
