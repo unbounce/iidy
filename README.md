@@ -62,8 +62,8 @@ brew install iidy
 ### Binary Installation on Other Platforms
 ```Shell
 # Grab the appropriate binary from the releases page.
-wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc6/iidy-linux-amd64.zip
-# or wget https://github.com/unbounce/iidy/releases/download/v1.6.0-rc6/iidy-macos-amd64.zip
+wget https://github.com/unbounce/iidy/releases/download/v1.6.5/iidy-linux-amd64.zip
+# or wget https://github.com/unbounce/iidy/releases/download/v1.6.5/iidy-macos-amd64.zip
 unzip iidy*.zip
 chmod +x iidy
 mv iidy /usr/local/bin/   # or somewhere more appropriate
@@ -624,6 +624,14 @@ before submitting a PR.
 MIT.
 
 ## Changelog
+* [v1.6.5](https://github.com/unbounce/iidy/releases/tag/v1.6.5)
+
+* [v1.6.4](https://github.com/unbounce/iidy/releases/tag/v1.6.4)
+
+* [v1.6.3](https://github.com/unbounce/iidy/releases/tag/v1.6.3)
+
+* [v1.6.2](https://github.com/unbounce/iidy/releases/tag/v1.6.2)
+
 * [v1.6.1](https://github.com/unbounce/iidy/releases/tag/v1.6.1)
   - fix bug with `iidy param` commands (#50)
 
