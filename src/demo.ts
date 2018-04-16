@@ -10,6 +10,7 @@ import * as cli from 'cli-color';
 import timeout from './timeout';
 import {transform} from './preprocess';
 import * as yaml from './yaml';
+import {SUCCESS} from './statusCodes';
 
 type Banner = {
   type: 'banner',
@@ -67,7 +68,7 @@ class DemoRunner {
       // TODO check result
       child_process.execSync(`rm -r "${this.tmpdir.name}"`, {cwd: this.tmpdir.name});
     }
-    return 0;
+    return SUCCESS;
   }
 
   _unpackFiles(files: {[key: string]: string}) {

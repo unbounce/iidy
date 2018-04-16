@@ -12,6 +12,7 @@ import {_loadStackArgs} from './cfn';
 import {logger} from './logger';
 import getCurrentAWSRegion from './getCurrentAWSRegion';
 import {GlobalArguments} from './cli';
+import {SUCCESS, FAILURE} from './statusCodes';
 
 export function isStackArgsFile(location: string, doc: any): boolean {
   if (pathmod.basename(location).match(/stack-args/)) {
@@ -56,9 +57,9 @@ export async function renderMain(argv: RenderArguments): Promise<number> {
   } else {
     if (fs.existsSync(argv.outfile) && !argv.overwrite) {
       logger.error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
-      return 1;
+      return FAILURE;
     }
     fs.writeFileSync(argv.outfile, outputString);
   }
-  return 0;
+  return SUCCESS;
 };

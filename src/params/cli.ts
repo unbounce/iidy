@@ -4,6 +4,7 @@ import {description, Handler, wrapCommandHandler} from '../cli';
 
 export interface ParamCommands {
   setParam: Handler;
+  reviewParam: Handler;
   getParam: Handler;
   getParamsByPath: Handler;
   getParamHistory: Handler;
@@ -14,6 +15,7 @@ const lazyLoad = (fnname: keyof ParamCommands): Handler =>
 
 const lazy: ParamCommands = {
   setParam: lazyLoad('setParam'),
+  reviewParam: lazyLoad('reviewParam'),
   getParam: lazyLoad('getParam'),
   getParamsByPath: lazyLoad('getParamsByPath'),
   getParamHistory: lazyLoad('getParamHistory'),
@@ -40,9 +42,17 @@ export function buildParamCommands(args: yargs.Argv, commands = lazy): yargs.Arg
     description('set a parameter value'),
     (args) =>
       args
+        .option('message', {
+          type: 'string',
+          description: 'descriptive message for parameter'
+        })
         .option('overwrite', {
           type: 'boolean', default: false,
           description: 'overwrite existing parameters'
+        })
+        .option('with-approval', {
+          type: 'boolean', default: false,
+          description: 'require parameter review to apply change'
         })
         .option('type', {
           type: 'string', default: 'SecureString',
@@ -50,6 +60,12 @@ export function buildParamCommands(args: yargs.Argv, commands = lazy): yargs.Arg
           choices: ['String', 'StringList', 'SecureString']
         }),
     wrapCommandHandler(commands.setParam))
+
+    .command(
+    'review <path>',
+    description('review a pending change'),
+    (args) => args,
+    wrapCommandHandler(commands.reviewParam))
 
     .command('get <path>',
     description('get a parameter value'),
