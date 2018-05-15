@@ -1128,16 +1128,14 @@ abstract class AbstractCloudFormationStackCommand {
   async _run(): Promise<number> {
     throw new Error('Not implemented');
   }
+
   async _runCreate() {
     if (_.isEmpty(this.stackArgs.Template)) {
       throw new Error('For create-stack you must provide at Template: parameter in your argsfile')
     };
     const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
-    if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(createStackInput.TemplateURL)) {
-      logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
-      logger.error(`  iidy template-approval request ${this.argsfile}`);
-      logger.error('to begin the approval process.');
-      return FAILURE;
+    if (await this._requiresTemplateApproval(createStackInput.TemplateURL)) {
+      return this._exitWithTemplateApprovalFailure();
     }
     const createStackOutput = await this.cfn.createStack(createStackInput).promise();
     await this._updateStackTerminationPolicy();
@@ -1147,11 +1145,8 @@ abstract class AbstractCloudFormationStackCommand {
   async _runUpdate() {
     try {
       let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
-      if (this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(updateStackInput.TemplateURL)) {
-        logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
-        logger.error(`  iidy template-approval request ${this.argsfile}`);
-        logger.error('to being the approval process.');
-        return FAILURE;
+      if (await this._requiresTemplateApproval(updateStackInput.TemplateURL)) {
+        return this._exitWithTemplateApprovalFailure();
       }
       if (this.argv.stackPolicyDuringUpdate) {
         const {
@@ -1173,6 +1168,18 @@ abstract class AbstractCloudFormationStackCommand {
       }
     }
   }
+
+  async _requiresTemplateApproval(TemplateURL?: string): Promise<boolean> {
+    return !!(this.stackArgs.ApprovedTemplateLocation && ! await isHttpTemplateAccessible(TemplateURL));
+  }
+
+  _exitWithTemplateApprovalFailure(): number {
+    logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
+    logger.error(`  iidy template-approval request ${this.argsfile}`);
+    logger.error('to begin the approval process.');
+    return FAILURE;
+  }
+
 }
 
 class CreateStack extends AbstractCloudFormationStackCommand {
@@ -1293,8 +1300,10 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const stackExists = await this.cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
     createChangeSetInput.ChangeSetType = stackExists ? 'UPDATE' : 'CREATE';
 
+    if (await this._requiresTemplateApproval(createChangeSetInput.TemplateURL)) {
+      return this._exitWithTemplateApprovalFailure();
+    }
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
-
     const _changeSetResult = await this.cfn.createChangeSet(createChangeSetInput).promise();
     await this._waitForChangeSetCreateComplete().catch(() => null); // catch for failed changesets
     const changeSet = await this.cfn.describeChangeSet({ChangeSetName, StackName}).promise();
