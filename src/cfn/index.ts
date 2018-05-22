@@ -8,6 +8,7 @@ import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
 import {Md5} from 'ts-md5/dist/md5';
 import * as request from 'request-promise-native';
+import * as handlebars from 'handlebars';
 
 import * as dateformat from 'dateformat';
 
@@ -32,11 +33,20 @@ import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import configureAWS from '../configureAWS';
 import {AWSRegion} from '../aws-regions';
 import timeout from '../timeout';
+import filehash from '../filehash';
+import normalizePath from '../normalizePath';
 import def from '../default';
 import {diff} from '../diff';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 
-import {readFromImportLocation, transform, PreprocessOptions} from '../preprocess';
+import {
+  readFromImportLocation,
+  transform,
+  PreprocessOptions,
+  interpolateHandlebarsString,
+  importLoaders,
+  ExtendedCfnDoc
+} from '../preprocess';
 import {getKMSAliasForParameter} from '../params';
 import {GlobalArguments} from '../cli';
 
@@ -498,21 +508,48 @@ async function summarizeCompletedStackOperation(StackId: string, stackPromise?: 
   return stack;
 }
 
-function runCommandSet(commands: string[]) {
+function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: object): string[] {
   // TODO: merge this with the demo script functionality see
   // https://stackoverflow.com/a/37217166 for a means of doing light
   // weight string templates of the input command
-  for (const command of commands) {
-    console.log('Running command:\n' + cli.blackBright(command))
-    const result = child_process.spawnSync(command, [], {shell: true});
-    if (result.status > 0) {
-      throw new Error('Error running command: ' + command);
+  // TODO might want to inject AWS_* envvars and helper bash functions as ENV vars
+  console.log('==', 'Executing CommandsBefore from argsfile', '='.repeat(28));
+  handlebars.registerHelper('filehash', (context: any) => filehash(normalizePath(cwd, context)));
+  const expandedCommands: string[] = [];
+  commands.forEach((command, index) => {
+    const expandedCommand = interpolateHandlebarsString(command, handleBarsEnv || {}, "CommandsBefore");
+    expandedCommands.push(expandedCommand);
+    console.log(`\n-- Command ${index + 1}`, '-'.repeat(50))
+
+
+    if (expandedCommand !== command) {
+      console.log(cli.red('# raw command before processing handlebars variables:'))
+      console.log(cli.blackBright(command))
+      console.log(cli.red('# command after processing handlebars variables:'))
+      console.log(cli.blackBright(expandedCommand))
     } else {
-      // TODO show stderr
-      // stream the output line by line rather than waiting
-      console.log('Command output: \n' + cli.blackBright(result.stdout.toString().trim()));
+      console.log(cli.blackBright(command))
     }
-  }
+
+    const spawnOptions = {
+      cwd,
+      shell: fs.existsSync('/bin/bash') ? '/bin/bash' : true, // TODO should we fail here if no bash?
+      // TODO color stderr
+      stdio: [0, 1, 2]
+    };
+    console.log('--', `Output ${index + 1}`, '-'.repeat(25));
+    const result = child_process.spawnSync(expandedCommand, [], spawnOptions);
+    if (result.status > 0) {
+      throw new Error(`Error running command (exit code ${result.status}):\n` + command);
+    }
+  });
+
+  handlebars.unregisterHelper('filehash');
+  console.log();
+  console.log('==', 'End CommandsBefore', '='.repeat(48));
+  console.log();
+
+  return expandedCommands;
 }
 
 function parseS3HttpUrl(input: string) {
@@ -864,23 +901,12 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
       throw new Error(`The ${key} setting in stack-args.yaml must be a plain string or an environment map of strings.`);
     }
   }
-  // have to configureAws  before the call to transform
+  // have to configureAws before the call to transform as $imports might make AWS api calls.
   const cliOptionOverrides = _.pickBy(argv, (v: any, k: string) => !_.isEmpty(v) && _.includes(['region', 'profile', 'assumeRoleArn'], k));
   const argsfileSettings = {profile: argsdata.Profile, assumeRoleArn: argsdata.AssumeRoleARN, region: argsdata.Region};
-  await configureAWS(_.merge(argsfileSettings, cliOptionOverrides)); // cliOptionOverrides trump argsfile
+  const mergedAWSSettings = _.merge(argsfileSettings, cliOptionOverrides);
+  await configureAWS(mergedAWSSettings); // cliOptionOverrides trump argsfile
 
-  if (argsdata.CommandsBefore) {
-    // TODO improve CLI output of this and think about adding
-    // descriptive names to the commands
-
-    // TODO move this to a more sensible place if I can resolve the chicken and egg issue
-
-    // TODO might want to inject ENV vars or handlebars into the
-    // commands. Also the AWS_ENV
-    console.log(formatSectionHeading('Preflight steps:'))
-    console.log('Executing CommandsBefore from argsfile');
-    runCommandSet(argsdata.CommandsBefore);
-  }
   if (environment) {
     if (!_.get(argsdata, ['Tags', 'environment'])) {
       argsdata.Tags = _.merge({environment}, argsdata.Tags);
@@ -893,13 +919,47 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
       region: finalRegion,
       environment,
       // new style with namespace to avoid clashes:
-      iidy: {environment, region: finalRegion}
+      iidy: {
+        command: argv._.join(' '),
+        environment,
+        region: finalRegion,
+        profile: mergedAWSSettings.profile
+      }
     });
 
-  const stackArgs = await transform(argsdata, argsfile) as StackArgs;
-  logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgs);
-  return stackArgs;
-  // ... do the normalization here
+  if (argsdata.CommandsBefore) {
+    // TODO should we actually execute the commands if this is `iidy render`?
+
+    // The CommandsBefore strings are pre-processed for any handlebars
+    // templates they contain. We call `transform` once here to get
+    // the $envValues ($imports, $defs, etc.) and fully rendered
+    // StackArgs so they're available to handlebars. It's called again
+    // below to produce the final `stackArgsPass2` as these commands
+    // might alter the values in $imports. For example, an import of
+    // `filehash:lambda.zip` would change after the
+    //
+    const argsdataPass1: ExtendedCfnDoc = _.omit(_.cloneDeep(argsdata), ['CommandsBefore']);
+    // NOTE any AWS api calls made in the imports will be made twice
+    // because of the multiple passes. TODO use transformPostImports
+    // instead and loadImports only once.
+    const stackArgsPass1 = await transform(argsdataPass1, argsfile) as StackArgs;
+    // TODO what about the rest of the $envValues from the imports and defs?
+    const CommandsBeforeEnv = _.merge({
+      iidy: {
+        stackArgs: stackArgsPass1,
+        stackName: argv.stackName || stackArgsPass1.StackName
+      }
+    }, argsdataPass1.$envValues);
+
+    // We want `iidy render` to show the results of that pre-processing:
+    argsdata.CommandsBefore = runCommandSet(
+      argsdata.CommandsBefore,
+      pathmod.dirname(argsfile),
+      CommandsBeforeEnv);
+  }
+  const stackArgsPass2 = await transform(argsdata, argsfile) as StackArgs;
+  logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgsPass2);
+  return stackArgsPass2;
 };
 
 async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, environment: string, stackName?: string)
