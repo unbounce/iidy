@@ -1001,7 +1001,7 @@ function visit$mergeMap(node: yaml.$mergeMap, path: string, env: Env): AnyButUnd
 
 function visit$concat(node: yaml.$concat, path: string, env: Env): AnyButUndefined[] {
   const error = new Error(`Invalid argument to $concat at "${path}".`
-      + " Must be array of arrays.")
+    + " Must be array of arrays.")
 
   if (!_.isArray(node.data)) {
     throw error;
