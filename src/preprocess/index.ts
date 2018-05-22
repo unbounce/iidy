@@ -26,6 +26,7 @@ import * as tv4 from 'tv4';
 
 import * as yaml from '../yaml';
 import {logger} from '../logger';
+import normalizePath from '../normalizePath';
 import paginateAwsCall from '../paginateAwsCall';
 import {_getParamsByPath} from '../params';
 
@@ -158,17 +159,6 @@ function gitValue(valueType: GitValue): string {
 
 const sha256Digest = (content: string | Buffer): SHA256Digest =>
   crypto.createHash('sha256').update(content.toString()).digest('hex');
-
-function resolveHome(path: string): string {
-  if (path[0] === '~') {
-    return pathmod.join(process.env.HOME as string, path.slice(1));
-  } else {
-    return path;
-  }
-}
-
-const normalizePath = (...pathSegments: string[]): string =>
-  pathmod.resolve.apply(pathmod, _.map(pathSegments, (path) => resolveHome(path.trim())));
 
 const _isPlainMap = (node: any): node is object =>
   _.isObject(node) &&
