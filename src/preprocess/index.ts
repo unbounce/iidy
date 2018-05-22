@@ -27,6 +27,7 @@ import * as tv4 from 'tv4';
 import * as yaml from '../yaml';
 import {logger} from '../logger';
 import normalizePath from '../normalizePath';
+import filehash from '../filehash';
 import paginateAwsCall from '../paginateAwsCall';
 import {_getParamsByPath} from '../params';
 
@@ -262,18 +263,11 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
   },
 
   filehash: async (location, baseLocation) => {
-    // this assumes local files/dirs TODO validate that
     const resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
     if (!fs.existsSync(resolvedLocation)) {
       throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
     }
-    const isDir = fs.lstatSync(resolvedLocation).isDirectory();
-    const shasumCommand = 'shasum -p -a 256';
-    const hashCommand = isDir
-      ? `find ${resolvedLocation} -type f -print0 | xargs -0 ${shasumCommand} | ${shasumCommand}`
-      : `${shasumCommand} ${resolvedLocation}`;
-    const result = child_process.spawnSync(hashCommand, [], {shell: true});
-    const data = result.stdout.toString().trim().split(' ')[0];
+    const data = filehash(resolvedLocation);
     return {resolvedLocation, data, doc: data};
   },
 
