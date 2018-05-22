@@ -38,11 +38,12 @@ handlebars.registerHelper('base64', (context: any) => new Buffer(context).toStri
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
 handlebars.registerHelper('toUpperCase', (str: string) => str.toUpperCase());
 
-function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
+export function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
   try {
     const template = handlebars.compile(templateString, {noEscape: true, strict: true});
     return template(env);
   } catch (e) {
+    logger.debug(e);
     throw new Error(
       `Error in string template at ${errorContext}:\n       ${e.message}\n       Template: ${templateString}`)
   }
