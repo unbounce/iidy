@@ -685,6 +685,7 @@ function validateTemplateParameter(param: $param, mergedParams: any, name: strin
       case 'AWS::SSM::Parameter::Value<String>':
       case 'AWS::SSM::Parameter::Value<List<String>>':
       case 'AWS::SSM::Parameter::Value<CommaDelimitedList>':
+        // TODO add the rest of the SSM types
         // TODO validate these
         break
       default:
