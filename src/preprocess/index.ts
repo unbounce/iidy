@@ -127,12 +127,13 @@ export type ImportData = {
   doc?: any
 }
 
+// TODO timestamp
 export type ImportType =
-  "file" | "env" | "git" | "random" | "filehash" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
+  "file" | "env" | "git" | "random" | "filehash" | "filehash-base64" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
 // https://github.com/kimamula/ts-transformer-enumerate is an alternative to this
 // repetition. Could also use a keyboard macro.
 const importTypes: ImportType[] = [
-  "file", "env", "git", "random", "filehash", "cfn", "ssm", "ssm-path", "s3", "http"];
+  "file", "env", "git", "random", "filehash", "filehash-base64", "cfn", "ssm", "ssm-path", "s3", "http"];
 const localOnlyImportTypes: ImportType[] = ["file", "env"];
 
 // npm:version npm:project-name, etc. with equivs for lein/mvn
@@ -190,6 +191,7 @@ const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env
 // Import handling
 
 export function parseImportType(location: ImportLocation, baseLocation: ImportLocation): ImportType {
+  // TODO splitting by : will probably cause issues on Windows. Do we care?
   const hasExplicitType = location.indexOf(':') > -1;
   const importType0 = hasExplicitType
     ? location.toLowerCase().split(':')[0].replace('https', 'http')
@@ -249,6 +251,25 @@ const parseDataFromParamStore = (payload: string, formatType?: string): any => {
 
 export type ImportLoader = (location: ImportLocation, baseLocation: ImportLocation) => Promise<ImportData>;
 
+export const filehashLoader = async (location0: ImportLocation, baseLocation: ImportLocation, format: 'hex'|'base64' ='hex') => {
+  let location = location0.split(':')[1];
+  const allowMissingFile: boolean = location.startsWith('?');
+  if (allowMissingFile) {
+    location = location.slice(1).trim();
+  }
+  const resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location);
+  if (!fs.existsSync(resolvedLocation)) {
+    if (allowMissingFile) {
+      return {resolvedLocation, data: 'FILE_MISSING', doc: 'FILE_MISSING'};
+    } else {
+      throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
+    }
+  } else {
+    const data = filehash(resolvedLocation, format);
+    return {resolvedLocation, data, doc: data};
+  }
+};
+
 export const importLoaders: {[key in ImportType]: ImportLoader} = {
 
   file: async (location, baseLocation) => {
@@ -262,14 +283,8 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     }
   },
 
-  filehash: async (location, baseLocation) => {
-    const resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
-    if (!fs.existsSync(resolvedLocation)) {
-      throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
-    }
-    const data = filehash(resolvedLocation);
-    return {resolvedLocation, data, doc: data};
-  },
+  filehash: filehashLoader, // hex
+  "filehash-base64": async (location, baseLocation) => filehashLoader(location, baseLocation, 'base64'),
 
   s3: async (location, baseLocation) => {
     let resolvedLocation: ImportLocation, format: string;
