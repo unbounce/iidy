@@ -22,7 +22,7 @@ export function isStackArgsFile(location: string, doc: any): boolean {
   }
 }
 
-export type RenderArguments = GlobalArguments & {
+export type RenderArguments = GlobalArguments & Arguments & {
   template: string;
   outfile: string;
   overwrite: boolean;
@@ -41,8 +41,15 @@ export async function renderMain(argv: RenderArguments): Promise<number> {
     // TODO remove the cast to any below after tightening the args on _loadStackArgs
     outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
   } else {
-    // injection of $region / $environment is handled by _loadStackArgs in the if branch above
-    input.$envValues = _.merge({}, input.$envValues, {iidy: {environment: argv.environment, region: getCurrentAWSRegion()}});
+    // injection of iidy env is handled by _loadStackArgs in the if branch above
+    input.$envValues = _.merge({}, input.$envValues, {
+      iidy: {
+        command: argv._.join(' '),
+        environment: argv.environment,
+        region: getCurrentAWSRegion()
+        // NOTE: missing profile which is present in stackArgs rendering
+      }
+    });
     outputDoc = await transform(input, rootDocLocation);
   }
   if (argv.query) {
