@@ -466,7 +466,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
   return _.merge({importType}, importData);
 }
 
-async function loadImports(
+export async function loadImports(
   doc: ExtendedCfnDoc,
   baseLocation: ImportLocation,
   importsAccum: ImportRecord[],
