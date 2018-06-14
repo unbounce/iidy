@@ -251,7 +251,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.equal({out: 'YWJj'});
         const longerString = "abc ".repeat(20);
         expect(await transform({$defs: {a: longerString}, out: '{{base64 a}}'}))
-          .to.deep.equal({out: new Buffer(longerString).toString('base64')});
+          .to.deep.equal({out: Buffer.from(longerString).toString('base64')});
       });
 
     });

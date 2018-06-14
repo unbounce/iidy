@@ -36,7 +36,7 @@ const CFN_SUB_RE = /\${([^!].*?)}/g;
 
 handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
 handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
-handlebars.registerHelper('base64', (context: any) => new Buffer(context).toString('base64'));
+handlebars.registerHelper('base64', (context: any) => Buffer.from(context).toString('base64'));
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
 handlebars.registerHelper('toUpperCase', (str: string) => str.toUpperCase());
 
