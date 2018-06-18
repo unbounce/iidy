@@ -515,6 +515,7 @@ function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: object):
   // TODO might want to inject AWS_* envvars and helper bash functions as ENV vars
   console.log('==', 'Executing CommandsBefore from argsfile', '='.repeat(28));
   handlebars.registerHelper('filehash', (context: any) => filehash(normalizePath(cwd, context)));
+  handlebars.registerHelper('filehashBase64', (context: any) => filehash(normalizePath(cwd, context), 'base64'));
   const expandedCommands: string[] = [];
   commands.forEach((command, index) => {
     const expandedCommand = interpolateHandlebarsString(command, handleBarsEnv || {}, "CommandsBefore");
@@ -535,7 +536,27 @@ function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: object):
       cwd,
       shell: fs.existsSync('/bin/bash') ? '/bin/bash' : true, // TODO should we fail here if no bash?
       // TODO color stderr
-      stdio: [0, 1, 2]
+      stdio: [0, 1, 2],
+      // TODO extract definition of iidy_s3_upload to somewhere else
+      env: _.merge(
+        {
+          'BASH_FUNC_iidy_filehash%%': `() {   shasum -p -a 256 "$1" | cut -f 1 -d ' '; }`,
+          'BASH_FUNC_iidy_filehash_base64%%': `() { shasum -p -a 256 "$1" | cut -f 1 -d ' ' | xxd -r -p | base64; }`,
+          'BASH_FUNC_iidy_s3_upload%%': `() {
+  echo '>> NOTE: iidy_s3_upload is an experimental addition to iidy. It might be removed in future versions.'
+  FILE=$1
+  BUCKET=$2
+  S3_KEY=$3
+  aws --profile "$iidy_profile" --region "$iidy_region" s3api head-object --bucket "$BUCKET" --key "$S3_KEY" 2>&1 >/dev/null || \
+        aws --profile "$iidy_profile" --region "$iidy_region" s3 cp "$FILE" "s3://$BUCKET/$S3_KEY";
+
+ }`,
+          // flatten out the environment to pass through
+          'iidy_profile': _.get(handleBarsEnv, 'iidy.profile'),
+          'iidy_region': _.get(handleBarsEnv, 'iidy.region'),
+          'iidy_environment': _.get(handleBarsEnv, 'iidy.environment')
+        },
+        process.env)
     };
     console.log('--', `Output ${index + 1}`, '-'.repeat(25));
     const result = child_process.spawnSync(expandedCommand, [], spawnOptions);
