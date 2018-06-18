@@ -558,7 +558,7 @@ function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: object):
         },
         process.env)
     };
-    console.log('--', `Output ${index + 1}`, '-'.repeat(25));
+    console.log('--', `Command ${index + 1} Output`, '-'.repeat(25));
     const result = child_process.spawnSync(expandedCommand, [], spawnOptions);
     if (result.status > 0) {
       throw new Error(`Error running command (exit code ${result.status}):\n` + command);
