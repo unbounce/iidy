@@ -145,6 +145,11 @@ Template: <local file path or s3 path>
 Region: <aws region name>
 
 Profile: <aws profile name>
+# or
+AssumeRoleARN: arn:aws:iam::<account>:role/<rolename>
+
+# CloudFormation ServiceRole
+ServiceRoleARN: arn:aws:iam::<account>:role/<rolename>
 
 Tags: # aws tags to apply to the stack
   owner: Tavis
@@ -162,9 +167,6 @@ Capabilities: # optional list. *Preferably empty*
 
 NotificationARNs:
   - <sns arn>
-
-# CloudFormation ServiceRole
-ServiceRoleARN: arn:aws:iam::<acount>:role/<rolename>
 
 TimeoutInMinutes: <number>
 
