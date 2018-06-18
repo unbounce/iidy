@@ -895,6 +895,7 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
   const profile: string | undefined = argv.profile;
   const assumeRoleArn: string | undefined = argv.assumeRoleArn;
   const environment: string | undefined = argv.environment;
+  const iidy_command = argv._.join(' ');
 
   let argsdata: any; // tslint:disable-line
   if (!fs.existsSync(argsfile)) {
@@ -941,7 +942,7 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
       environment,
       // new style with namespace to avoid clashes:
       iidy: {
-        command: argv._.join(' '),
+        command: iidy_command,
         environment,
         region: finalRegion,
         profile: mergedAWSSettings.profile
@@ -950,33 +951,38 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
 
   if (argsdata.CommandsBefore) {
     // TODO should we actually execute the commands if this is `iidy render`?
+    if (_.includes(['create-stack', 'update-stack', 'create-changeset', 'create-or-update'], iidy_command)) {
+      // The CommandsBefore strings are pre-processed for any handlebars
+      // templates they contain. We call `transform` once here to get
+      // the $envValues ($imports, $defs, etc.) and fully rendered
+      // StackArgs so they're available to handlebars. It's called again
+      // below to produce the final `stackArgsPass2` as these commands
+      // might alter the values in $imports. For example, an import of
+      // `filehash:lambda.zip` would change after the
+      //
+      const argsdataPass1: ExtendedCfnDoc = _.omit(_.cloneDeep(argsdata), ['CommandsBefore']);
+      // NOTE any AWS api calls made in the imports will be made twice
+      // because of the multiple passes. TODO use transformPostImports
+      // instead and loadImports only once.
+      const stackArgsPass1 = await transform(argsdataPass1, argsfile) as StackArgs;
+      // TODO what about the rest of the $envValues from the imports and defs?
+      const CommandsBeforeEnv = _.merge({
+        iidy: {
+          stackArgs: stackArgsPass1,
+          stackName: argv.stackName || stackArgsPass1.StackName
+        }
+      }, argsdataPass1.$envValues);
 
-    // The CommandsBefore strings are pre-processed for any handlebars
-    // templates they contain. We call `transform` once here to get
-    // the $envValues ($imports, $defs, etc.) and fully rendered
-    // StackArgs so they're available to handlebars. It's called again
-    // below to produce the final `stackArgsPass2` as these commands
-    // might alter the values in $imports. For example, an import of
-    // `filehash:lambda.zip` would change after the
-    //
-    const argsdataPass1: ExtendedCfnDoc = _.omit(_.cloneDeep(argsdata), ['CommandsBefore']);
-    // NOTE any AWS api calls made in the imports will be made twice
-    // because of the multiple passes. TODO use transformPostImports
-    // instead and loadImports only once.
-    const stackArgsPass1 = await transform(argsdataPass1, argsfile) as StackArgs;
-    // TODO what about the rest of the $envValues from the imports and defs?
-    const CommandsBeforeEnv = _.merge({
-      iidy: {
-        stackArgs: stackArgsPass1,
-        stackName: argv.stackName || stackArgsPass1.StackName
-      }
-    }, argsdataPass1.$envValues);
-
-    // We want `iidy render` to show the results of that pre-processing:
-    argsdata.CommandsBefore = runCommandSet(
-      argsdata.CommandsBefore,
-      pathmod.dirname(argsfile),
-      CommandsBeforeEnv);
+      // We want `iidy render` to show the results of that pre-processing:
+      argsdata.CommandsBefore = runCommandSet(
+        argsdata.CommandsBefore,
+        pathmod.dirname(argsfile),
+        CommandsBeforeEnv);
+    } else {
+      // Not on an iidy command that require CommandsBefore to be processed
+      // TODO ... do something more sensible here, such as escaping the commands
+      delete argsdata.CommandsBefore;
+    }
   }
   const stackArgsPass2 = await transform(argsdata, argsfile) as StackArgs;
   logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgsPass2);
