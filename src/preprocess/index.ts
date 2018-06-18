@@ -147,7 +147,7 @@ const gitValues = ["branch", "describe", "sha"];
 function gitValue(valueType: GitValue): string {
   const command = {
     branch: 'git rev-parse --abbrev-ref HEAD',
-    describe: 'git describe --dirty',
+    describe: 'git describe --dirty --tags',
     sha: 'git rev-parse HEAD'
   }[valueType];
 
