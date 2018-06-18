@@ -87,8 +87,9 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
 
       }
 
+      const testProfiles = ['sandbox']; // add more here to test for state bugs
       it("handles the profile argument", async () => {
-        for (const profile of _.intersection(availableProfileNames, ['sandbox', 'staging'])) {
+        for (const profile of _.intersection(availableProfileNames, testProfiles)) {
           const roleToAssume = awsConfigIni.getProfile(profile).role_arn;
           await configureAWS({profile});
           await assertRoleAssumed(roleToAssume);
@@ -96,7 +97,7 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
       });
 
       it("handles the assumeRoleArn argument", async () => {
-        for (const profile of _.intersection(availableProfileNames, ['sandbox', 'staging'])) {
+        for (const profile of _.intersection(availableProfileNames, testProfiles)) {
           const roleToAssume = awsConfigIni.getProfile(profile).role_arn;
           await configureAWS({assumeRoleArn: roleToAssume});
           await assertRoleAssumed(roleToAssume);

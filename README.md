@@ -145,6 +145,11 @@ Template: <local file path or s3 path>
 Region: <aws region name>
 
 Profile: <aws profile name>
+# or
+AssumeRoleARN: arn:aws:iam::<account>:role/<rolename>
+
+# CloudFormation ServiceRole
+ServiceRoleARN: arn:aws:iam::<account>:role/<rolename>
 
 Tags: # aws tags to apply to the stack
   owner: Tavis
@@ -163,9 +168,6 @@ Capabilities: # optional list. *Preferably empty*
 NotificationARNs:
   - <sns arn>
 
-# CloudFormation ServiceRole
-ServiceRoleARN: arn:aws:iam::<acount>:role/<rolename>
-
 TimeoutInMinutes: <number>
 
 # OnFailure defaults to ROLLBACK
@@ -176,8 +178,13 @@ StackPolicy: <local file path or s3 path>
 ResourceTypes: <list of aws resource types allowed in the template>
   # see http://docs.aws.amazon.com/cli/latest/reference/cloudformation/create-stack.html#options
 
-CommandsBefore: # shell commands to run prior the cfn stack operation
-  - make build # for example
+CommandsBefore:
+  # a list of shell commands to run prior the cfn stack operation
+  # /bin/bash is used if found.
+  # handlebars templates in the command strings are preprocessed prior to execution.
+
+  # E.g.
+  - make build
 
 ```
 

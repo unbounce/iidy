@@ -26,6 +26,8 @@ import * as tv4 from 'tv4';
 
 import * as yaml from '../yaml';
 import {logger} from '../logger';
+import normalizePath from '../normalizePath';
+import filehash from '../filehash';
 import paginateAwsCall from '../paginateAwsCall';
 import {_getParamsByPath} from '../params';
 
@@ -34,15 +36,16 @@ const CFN_SUB_RE = /\${([^!].*?)}/g;
 
 handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
 handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
-handlebars.registerHelper('base64', (context: any) => new Buffer(context).toString('base64'));
+handlebars.registerHelper('base64', (context: any) => Buffer.from(context).toString('base64'));
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
 handlebars.registerHelper('toUpperCase', (str: string) => str.toUpperCase());
 
-function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
+export function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
   try {
     const template = handlebars.compile(templateString, {noEscape: true, strict: true});
     return template(env);
   } catch (e) {
+    logger.debug(e);
     throw new Error(
       `Error in string template at ${errorContext}:\n       ${e.message}\n       Template: ${templateString}`)
   }
@@ -124,12 +127,13 @@ export type ImportData = {
   doc?: any
 }
 
+// TODO timestamp
 export type ImportType =
-  "file" | "env" | "git" | "random" | "filehash" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
+  "file" | "env" | "git" | "random" | "filehash" | "filehash-base64" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
 // https://github.com/kimamula/ts-transformer-enumerate is an alternative to this
 // repetition. Could also use a keyboard macro.
 const importTypes: ImportType[] = [
-  "file", "env", "git", "random", "filehash", "cfn", "ssm", "ssm-path", "s3", "http"];
+  "file", "env", "git", "random", "filehash", "filehash-base64", "cfn", "ssm", "ssm-path", "s3", "http"];
 const localOnlyImportTypes: ImportType[] = ["file", "env"];
 
 // npm:version npm:project-name, etc. with equivs for lein/mvn
@@ -143,7 +147,7 @@ const gitValues = ["branch", "describe", "sha"];
 function gitValue(valueType: GitValue): string {
   const command = {
     branch: 'git rev-parse --abbrev-ref HEAD',
-    describe: 'git describe --dirty',
+    describe: 'git describe --dirty --tags',
     sha: 'git rev-parse HEAD'
   }[valueType];
 
@@ -158,17 +162,6 @@ function gitValue(valueType: GitValue): string {
 
 const sha256Digest = (content: string | Buffer): SHA256Digest =>
   crypto.createHash('sha256').update(content.toString()).digest('hex');
-
-function resolveHome(path: string): string {
-  if (path[0] === '~') {
-    return pathmod.join(process.env.HOME as string, path.slice(1));
-  } else {
-    return path;
-  }
-}
-
-const normalizePath = (...pathSegments: string[]): string =>
-  pathmod.resolve.apply(pathmod, _.map(pathSegments, (path) => resolveHome(path.trim())));
 
 const _isPlainMap = (node: any): node is object =>
   _.isObject(node) &&
@@ -198,6 +191,7 @@ const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env
 // Import handling
 
 export function parseImportType(location: ImportLocation, baseLocation: ImportLocation): ImportType {
+  // TODO splitting by : will probably cause issues on Windows. Do we care?
   const hasExplicitType = location.indexOf(':') > -1;
   const importType0 = hasExplicitType
     ? location.toLowerCase().split(':')[0].replace('https', 'http')
@@ -257,6 +251,25 @@ const parseDataFromParamStore = (payload: string, formatType?: string): any => {
 
 export type ImportLoader = (location: ImportLocation, baseLocation: ImportLocation) => Promise<ImportData>;
 
+export const filehashLoader = async (location0: ImportLocation, baseLocation: ImportLocation, format: 'hex'|'base64' ='hex') => {
+  let location = location0.split(':')[1];
+  const allowMissingFile: boolean = location.startsWith('?');
+  if (allowMissingFile) {
+    location = location.slice(1).trim();
+  }
+  const resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location);
+  if (!fs.existsSync(resolvedLocation)) {
+    if (allowMissingFile) {
+      return {resolvedLocation, data: 'FILE_MISSING', doc: 'FILE_MISSING'};
+    } else {
+      throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
+    }
+  } else {
+    const data = filehash(resolvedLocation, format);
+    return {resolvedLocation, data, doc: data};
+  }
+};
+
 export const importLoaders: {[key in ImportType]: ImportLoader} = {
 
   file: async (location, baseLocation) => {
@@ -270,21 +283,8 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     }
   },
 
-  filehash: async (location, baseLocation) => {
-    // this assumes local files/dirs TODO validate that
-    const resolvedLocation = normalizePath(pathmod.dirname(baseLocation), location.split(':')[1]);
-    if (!fs.existsSync(resolvedLocation)) {
-      throw new Error(`Invalid location ${resolvedLocation} for filehash in ${baseLocation}`);
-    }
-    const isDir = fs.lstatSync(resolvedLocation).isDirectory();
-    const shasumCommand = 'shasum -p -a 256';
-    const hashCommand = isDir
-      ? `find ${resolvedLocation} -type f -print0 | xargs -0 ${shasumCommand} | ${shasumCommand}`
-      : `${shasumCommand} ${resolvedLocation}`;
-    const result = child_process.spawnSync(hashCommand, [], {shell: true});
-    const data = result.stdout.toString().trim().split(' ')[0];
-    return {resolvedLocation, data, doc: data};
-  },
+  filehash: filehashLoader, // hex
+  "filehash-base64": async (location, baseLocation) => filehashLoader(location, baseLocation, 'base64'),
 
   s3: async (location, baseLocation) => {
     let resolvedLocation: ImportLocation, format: string;
@@ -466,7 +466,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
   return _.merge({importType}, importData);
 }
 
-async function loadImports(
+export async function loadImports(
   doc: ExtendedCfnDoc,
   baseLocation: ImportLocation,
   importsAccum: ImportRecord[],
@@ -685,6 +685,7 @@ function validateTemplateParameter(param: $param, mergedParams: any, name: strin
       case 'AWS::SSM::Parameter::Value<String>':
       case 'AWS::SSM::Parameter::Value<List<String>>':
       case 'AWS::SSM::Parameter::Value<CommaDelimitedList>':
+        // TODO add the rest of the SSM types
         // TODO validate these
         break
       default:
@@ -1000,7 +1001,7 @@ function visit$mergeMap(node: yaml.$mergeMap, path: string, env: Env): AnyButUnd
 
 function visit$concat(node: yaml.$concat, path: string, env: Env): AnyButUndefined[] {
   const error = new Error(`Invalid argument to $concat at "${path}".`
-      + " Must be array of arrays.")
+    + " Must be array of arrays.")
 
   if (!_.isArray(node.data)) {
     throw error;
