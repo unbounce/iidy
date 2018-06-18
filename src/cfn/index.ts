@@ -1079,6 +1079,11 @@ async function isHttpTemplateAccessible(location?: string) {
   }
 }
 
+export async function doesStackExist(StackName: string): Promise<boolean> {
+  const cfn = new aws.CloudFormation();
+  return await cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
+}
+
 abstract class AbstractCloudFormationStackCommand {
   public region: AWSRegion
 
@@ -1276,35 +1281,6 @@ class UpdateStack extends AbstractCloudFormationStackCommand {
   }
 }
 
-class CreateOrUpdateStack extends AbstractCloudFormationStackCommand {
-  stackExists: boolean;
-  showPreviousEvents = false;
-
-  async _setup() {
-    await super._setup();
-    this.stackExists = await this.cfn.describeStacks({StackName: this.stackName}).promise()
-      .return(true).catchReturn(false);
-    if (this.stackExists) {
-      this.cfnOperation = 'UPDATE_STACK';
-      this.expectedFinalStackStatus = ['UPDATE_COMPLETE'];
-      this.previousStackEventsPromise = getAllStackEvents(this.stackName);
-      this.showPreviousEvents = true;
-    } else {
-      this.cfnOperation = 'CREATE_STACK';
-      this.expectedFinalStackStatus = ['CREATE_COMPLETE'];
-      this.showTimesInSummary = false;
-    }
-  }
-
-  async _run() {
-    if (this.stackExists) {
-      return this._runUpdate();
-    } else {
-      return this._runCreate();
-    }
-  }
-}
-
 function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutput) {
   const indent = '   ';
   for (const change of changeSet.Changes || []) {
@@ -1371,7 +1347,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const StackName = createChangeSetInput.StackName;
     createChangeSetInput.Description = this.argv.description;
 
-    const stackExists = await this.cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
+    const stackExists = await doesStackExist(StackName);
     createChangeSetInput.ChangeSetType = stackExists ? 'UPDATE' : 'CREATE';
 
     if (await this._requiresTemplateApproval(createChangeSetInput.TemplateURL)) {
@@ -1474,7 +1450,6 @@ const wrapCommandCtor =
     }
 
 export const createStackMain = wrapCommandCtor(CreateStack);
-export const createOrUpdateStackMain = wrapCommandCtor(CreateOrUpdateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
@@ -1506,10 +1481,54 @@ export async function diffStackTemplates(StackName: string, stackArgs: StackArgs
     diff(yaml.dump(oldTemplate), yaml.dump(newTemplate))
   }
 }
+export async function createOrUpdateStackMain(argv: GenericCLIArguments): Promise<number> {
+  const stackArgs = await loadStackArgs(argv);
+  const StackName = argv.stackName || stackArgs.StackName;
+  const stackExists = await doesStackExist(StackName);
+  if (stackExists) {
+    return updateStackMain(argv, stackArgs);
+  } else if (argv.changeset) {
+    // TODO extract this into a separate createStackMain fn
+    // TODO autodetect AWS::Serverless and default to changeset=true
+    const changeSetRunner = new CreateChangeSet(argv, stackArgs);
+    const createChangesetResult = await changeSetRunner.run();
+    if (createChangesetResult > 0) {
+      return createChangesetResult;
+    } else {
+      console.log()
+      return await confirmChangesetExec(argv, changeSetRunner, stackArgs);
+    }
+  } else {
+    return new CreateStack(argv, stackArgs).run();
+  }
+}
 
-export async function updateStackMain(argv: GenericCLIArguments): Promise<number> {
+async function confirmChangesetExec(argv: GenericCLIArguments, changeSetRunner: CreateChangeSet, stackArgs: StackArgs): Promise<number> {
+  let confirmed: boolean;
+  if (argv.yes) {
+    confirmed = true;
+  } else {
+    const resp = await inquirer.prompt(
+      {
+        name: 'confirm',
+        type: 'confirm', default: false,
+        message: `Do you want to execute this changeset now?`
+      })
+    confirmed = resp.confirm;
+  }
+  if (confirmed) {
+    argv.changesetName = changeSetRunner.changeSetName;
+    return new ExecuteChangeSet(argv, stackArgs).run();
+  } else {
+    console.log(`You can do so later using\n`
+      + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`);
+    return INTERRUPT;
+  }
+}
+
+export async function updateStackMain(argv: GenericCLIArguments, stackArgs?: StackArgs): Promise<number> {
+  stackArgs = stackArgs || await loadStackArgs(argv);
   if (argv.changeset) {
-    const stackArgs = await loadStackArgs(argv);
     const region = getCurrentAWSRegion();
     const StackName = argv.stackName || stackArgs.StackName;
     const stack = await summarizeStackDefinition(StackName, region);
@@ -1532,23 +1551,9 @@ export async function updateStackMain(argv: GenericCLIArguments): Promise<number
       }
     }
     console.log()
-
-    const resp = await inquirer.prompt(
-      {
-        name: 'confirmed',
-        type: 'confirm', default: false,
-        message: `Do you want to execute this changeset now?`
-      })
-    if (resp.confirmed) {
-      argv.changesetName = changeSetRunner.changeSetName;
-      return new ExecuteChangeSet(argv, stackArgs).run();
-    } else {
-      console.log(`You can do so later using\n`
-        + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`);
-      return INTERRUPT;
-    }
+    return await confirmChangesetExec(argv, changeSetRunner, stackArgs);
   } else {
-    return new UpdateStack(argv, await loadStackArgs(argv)).run();
+    return new UpdateStack(argv, stackArgs).run();
   }
 };
 

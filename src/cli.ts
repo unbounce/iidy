@@ -180,6 +180,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'boolean', default: false,
         description: description('review & confirm changes via a changeset')
       })
+      .option('yes', {
+        type: 'boolean', default: false,
+        description: description('Confirm and execute changeset if --changeset option is used')
+      })
       .option('diff', {
         type: 'boolean', default: true,
         description: description('diff & review changes to the template body as part of changeset review')
@@ -196,7 +200,23 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy create-or-update <stack-args.yaml>')
-      .option('stack-name', stackNameOpt),
+      .option('stack-name', stackNameOpt)
+      .option('changeset', {
+        type: 'boolean', default: false,
+        description: description('review & confirm changes via a changeset')
+      })
+      .option('yes', {
+        type: 'boolean', default: false,
+        description: description('Confirm and execute changeset if --changeset option is used')
+      })
+      .option('diff', {
+        type: 'boolean', default: true,
+        description: description('diff & review changes to the template body as part of changeset review')
+      })
+      .option('stack-policy-during-update', {
+        type: 'string', default: null,
+        description: description('override original stack-policy for this update only')
+      }),
     wrapMainHandler(commands.createOrUpdateStackMain))
 
     .command(
@@ -216,7 +236,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('watch', {
         type: 'boolean', default: false,
-        description: 'Watch stack after creating changeset. This is useful when exec-changeset is called by others.'
+        description: description('Watch stack after creating changeset. This is useful when exec-changeset is called by others.')
       })
       .option('watch-inactivity-timeout', {
         type: 'number', default: (60 * 3),
@@ -271,7 +291,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .demandCommand(0, 0)
       .option('role-arn', {
         type: 'string',
-        description: 'Role to assume for delete operation'
+        description: description('Role to assume for delete operation')
       })
       .option('retain-resources', {
         type: 'string',
@@ -280,11 +300,11 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       })
       .option('yes', {
         type: 'boolean', default: false,
-        description: 'Confirm deletion of stack'
+        description: description('Confirm deletion of stack')
       })
       .option('fail-if-absent', {
         type: 'boolean', default: false,
-        description: 'Fail if stack is absent (exit code = 1). Default is to tolerate absence.'
+        description: description('Fail if stack is absent (exit code = 1). Default is to tolerate absence.')
       })
       .usage('Usage: iidy delete-stack <stackname-or-argsfile>'),
     wrapMainHandler(commands.deleteStackMain))
