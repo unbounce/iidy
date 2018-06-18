@@ -1778,9 +1778,13 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
   }
   if (confirmed) {
     const cfn = new aws.CloudFormation();
-    // TODO --client-request-token
     const startTime = await getReliableStartTime();
-    await cfn.deleteStack({StackName, RoleARN: argv.roleArn, RetainResources: argv.retainResources}).promise();
+    await cfn.deleteStack({
+      StackName,
+      RoleARN: argv.roleArn,
+      RetainResources: argv.retainResources,
+      ClientRequestToken: argv.clientRequestToken
+    }).promise();
     await watchStack(StackId, startTime);
     console.log();
     const {StackStatus} = await getStackDescription(StackId);
