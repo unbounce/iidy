@@ -10,6 +10,8 @@ import {Md5} from 'ts-md5/dist/md5';
 import * as request from 'request-promise-native';
 import * as handlebars from 'handlebars';
 
+import * as jmespath from 'jmespath';
+
 import * as dateformat from 'dateformat';
 
 import {Arguments} from 'yargs';
@@ -792,9 +794,8 @@ async function getAllStacks() {
   return stacks;
 }
 
-async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
+async function listStacks(showTags = false, query?: string, tagsFilter?: [string, string][], jmespathFilter?: string) {
   const stacksPromise = getAllStacks();
-  console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
   const spinner = mkSpinner();
   spinner.start();
   const stacks = _.sortBy(await stacksPromise, (st) => def(st.CreationTime, st.LastUpdatedTime));
@@ -807,48 +808,74 @@ async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
   const timePadding = 24;
   const statusPadding = _.max(_.map(stacks, ev => ev.StackStatus.length));
 
-  for (const stack of stacks) {
-    const tags = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
-    if (tagsFilter && !_.every(tagsFilter, ([k, v]) => tags[k] === v)) {
-      // TODO support more advanced tag filters like: not-set, any, or in-set
-      continue;
+  let filteredStacks;
+  if (tagsFilter || jmespathFilter) {
+    const predicates = [];
+    if (tagsFilter) {
+      predicates.push((stack: aws.CloudFormation.Stack) => {
+        // OLD TODO support more advanced tag filters like: not-set, any, or in-set
+        // ^ jmespathfilter can probably handle that
+        const tags = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
+        return _.every(tagsFilter, ([k, v]) => tags[k] === v);
+      })
     }
-    const lifecyle: string | undefined = tags.lifetime;
-    let lifecyleIcon: string = '';
-    if (stack.EnableTerminationProtection || lifecyle === 'protected') {
-      // NOTE stack.EnableTerminationProtection is undefined for the
-      // time-being until an upstream bug is fix by AWS
-      lifecyleIcon = '🔒 ';
-    } else if (lifecyle === 'long') {
-      lifecyleIcon = '∞ ';
-    } else if (lifecyle === 'short') {
-      lifecyleIcon = '♺ ';
+    if (jmespathFilter) {
+      predicates.push((stack: aws.CloudFormation.Stack) => {
+        const jmespathResult = jmespath.search(stack, jmespathFilter);
+        logger.debug(`jmespath filtered: ${stack.StackId} jmespathResult=${jmespathResult}`)
+        return !!jmespathResult;
+      })
     }
-    const baseStackName = stack.StackName.startsWith('StackSet-')
-      ? `${cli.blackBright(stack.StackName)} ${tags.StackSetName || stack.Description || 'Unknown stack set instance'}`
-      : stack.StackName;
-    let stackName: string;
-    if (stack.StackName.includes('production') || tags.environment === 'production') {
-      stackName = cli.red(baseStackName);
-    } else if (stack.StackName.includes('integration') || tags.environment === 'integration') {
-      stackName = cli.xterm(75)(baseStackName);
-    } else if (stack.StackName.includes('development') || tags.environment === 'development') {
-      stackName = cli.xterm(194)(baseStackName);
-    } else {
-      stackName = baseStackName;
-    }
-    process.stdout.write(
-      sprintf('%s %s %s %s\n',
-        formatTimestamp(
-          sprintf(`%${timePadding}s`,
-            renderTimestamp(def(stack.CreationTime, stack.LastUpdatedTime)))),
-        colorizeResourceStatus(stack.StackStatus, statusPadding),
-        cli.blackBright(lifecyleIcon) + stackName,
-        showTags ? cli.blackBright(prettyFormatTags(stack.Tags)) : ''
-      ))
+    filteredStacks = _.filter(stacks, _.overEvery(predicates));
+  } else {
+    filteredStacks = stacks;
+  }
 
-    if (stack.StackStatus.indexOf('FAILED') > -1 && !_.isEmpty(stack.StackStatusReason)) {
-      console.log('  ', cli.blackBright(stack.StackStatusReason))
+  if (query) {
+    // TODO consider adding in .Resources
+    console.log(JSON.stringify(jmespath.search({Stacks: filteredStacks}, query), null, ' '));
+    return;
+  } else {
+    console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
+    for (const stack of filteredStacks) {
+      const tags = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
+      const lifecyle: string | undefined = tags.lifetime;
+      let lifecyleIcon: string = '';
+      if (stack.EnableTerminationProtection || lifecyle === 'protected') {
+        // NOTE stack.EnableTerminationProtection is undefined for the
+        // time-being until an upstream bug is fix by AWS
+        lifecyleIcon = '🔒 ';
+      } else if (lifecyle === 'long') {
+        lifecyleIcon = '∞ ';
+      } else if (lifecyle === 'short') {
+        lifecyleIcon = '♺ ';
+      }
+      const baseStackName = stack.StackName.startsWith('StackSet-')
+        ? `${cli.blackBright(stack.StackName)} ${tags.StackSetName || stack.Description || 'Unknown stack set instance'}`
+        : stack.StackName;
+      let stackName: string;
+      if (stack.StackName.includes('production') || tags.environment === 'production') {
+        stackName = cli.red(baseStackName);
+      } else if (stack.StackName.includes('integration') || tags.environment === 'integration') {
+        stackName = cli.xterm(75)(baseStackName);
+      } else if (stack.StackName.includes('development') || tags.environment === 'development') {
+        stackName = cli.xterm(194)(baseStackName);
+      } else {
+        stackName = baseStackName;
+      }
+      process.stdout.write(
+        sprintf('%s %s %s %s\n',
+          formatTimestamp(
+            sprintf(`%${timePadding}s`,
+              renderTimestamp(def(stack.CreationTime, stack.LastUpdatedTime)))),
+          colorizeResourceStatus(stack.StackStatus, statusPadding),
+          cli.blackBright(lifecyleIcon) + stackName,
+          showTags ? cli.blackBright(prettyFormatTags(stack.Tags)) : ''
+        ))
+
+      if (stack.StackStatus.indexOf('FAILED') > -1 && !_.isEmpty(stack.StackStatusReason)) {
+        console.log('  ', cli.blackBright(stack.StackStatusReason))
+      }
     }
   }
 }
@@ -1589,7 +1616,7 @@ export async function listStacksMain(argv: GenericCLIArguments): Promise<number>
     const [key, ...value] = tf.split('=');
     return [key, value.join('=')] as [string, string];
   });
-  await listStacks(argv.tags, tagsFilter);
+  await listStacks(argv.tags, argv.query, tagsFilter, argv.jmespathFilter);
   return SUCCESS;
 }
 
@@ -1629,19 +1656,26 @@ export async function describeStackMain(argv: GenericCLIArguments): Promise<numb
   const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
   const region = getCurrentAWSRegion();
   const stackPromise = getStackDescription(StackName);
-  await stackPromise; // we wait here in case the stack doesn't exist: better error messages this way.
-  const stackEventsPromise = getAllStackEvents(StackName);
-
-  const stack = await summarizeStackDefinition(StackName, region, true, stackPromise);
-  const StackId = stack.StackId as string;
-  console.log();
-
-  const eventCount = def(50, argv.events);
-  console.log(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`))
-  await showStackEvents(StackName, eventCount, stackEventsPromise);
-  console.log();
-  await summarizeCompletedStackOperation(StackId, stackPromise);
-  return SUCCESS;
+  const stack = await stackPromise; // we wait here in case the stack doesn't exist: better error messages this way.
+  if (argv.query) { //
+    const cfn = new aws.CloudFormation();
+    const {StackResources} = await cfn.describeStackResources({StackName}).promise();
+    const Resources = _.fromPairs(_.map(StackResources, (r) => [r.LogicalResourceId, r]));
+    const combined = _.merge({Resources}, stack);
+    console.log(JSON.stringify(jmespath.search(stack, argv.query), null, ' '));
+    return SUCCESS;
+  } else {
+    const stackEventsPromise = getAllStackEvents(StackName);
+    await summarizeStackDefinition(StackName, region, true, stackPromise);
+    const StackId = stack.StackId as string;
+    console.log();
+    const eventCount = def(50, argv.events);
+    console.log(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`))
+    await showStackEvents(StackName, eventCount, stackEventsPromise);
+    console.log();
+    await summarizeCompletedStackOperation(StackId, stackPromise);
+    return SUCCESS;
+  }
 }
 
 export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<number> {

@@ -269,6 +269,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'number', default: 50,
         description: description('how many stack events to display')
       })
+      .option('query', {
+        type: 'string', default: null,
+        description: description('jmespath search query to select a subset of the output')
+      })
       .usage('Usage: iidy describe-stack <stackname-or-argsfile>'),
     wrapMainHandler(commands.describeStackMain))
 
@@ -348,6 +352,14 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         type: 'string', default: [],
         array: true,
         description: description('Filter by tags: key=value')
+      })
+      .option('jmespath-filter', {
+        type: 'string', default: null,
+        description: description('jmespath search query to select a subset of the stacks')
+      })
+      .option('query', {
+        type: 'string', default: null,
+        description: description('jmespath search query to select a subset of the output')
       })
       .option('tags', {
         type: 'boolean', default: false,
