@@ -36,6 +36,7 @@ import timeout from '../timeout';
 import filehash from '../filehash';
 import normalizePath from '../normalizePath';
 import def from '../default';
+import mkSpinner from '../spinner';
 import {diff} from '../diff';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 
@@ -300,12 +301,7 @@ async function watchStack(StackName: string, startTime: Date, pollInterval = DEF
 
   // TODO add a timeout for super long stacks
   const seen: {[key: string]: boolean} = {};
-  const tty: any = process.stdout; // tslint:disable-line
-  const spinner = ora({
-    spinner: 'dots12',
-    text: '',
-    enabled: _.isNumber(tty.columns)
-  });
+  const spinner = mkSpinner();
   // TODO consider doing: const spinnerStart = new Date()
   // to ensure calcElapsedSeconds is accurate in the face of innacurate local clocks
   const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
@@ -799,13 +795,7 @@ async function getAllStacks() {
 async function listStacks(showTags = false, tagsFilter?: [string, string][]) {
   const stacksPromise = getAllStacks();
   console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`))
-  // TODO dry up the spinner code
-  const tty: any = process.stdout; // tslint:disable-line
-  const spinner = ora({
-    spinner: 'dots12',
-    text: '',
-    enabled: _.isNumber(tty.columns)
-  });
+  const spinner = mkSpinner();
   spinner.start();
   const stacks = _.sortBy(await stacksPromise, (st) => def(st.CreationTime, st.LastUpdatedTime));
   spinner.stop();
@@ -1417,13 +1407,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     const pollInterval = 1;     // seconds
     const startTime = this.startTime;
     const calcElapsedSeconds = (since: Date) => Math.ceil((+(new Date()) - +(since)) / 1000);
-
-    const tty: any = process.stdout; // tslint:disable-line
-    const spinner = ora({
-      spinner: 'dots12',
-      text: '',
-      enabled: _.isNumber(tty.columns)
-    });
+    const spinner = mkSpinner();
 
     while (true) {
       const {Status, StatusReason} = await this.cfn.describeChangeSet({ChangeSetName: this.changeSetName, StackName}).promise();
