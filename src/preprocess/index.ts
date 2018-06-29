@@ -101,6 +101,8 @@ export interface ExtendedCfnDoc extends CfnDoc {
 };
 const extendedCfnDocKeys = ['$imports', '$defs', '$params', '$location', '$envValues'];
 
+// TODO definition of GlobalSections is a bit ugly. Investigate enum
+// alternatives.
 const GlobalSections = {
   Parameters: 'Parameters',
   Metadata: 'Metadata',
@@ -110,6 +112,7 @@ const GlobalSections = {
   Outputs: 'Outputs',
 };
 type GlobalSection = keyof typeof GlobalSections;
+const GlobalSectionNames = _.values(GlobalSections) as GlobalSection[];
 
 export type StackFrame = {location: string, path: string};
 type MaybeStackFrame = {location?: string, path: string};
@@ -251,7 +254,7 @@ const parseDataFromParamStore = (payload: string, formatType?: string): any => {
 
 export type ImportLoader = (location: ImportLocation, baseLocation: ImportLocation) => Promise<ImportData>;
 
-export const filehashLoader = async (location0: ImportLocation, baseLocation: ImportLocation, format: 'hex'|'base64' ='hex') => {
+export const filehashLoader = async (location0: ImportLocation, baseLocation: ImportLocation, format: 'hex' | 'base64' = 'hex') => {
   let location = location0.split(':')[1];
   const allowMissingFile: boolean = location.startsWith('?');
   if (allowMissingFile) {
@@ -578,14 +581,14 @@ function mapCustomResourceToGlobalSections(
   env: Env
 ): void {
 
-  _.forOwn(GlobalSections, (section: GlobalSection) => {
+  _.forEach(GlobalSectionNames, (section: GlobalSection) => {
     if (resourceDoc[section]) {
       const res = _.merge(
         env.GlobalAccumulator[section], // mutate in place
         _.fromPairs(
           // TOOD is this the right place to be visiting the subsections
           _.map(_.toPairs(visitNode(resourceDoc[section], appendPath(path, section), env)),
-            ([k, v]) => {
+            ([k, v]: [string, any]) => {
               const isGlobal = _.has(v, '$global');
               delete v.$global;
               if (isGlobal) {
@@ -766,7 +769,7 @@ function visitCustomResource(name: string, resource: any, path: string, env: Env
   // Could also add a special char prefix individual resource names and global sections to
   // override this name remapping.
   // This ties in with supporting singleton custom resources that should be shared amongst templates
-  return _.map(_.toPairs(outputResources), ([resname, val]) => {
+  return _.map(_.toPairs(outputResources), ([resname, val]: [string, any]) => {
     const isGlobal = _.has(val, '$global');
     delete val.$global;
     if (isGlobal) {
@@ -1181,9 +1184,9 @@ function visitImportedDoc(node: ExtendedCfnDoc, path: string, env: Env): AnyButU
 
   const stackFrame = {location: node.$location, path: path}; // TODO improve for Root, ...
   const subEnv0 = mkSubEnv(env, node.$envValues || {}, {location: node.$location, path: path});
-  const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k, v]) => _.has(v, '$params'));
-  const nonTemplates = _.fromPairs(_.get(nodeTypes, false));
-  const templates = _.fromPairs(_.get(nodeTypes, true));
+  const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k, v]) => `${_.has(v, '$params')}`);
+  const nonTemplates = _.fromPairs(_.get(nodeTypes, 'false'));
+  const templates = _.fromPairs(_.get(nodeTypes, 'true'));
   const processedEnvValues = _.merge({}, visitNode(nonTemplates, path, subEnv0), templates);
   const subEnv = mkSubEnv(env, processedEnvValues, stackFrame);
   return visitMapNode(node, path, subEnv);
@@ -1309,8 +1312,8 @@ export function transformPostImports(
 
     // TODO check for secondary cfn docs, or stack dependencies
 
-    _.forOwn(
-      GlobalSections,
+    _.forEach(
+      GlobalSectionNames,
       (sectionName: GlobalSection) => {
         if (!_.isEmpty(globalAccum[sectionName])) {
           output[sectionName] = _.merge({}, output[sectionName], globalAccum[sectionName]);

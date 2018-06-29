@@ -50,6 +50,8 @@ class DemoRunner {
   constructor(demoscript: string, timescaling = 1) {
     this.demoscript = demoscript;
     this.bashEnv = _.merge({}, process.env);
+    this.bashEnv.PKG_SKIP_EXECPATH_PATCH = 'yes';
+    // ^ workaround for https://github.com/zeit/pkg/issues/376
     this.timescaling = timescaling;
   }
 
