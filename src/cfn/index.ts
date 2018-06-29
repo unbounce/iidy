@@ -813,7 +813,7 @@ async function listStacks(showTags = false, query?: string, tagsFilter?: [string
   const timePadding = 24;
   const statusPadding = _.max(_.map(stacks, ev => ev.StackStatus.length));
 
-  let filteredStacks;
+  let filteredStacks: aws.CloudFormation.Stack[];
   if (tagsFilter || jmespathFilter) {
     const predicates = [];
     if (tagsFilter) {
@@ -831,7 +831,8 @@ async function listStacks(showTags = false, query?: string, tagsFilter?: [string
         return !!jmespathResult;
       })
     }
-    filteredStacks = _.filter(stacks, _.overEvery(predicates));
+    const combinedPredicate: (stack: aws.CloudFormation.Stack) => boolean = _.overEvery(predicates);
+    filteredStacks = _.filter(stacks, combinedPredicate);
   } else {
     filteredStacks = stacks;
   }

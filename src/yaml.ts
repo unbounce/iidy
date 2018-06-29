@@ -81,7 +81,7 @@ addCFNTagType('Ref', 'sequence');
 
 addCFNTagType('Select', 'sequence');
 
-export class Sub extends Tag<string | [string, object]> {}
+export class Sub extends Tag<string | [string, object] | [string]> {}
 customTags.Sub = Sub;
 addCFNTagType('Sub', 'scalar');
 addCFNTagType('Sub', 'sequence');

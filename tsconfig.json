@@ -24,6 +24,7 @@
     /* Strict Type-Checking Options */
     "strict": true,                            /* Enable all strict type-checking options. */
     "noStrictGenericChecks": true, /* for rxjs https://stackoverflow.com/questions/44810195/how-do-i-get-around-this-subject-incorrectly-extends-observable-error-in-types */
+    "strictPropertyInitialization": false,
     // "noImplicitAny": true,                 /* Raise error on expressions and declarations with an implied 'any' type. */
     // "strictNullChecks": true,              /* Enable strict null checks. */
     // "noImplicitThis": true,                /* Raise error on 'this' expressions with an implied 'any' type. */
