@@ -53,6 +53,7 @@ class DemoRunner {
     this.bashEnv.PKG_SKIP_EXECPATH_PATCH = 'yes';
     // ^ workaround for https://github.com/zeit/pkg/issues/376
     this.timescaling = timescaling;
+    this.tmpdir = tmp.dirSync();
   }
 
   async run(): Promise<number> {
@@ -60,7 +61,6 @@ class DemoRunner {
     const script0 = yaml.loadString(fs.readFileSync(demoFile), demoFile);
     const script: any = await transform(script0, demoFile); // tslint:disable-line
     // TODO input validation using tv4 and json schema on ^
-    this.tmpdir = tmp.dirSync();
     try {
       this._unpackFiles(script.files);
       await this._runCommands(_.map(script.demo, normalizeRawCommand));

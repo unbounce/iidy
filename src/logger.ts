@@ -22,7 +22,7 @@ const consoleFormat = printf(info => {
     Symbol.for('timestamp'), 'timestamp',
     Symbol.for('splat')
   ]);
-  const splat = info[Symbol.for('splat')];
+  const splat = info[Symbol.for('splat') as any];
   const splatDisplay = !_.isEmpty(splat)
     ? '\n  ' + splat.map((item: any) => util.inspect(item, inspectArgs)).join(' ')
     : '';
