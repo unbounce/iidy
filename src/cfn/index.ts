@@ -530,17 +530,11 @@ function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: object):
       console.log(cli.blackBright(command))
     }
 
-    const spawnOptions = {
-      cwd,
-      shell: fs.existsSync('/bin/bash') ? '/bin/bash' : true, // TODO should we fail here if no bash?
-      // TODO color stderr
-      stdio: [0, 1, 2],
-      // TODO extract definition of iidy_s3_upload to somewhere else
-      env: _.merge(
-        {
-          'BASH_FUNC_iidy_filehash%%': `() {   shasum -p -a 256 "$1" | cut -f 1 -d ' '; }`,
-          'BASH_FUNC_iidy_filehash_base64%%': `() { shasum -p -a 256 "$1" | cut -f 1 -d ' ' | xxd -r -p | base64; }`,
-          'BASH_FUNC_iidy_s3_upload%%': `() {
+    const shellEnv = _.merge(
+      {
+        'BASH_FUNC_iidy_filehash%%': `() {   shasum -p -a 256 "$1" | cut -f 1 -d ' '; }`,
+        'BASH_FUNC_iidy_filehash_base64%%': `() { shasum -p -a 256 "$1" | cut -f 1 -d ' ' | xxd -r -p | base64; }`,
+        'BASH_FUNC_iidy_s3_upload%%': `() {
   echo '>> NOTE: iidy_s3_upload is an experimental addition to iidy. It might be removed in future versions.'
   FILE=$1
   BUCKET=$2
@@ -549,12 +543,23 @@ function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: object):
         aws --profile "$iidy_profile" --region "$iidy_region" s3 cp "$FILE" "s3://$BUCKET/$S3_KEY";
 
  }`,
-          // flatten out the environment to pass through
-          'iidy_profile': _.get(handleBarsEnv, 'iidy.profile'),
-          'iidy_region': _.get(handleBarsEnv, 'iidy.region'),
-          'iidy_environment': _.get(handleBarsEnv, 'iidy.environment')
-        },
-        process.env)
+        // flatten out the environment to pass through
+        'iidy_profile': _.get(handleBarsEnv, 'iidy.profile'),
+        'iidy_region': _.get(handleBarsEnv, 'iidy.region'),
+        'iidy_environment': _.get(handleBarsEnv, 'iidy.environment')
+      },
+      process.env);
+
+    shellEnv.PKG_SKIP_EXECPATH_PATCH = 'yes';
+    // ^ workaround for https://github.com/zeit/pkg/issues/376
+
+    const spawnOptions = {
+      cwd,
+      shell: fs.existsSync('/bin/bash') ? '/bin/bash' : true, // TODO should we fail here if no bash?
+      // TODO color stderr
+      stdio: [0, 1, 2],
+      // TODO extract definition of iidy_s3_upload to somewhere else
+      env: shellEnv
     };
     console.log('--', `Command ${index + 1} Output`, '-'.repeat(25));
     const result = child_process.spawnSync(expandedCommand, [], spawnOptions);
@@ -1189,9 +1194,10 @@ abstract class AbstractCloudFormationStackCommand {
     if (!_.isEmpty(this.profile)) {
       printSectionEntry('Profile:', cli.magenta(this.profile));
     }
+
     printSectionEntry(
       'CLI Arguments:',
-      cli.blackBright(prettyFormatSmallMap(_.pick(this.argv, ['region', 'profile', 'argsfile']))));
+      cli.blackBright(prettyFormatSmallMap(_.pick(this.argv, ['region', 'profile', 'argsfile']) as any)));
 
     printSectionEntry('IAM Service Role:', cli.blackBright(def('None', roleARN)));
 
@@ -1405,7 +1411,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     this.hasChanges = !_.isEmpty(changeSet.Changes);
 
     if (changeSet.Status === 'FAILED') {
-      logger.error(changeSet.StatusReason as string, 'Deleting failed changeset.');
+      logger.error(`${changeSet.StatusReason as string} Deleting failed changeset.`);
       await this.cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
       return FAILURE;
     }
