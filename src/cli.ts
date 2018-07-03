@@ -471,13 +471,17 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .option('profile', {
       type: 'string', default: null,
       group: 'AWS Options:',
-      description: description('AWS profile. Can also be set via --environment & stack-args.yaml:Profile.')
+      description: description(
+        'AWS profile. Can also be set via --environment & stack-args.yaml:Profile. '
+        + 'Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env vars.')
     })
     .option('assume-role-arn', {
       type: 'string', default: null,
       group: 'AWS Options:',
       description: description(
-        'AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile')
+        'AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. '
+          + 'This is mutually exclusive with --profile. '
+          + 'Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars.')
     })
 
     .option('debug', {
