@@ -43,7 +43,16 @@ async function resolveCredentials(profile?: string, assumeRoleArn?: string) {
     aws.config.credentials = tempCreds;
   } else {
     // note, profile might be undefined here and that's fine.
-    aws.config.credentials = await getCredentialsProviderChain(profile).resolvePromise();
+    aws.config.credentials = await getCredentialsProviderChain(profile)
+      .resolvePromise()
+      //.timeout(10500) // consider doing this as ETIMEDOUT takes a long time
+      .catch((e) => {
+        if (e.code === 'ETIMEDOUT' || e.code === 'ECONNREFUSED') {
+          throw new Error("iidy can't find any local AWS credentials or connect to the AWS metadata service (169.254.169.254)");
+        } else {
+          throw e;
+        }
+      });
     // TODO optionally cache the credentials here
   }
 }
