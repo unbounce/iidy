@@ -22,7 +22,7 @@ import {AWSRegion} from './aws-regions';
 
 function getCredentialsProviderChain(profile?: string) {
   const hasDotAWS = (awsUserDir && fs.existsSync(awsUserDir));
-  if (profile) {
+  if (profile && ! _.includes(['no-profile', 'noprofile'], profile)) {
     if (profile.startsWith('arn:')) {
       throw new Error('profile was set to a role ARN. Use AssumeRoleArn instead');
     }
@@ -36,7 +36,7 @@ function getCredentialsProviderChain(profile?: string) {
 }
 
 async function resolveCredentials(profile?: string, assumeRoleArn?: string) {
-  if (assumeRoleArn) {
+  if (assumeRoleArn && ! _.includes(['no-role', 'norole'], assumeRoleArn)) {
     const masterCreds = await getCredentialsProviderChain(profile).resolvePromise();
     const tempCreds = new aws.TemporaryCredentials({RoleArn: assumeRoleArn, RoleSessionName: 'iidy'}, masterCreds);
     await tempCreds.getPromise();
