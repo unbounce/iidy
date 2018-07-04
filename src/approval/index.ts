@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import * as cli from 'cli-color';
 import * as path from 'path';
 import * as url from 'url';
-import * as inquirer from 'inquirer';
 
 import {Arguments} from 'yargs';
 
@@ -14,6 +13,7 @@ import {logger} from '../logger';
 import {diff} from '../diff';
 import {GlobalArguments} from '../cli';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
+import confirmationPrompt from '../confirmationPrompt';
 
 export type RequestArguments = GlobalArguments & {
   argsfile: string;
@@ -100,14 +100,8 @@ export async function review(argv: ReviewArguments): Promise<number> {
         500
       );
 
-      const resp = await inquirer.prompt(
-        {
-          name: 'confirmed',
-          type: 'confirm', default: false,
-          message: `Would you like to approve these changes?`
-        });
-
-      if (resp.confirmed) {
+      const confirmed = await confirmationPrompt('Would you like to approve these changes?');
+      if (confirmed) {
         // create a new pending file
         await s3.putObject({
           Body: pendingTemplate,

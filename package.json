@@ -52,7 +52,7 @@
     "@types/dateformat": "^1.0.1",
     "@types/escape-string-regexp": "0.0.32",
     "@types/handlebars": "^4.0.38",
-    "@types/inquirer": "0.0.36",
+    "@types/inquirer": "0.0.42",
     "@types/jmespath": "^0.15.0",
     "@types/js-yaml": "^3.11.1",
     "@types/lodash": "^4.14.110",

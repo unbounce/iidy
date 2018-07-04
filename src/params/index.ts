@@ -1,6 +1,5 @@
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
-import * as inquirer from 'inquirer';
 
 import * as jsyaml from 'js-yaml';
 
@@ -14,6 +13,7 @@ import def from '../default';
 import paginateAwsCall from '../paginateAwsCall';
 import {Dictionary} from 'lodash';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
+import confirmationPrompt from '../confirmationPrompt';
 
 const MESSAGE_TAG = 'iidy:message';
 
@@ -112,14 +112,8 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
       console.log('');
     }
 
-    const resp = await inquirer.prompt({
-      name: 'confirmed',
-      type: 'confirm',
-      default: false,
-      message: 'Would you like to approve these changes?'
-    });
-
-    if (resp.confirmed) {
+    const confirmed = await confirmationPrompt('Would you like to approve these changes?');
+    if (confirmed) {
       await ssm.putParameter({Name, Value, Type, KeyId, Overwrite}).promise();
       await ssm.deleteParameter({Name: pendingName}).promise();
 

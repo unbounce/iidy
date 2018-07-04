@@ -21,7 +21,6 @@ import {sprintf} from 'sprintf-js';
 import * as cli from 'cli-color';
 import * as wrapAnsi from 'wrap-ansi';
 import * as ora from 'ora';
-import * as inquirer from 'inquirer';
 import * as nameGenerator from 'project-name-generator';
 
 let getStrippedLength: (s: string) => number;
@@ -40,6 +39,7 @@ import normalizePath from '../normalizePath';
 import def from '../default';
 import mkSpinner from '../spinner';
 import {diff} from '../diff';
+import confirmationPrompt from '../confirmationPrompt';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 
 import {
@@ -1553,13 +1553,7 @@ async function confirmChangesetExec(argv: GenericCLIArguments, changeSetRunner: 
   if (argv.yes) {
     confirmed = true;
   } else {
-    const resp = await inquirer.prompt(
-      {
-        name: 'confirm',
-        type: 'confirm', default: false,
-        message: `Do you want to execute this changeset now?`
-      })
-    confirmed = resp.confirm;
+    confirmed = await confirmationPrompt('Do you want to execute this changeset now?');
   }
   if (confirmed) {
     argv.changesetName = changeSetRunner.changeSetName;
@@ -1793,13 +1787,7 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
   if (argv.yes) {
     confirmed = true;
   } else {
-    const resp = await inquirer.prompt(
-      {
-        name: 'confirm',
-        type: 'confirm', default: false,
-        message: `Are you sure you want to DELETE the stack ${StackName}?`
-      })
-    confirmed = resp.confirm;
+    confirmed = await confirmationPrompt(`Are you sure you want to DELETE the stack ${StackName}?`);
   }
   if (confirmed) {
     const cfn = new aws.CloudFormation();
