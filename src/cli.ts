@@ -149,6 +149,10 @@ const stackNameOpt: yargs.Options = {
   description: description('override the StackName from <argsfile>')
 };
 
+const fakeCommandSeparator = `\b\b\b\b\b     ${cli.black('...')}`;
+// ^ the \b's are ansi backspace control chars to delete 'iidy' from
+// help output on these fake commands. This allows us to visually
+// separate the iidy help output into sets of commands.
 
 export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler) {
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
@@ -227,7 +231,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.estimateCost))
 
-    .command('\t', '') // fake command to add a line-break to the help output
+    .command(fakeCommandSeparator, '')
 
     .command(
     'create-changeset           <argsfile> [changesetName]',
@@ -257,8 +261,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       .option('stack-name', stackNameOpt),
     wrapMainHandler(commands.executeChangesetMain))
 
-    .command('\t', '') // fake command to add a line-break to the help output
-
+    .command(fakeCommandSeparator, '')
 
     .command(
     'describe-stack      <stackname>',
@@ -367,19 +370,19 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       }),
     wrapMainHandler(commands.listStacksMain))
 
-    .command('\t', '') // fake command to add a line-break to the help output
+    .command(fakeCommandSeparator, '')
 
     .command('param',
     description('sub commands for working with AWS SSM Parameter Store'),
     buildParamCommands)
 
-    .command('\t', '') // fake command to add a line-break to the help output
+    .command(fakeCommandSeparator, '')
 
     .command('template-approval',
     description('sub commands for template approval'),
     buildApprovalCommands)
 
-    .command('\t', '') // fake command to add a line-break to the help output
+    .command(fakeCommandSeparator, '')
 
     .command(
     'render <template>',
@@ -488,7 +491,7 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
       type: 'boolean', default: false,
       description: description('log debug information to stderr.')
     })
-    .command('\t', '') // fake command to add a line-break to the help output
+    .command(fakeCommandSeparator, '')
 
     .demandCommand(1)
     .usage(usage)
