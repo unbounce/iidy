@@ -1,5 +1,6 @@
 import * as process from 'process';
 
+import * as inquirer from 'inquirer';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -29,7 +30,20 @@ function getCredentialsProviderChain(profile?: string) {
     if (!hasDotAWS) {
       throw new Error('AWS profile provided but ~/.aws/{config,credentials} not found.');
     }
-    return new aws.CredentialProviderChain([() => new aws.SharedIniFileCredentials({profile})]);
+    const tokenCodeFn = (serial: string, cb: (err?: string, token?: string) => void) => {
+      const resp = inquirer.prompt<{token: string}>(
+        {
+          name: 'token',
+          type: 'input',
+          default: '',
+          message: `MFA token for ${serial}:`
+        }).then((r) => {
+          cb(undefined, r.token);
+        }).catch((e) => {
+          cb(e);
+        });
+    };
+    return new aws.CredentialProviderChain([() => new aws.SharedIniFileCredentials({profile, tokenCodeFn})]);
   } else {
     return new aws.CredentialProviderChain();
   }
