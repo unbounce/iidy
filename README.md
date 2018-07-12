@@ -207,6 +207,11 @@ options shown above, b) `Region` or `Profile` settings in
 will also need the correct level of IAM permissions for `iidy` to
 perform CloudFormation API calls.
 
+When the assumed profile requires an MFA, iidy will prompt for the one-time password.
+```
+? MFA token for arn:aws:iam::002682819933:mfa/example.user: ()
+```
+
 Additionally, the [YAML pre-processing](#yaml-pre-processing)
 `$imports` that pull data from AWS (`cfn`, `s3`, `ssm`, and
 `ssm-path`) depend on `iidy` being wired to the correct AWS user /
