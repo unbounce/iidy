@@ -62,8 +62,8 @@ brew install iidy
 ### Binary Installation on Other Platforms
 ```Shell
 # Grab the appropriate binary from the releases page.
-wget https://github.com/unbounce/iidy/releases/download/v1.6.5/iidy-linux-amd64.zip
-# or wget https://github.com/unbounce/iidy/releases/download/v1.6.5/iidy-macos-amd64.zip
+wget https://github.com/unbounce/iidy/releases/download/v1.6.6-rc1/iidy-linux-amd64.zip
+# or wget https://github.com/unbounce/iidy/releases/download/v1.6.6-rc1/iidy-macos-amd64.zip
 unzip iidy*.zip
 chmod +x iidy
 mv iidy /usr/local/bin/   # or somewhere more appropriate
@@ -90,39 +90,48 @@ $ iidy help
 iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
 Commands:
-  create-stack  <argsfile>                               create a cfn stack based on stack-args.yaml
-  update-stack  <argsfile>                               update a cfn stack based on stack-args.yaml
-  estimate-cost <argsfile>                               estimate aws costs based on stack-args.yaml
+  iidy create-stack     <argsfile>                            create a cfn stack based on stack-args.yaml
+  iidy update-stack     <argsfile>                            update a cfn stack based on stack-args.yaml
+  iidy create-or-update <argsfile>                            create or update a cfn stack based on stack-args.yaml
+  iidy estimate-cost    <argsfile>                            estimate aws costs based on stack-args.yaml
 
-  create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
-  exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
+  iidy create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
+  iidy exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
+  
+  iidy describe-stack      <stackname>                        describe a stack
+  iidy watch-stack         <stackname>                        watch a stack that is already being created or updated
+  iidy delete-stack        <stackname>                        delete a stack (after confirmation)
+  iidy get-stack-template  <stackname>                        download the template of a live stack
+  iidy get-stack-instances <stackname>                        list the ec2 instances of a live stack
+  iidy list-stacks                                            list all stacks within a region
 
-  describe-stack      <stackname>                        describe a stack
-  watch-stack         <stackname>                        watch a stack that is already being created or updated
-  delete-stack        <stackname>                        delete a stack (after confirmation)
-  get-stack-template  <stackname>                        download the template of a live stack
-  get-stack-instances <stackname>                        list the ec2 instances of a live stack
-  list-stacks                                            list all stacks within a region
+  iidy param                                                  sub commands for working with AWS SSM Parameter Store
 
-  param                                                  sub commands for working with AWS SSM Parameter Store
+  iidy template-approval                                      sub commands for template approval
 
-  render <template>                                      pre-process and render YAML template
-  demo   <demoscript>                                    run a demo script
-  convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
-  init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
+  iidy render <template>                                      pre-process and render yaml template
+  iidy demo   <demoscript>                                    run a demo script
+  iidy convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
+  iidy init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
 
-  completion                                             generate bash completion script. To use: "source <(iidy completion)"
+  iidy completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
-AWS Options
-  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.
+AWS Options:
+  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries. 
   --region                AWS region. Can also be set via --environment & stack-args.yaml:Region.
-  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile.
+  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile. Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env vars. 
+  --assume-role-arn       AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile. Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars. 
 
 Options:
   --environment, -e  used to load environment based settings: AWS Profile, Region, etc.
   --debug            log debug information to stderr.
-  -v, --version      show version information
-  -h, --help         show help
+  -v, --version      show version information 
+  -h, --help         show help 
+
+Status Codes:
+  Success (0)       Command successfully completed
+  Error (1)         An error was encountered while executing command
+  Cancelled (130)   User responded 'No' to iidy prompt or interrupt (CTRL-C) was received
 ```
 
 ### The `argsfile` (aka `stack-args.yaml`)
@@ -191,16 +200,25 @@ CommandsBefore:
 ### AWS IAM Settings
 
 `iidy` supports loading AWS IAM credentials/profiles from a) the cli
-options shown above, b) `Region` or `Profile` settings in
-`stack-args.yaml`, or c) the standard AWS environment variables. You
-will also need the correct level of IAM permissions for `iidy` to
-perform CloudFormation API calls.
+options shown above, b) `Region` and `Profile` or `AssumeRoleArn`
+settings in `stack-args.yaml`, or c) the standard AWS environment
+variables. You will also need the correct level of IAM permissions for
+`iidy` to perform CloudFormation API calls.
 
 Additionally, the [YAML pre-processing](#yaml-pre-processing)
 `$imports` that pull data from AWS (`cfn`, `s3`, `ssm`, and
 `ssm-path`) depend on `iidy` being wired to the correct AWS user /
 role and region. You will also need the correct level of IAM
 permissions for `iidy` to make the API calls these `$imports` rely on.
+
+If your profile requires an MFA token, iidy will prompt for it.
+```
+? MFA token for arn:aws:iam::002682819933:mfa/example.user: ____
+```
+
+If you've assumed a profile prior to running `iidy` and want to it to
+ignore what's specified in `stack-args.yaml` and instead use `AWS_*`
+environment variables, set the cli option `--profile no-profile`.
 
 ### Listing and Describing Live Stacks
 
@@ -631,6 +649,8 @@ before submitting a PR.
 MIT.
 
 ## Changelog
+* [v1.6.6-rc1](https://github.com/unbounce/iidy/releases/tag/v1.6.6-rc1)
+
 * [v1.6.5](https://github.com/unbounce/iidy/releases/tag/v1.6.5)
 
 * [v1.6.4](https://github.com/unbounce/iidy/releases/tag/v1.6.4)
@@ -640,7 +660,6 @@ MIT.
 * [v1.6.2](https://github.com/unbounce/iidy/releases/tag/v1.6.2)
 
 * [v1.6.1](https://github.com/unbounce/iidy/releases/tag/v1.6.1)
-  - fix bug with `iidy param` commands (#50)
 
 * [v1.6.0-rc7](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc7)
   - add `iidy template-approval` commands (#43)
@@ -699,7 +718,7 @@ MIT.
   - Initial Release -- August 1, 2017
 
 
-## Release
+## Preparing a Release
 
 - Update `version` in `package.json`
 - Run `npm install`
@@ -717,4 +736,4 @@ In priority order:
 
 * More examples and documentation.
 
-* Unit tests of the pre-processor code. Our current coverage is minimal.
+* More unit tests of the pre-processor code.
