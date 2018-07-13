@@ -90,39 +90,50 @@ $ iidy help
 iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
 Commands:
-  create-stack  <argsfile>                               create a cfn stack based on stack-args.yaml
-  update-stack  <argsfile>                               update a cfn stack based on stack-args.yaml
-  estimate-cost <argsfile>                               estimate aws costs based on stack-args.yaml
+  iidy create-stack     <argsfile>                            create a cfn stack based on stack-args.yaml
+  iidy update-stack     <argsfile>                            update a cfn stack based on stack-args.yaml
+  iidy create-or-update <argsfile>                            create or update a cfn stack based on stack-args.yaml
+  iidy estimate-cost    <argsfile>                            estimate aws costs based on stack-args.yaml
+       ...
+  iidy create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
+  iidy exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
+       ...
+  iidy describe-stack      <stackname>                        describe a stack
+  iidy watch-stack         <stackname>                        watch a stack that is already being created or updated
+  iidy delete-stack        <stackname>                        delete a stack (after confirmation)
+  iidy get-stack-template  <stackname>                        download the template of a live stack
+  iidy get-stack-instances <stackname>                        list the ec2 instances of a live stack
+  iidy list-stacks                                            list all stacks within a region
+       ...
+  iidy param                                                  sub commands for working with AWS SSM Parameter Store
+       ...
+  iidy template-approval                                      sub commands for template approval
+       ...
+  iidy render <template>                                      pre-process and render yaml template
+  iidy demo   <demoscript>                                    run a demo script
+  iidy convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
+  iidy init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
+       ...
+  iidy completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
-  create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
-  exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
-
-  describe-stack      <stackname>                        describe a stack
-  watch-stack         <stackname>                        watch a stack that is already being created or updated
-  delete-stack        <stackname>                        delete a stack (after confirmation)
-  get-stack-template  <stackname>                        download the template of a live stack
-  get-stack-instances <stackname>                        list the ec2 instances of a live stack
-  list-stacks                                            list all stacks within a region
-
-  param                                                  sub commands for working with AWS SSM Parameter Store
-
-  render <template>                                      pre-process and render YAML template
-  demo   <demoscript>                                    run a demo script
-  convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
-  init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
-
-  completion                                             generate bash completion script. To use: "source <(iidy completion)"
-
-AWS Options
-  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.
-  --region                AWS region. Can also be set via --environment & stack-args.yaml:Region.
-  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile.
+AWS Options:
+  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.                                    [string] [default: null]
+  --region                AWS region. Can also be set via --environment & stack-args.yaml:Region.                                                            [string] [default: null]
+  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile. Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env
+                          vars.                                                                                                                              [string] [default: null]
+  --assume-role-arn       AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile. Use --assume-role-arn=no-role to
+                          override values in stack-args.yaml and use AWS_* env vars.                                                                         [string] [default: null]
 
 Options:
-  --environment, -e  used to load environment based settings: AWS Profile, Region, etc.
-  --debug            log debug information to stderr.
-  -v, --version      show version information
-  -h, --help         show help
+  --environment, -e  used to load environment based settings: AWS Profile, Region, etc.                                                             [string] [default: "development"]
+  --debug            log debug information to stderr.                                                                                                      [boolean] [default: false]
+  -v, --version      show version information                                                                                                                               [boolean]
+  -h, --help         show help                                                                                                                                              [boolean]
+
+Status Codes:
+  Success (0)       Command successfully completed
+  Error (1)         An error was encountered while executing command
+  Cancelled (130)   User responded 'No' to iidy prompt or interrupt (CTRL-C) was received
 ```
 
 ### The `argsfile` (aka `stack-args.yaml`)
@@ -195,6 +206,11 @@ options shown above, b) `Region` or `Profile` settings in
 `stack-args.yaml`, or c) the standard AWS environment variables. You
 will also need the correct level of IAM permissions for `iidy` to
 perform CloudFormation API calls.
+
+When the assumed profile requires an MFA, iidy will prompt for the one-time password.
+```
+? MFA token for arn:aws:iam::002682819933:mfa/example.user: ()
+```
 
 Additionally, the [YAML pre-processing](#yaml-pre-processing)
 `$imports` that pull data from AWS (`cfn`, `s3`, `ssm`, and
