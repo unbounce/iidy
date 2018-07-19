@@ -22,7 +22,7 @@
     "npm": ">=4.0"
   },
   "dependencies": {
-    "aws-sdk": "github:unbounce/aws-sdk-js#e6a1b24910e9182bb2e03c111d71b4c95198149b",
+    "aws-sdk": "^2.277.1",
     "bluebird": "^3.5.1",
     "cli-color": "^1.2.0",
     "dateformat": "^3.0.3",
