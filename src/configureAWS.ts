@@ -30,7 +30,7 @@ function getCredentialsProviderChain(profile?: string) {
     if (!hasDotAWS) {
       throw new Error('AWS profile provided but ~/.aws/{config,credentials} not found.');
     }
-    const tokenCodeFn = (serial: string, cb: (err?: string, token?: string) => void) => {
+    const tokenCodeFn = (serial: string, cb: (err?: Error, token?: string) => void) => {
       const resp = inquirer.prompt<{token: string}>(
         {
           name: 'token',
