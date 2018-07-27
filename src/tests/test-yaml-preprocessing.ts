@@ -210,6 +210,23 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
 
 
+    it('octal-like strings', async () => {
+
+      expect(yaml.dump(await transform({$defs: {a: '008'}, a: '{{a}}'})))
+        .to.equal("a: '008'\n");
+
+      expect(yaml.dump(await transform({$defs: {a: '008'}, a: 'a{{a}}a'})))
+        .to.equal("a: a008a\n");
+
+      expect(yaml.dump(await transform({$defs: {a: '008'}, a: '{{a}}a'})))
+        .to.equal("a: 008a\n");
+
+      expect(yaml.dump(await transform({$defs: {a: '008'}, a: 'a{{a}}'})))
+        .to.equal("a: a008\n");
+
+    });
+
+
     it('used in map keys', async () => {
 
       expect(await transform({$defs: {a: 'b'}, out: {'{{a}}': 1}}))
