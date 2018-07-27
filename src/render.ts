@@ -32,8 +32,14 @@ export type RenderArguments = GlobalArguments & Arguments & {
 
 export async function renderMain(argv: RenderArguments): Promise<number> {
   await configureAWS(argv);
-  const rootDocLocation = pathmod.resolve(argv.template);
-  const content = fs.readFileSync(rootDocLocation);
+
+  // Read from STDIN (0) if the template is `-`
+  // For some reason, yargs converts the `-` to `true`
+  const isStdin = typeof argv.template === 'boolean' && argv.template === true;
+  const rootDocLocation = pathmod.resolve(isStdin ? '-' : argv.template);
+  const file = isStdin ? 0 : rootDocLocation;
+
+  const content = fs.readFileSync(file);
   const input = yaml.loadString(content, rootDocLocation);
 
   let outputDoc: any;
