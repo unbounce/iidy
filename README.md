@@ -632,6 +632,16 @@ iidy convert-stack-to-iidy my-cloudformation-stack-1 ./infrastructure
 # * cfn-template.yaml
 ```
 
+### `iidy` Environment Variables
+
+Any parameter used by iidy can be set using IIDY_{{argname}}
+
+An example of this would be chaning the default environment from development to production.
+
+```
+export IIDY_ENVIRONMENT=production
+```
+
 ## Examples
 See the examples/ directory.
 
