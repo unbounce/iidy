@@ -7,7 +7,7 @@ import {search} from 'jmespath';
 
 import configureAWS from './configureAWS';
 import * as yaml from './yaml';
-import {transform} from './preprocess';
+import {ExtendedCfnDoc, transform} from './preprocess';
 import {_loadStackArgs} from './cfn';
 import {logger} from './logger';
 import getCurrentAWSRegion from './getCurrentAWSRegion';
@@ -40,39 +40,72 @@ export async function renderMain(argv: RenderArguments): Promise<number> {
   const file = isStdin ? 0 : rootDocLocation;
 
   const content = fs.readFileSync(file);
-  const input = yaml.loadString(content, rootDocLocation);
+  const documents = yaml.loadStringAll(content, rootDocLocation);
 
-  let outputDoc: any;
-  if (isStackArgsFile(rootDocLocation, input)) {
-    // TODO remove the cast to any below after tightening the args on _loadStackArgs
-    outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
-  } else {
-    // injection of iidy env is handled by _loadStackArgs in the if branch above
-    input.$envValues = _.merge({}, input.$envValues, {
-      iidy: {
-        command: argv._.join(' '),
-        environment: argv.environment,
-        region: getCurrentAWSRegion()
-        // NOTE: missing profile which is present in stackArgs rendering
+  try {
+    const output = await render(rootDocLocation, documents, argv);
+    writeOutput(output, argv);
+  } catch(e) {
+    logger.error(e);
+    return FAILURE;
+  }
+
+  return SUCCESS;
+}
+
+export async function render(rootDocLocation: string, documents: ExtendedCfnDoc[], argv: RenderArguments) {
+  const multiDocument = documents.length > 1;
+  const output = [];
+
+  for(const input of documents) {
+    let outputDoc: any;
+    if (isStackArgsFile(rootDocLocation, input)) {
+      // TODO remove the cast to any below after tightening the args on _loadStackArgs
+      outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
+    } else {
+      // injection of iidy env is handled by _loadStackArgs in the if branch above
+      input.$envValues = _.merge({}, input.$envValues, {
+        iidy: {
+          command: argv._.join(' '),
+          environment: argv.environment,
+          region: getCurrentAWSRegion()
+          // NOTE: missing profile which is present in stackArgs rendering
+        }
+      });
+      outputDoc = await transform(input, rootDocLocation);
+    }
+    if (argv.query) {
+      outputDoc = search(outputDoc, argv.query);
+    }
+
+    if (argv.format === 'yaml') {
+      if (multiDocument) {
+        output.push('---');
       }
-    });
-    outputDoc = await transform(input, rootDocLocation);
-  }
-  if (argv.query) {
-    outputDoc = search(outputDoc, argv.query);
-  }
-  const outputString = argv.format === 'yaml' ? yaml.dump(outputDoc) : JSON.stringify(outputDoc, null, ' ');
+
+      output.push(yaml.dump(outputDoc))
+    } else {
+      output.push(JSON.stringify(outputDoc, null, ' '));
+    }
+
+  };
+
+  return output.join('\n');
+};
+
+function writeOutput(output: string, argv: RenderArguments) {
+  let outputStream: NodeJS.WritableStream;
+
   if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
-    console.log(outputString);
+    outputStream = process.stdout;
   } else if (_.includes(['/dev/stderr', 'stderr'], argv.outfile)) {
-    process.stderr.write(outputString);
-    process.stderr.write('\n');
+    outputStream = process.stderr;
   } else {
     if (fs.existsSync(argv.outfile) && !argv.overwrite) {
-      logger.error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
-      return FAILURE;
+      throw new Error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
     }
-    fs.writeFileSync(argv.outfile, outputString);
+    outputStream = fs.createWriteStream(argv.outfile);
   }
-  return SUCCESS;
-};
+
+  outputStream.write(output);
+}
