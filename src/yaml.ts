@@ -194,6 +194,9 @@ const schema = jsyaml.Schema.create(schemaTypes);
 export const loadString = (content: string | Buffer, filename: string): any =>
   jsyaml.safeLoad(content.toString(), {schema: schema, filename: filename});
 
+export const loadStringAll = (content: string | Buffer, filename: string): any =>
+  jsyaml.loadAll(content.toString(), undefined, {schema: schema, filename: filename});
+
 export const dump = (doc: object): string =>
   jsyaml.safeDump(doc, {schema: schema, lineWidth: 999})
     .replace(/!<!([^>]+?)>/g, '!$1')
