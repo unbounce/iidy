@@ -914,7 +914,6 @@ export async function loadStackArgs(argv: GenericCLIArguments): Promise<StackArg
 
 //export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
 export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments): Promise<StackArgs> {
-  const region: string | undefined = argv.region;
   const profile: string | undefined = argv.profile;
   const assumeRoleArn: string | undefined = argv.assumeRoleArn;
   const environment: string | undefined = argv.environment;
@@ -950,6 +949,11 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
   const cliOptionOverrides = _.pickBy(argv, (v: any, k: string) => !_.isEmpty(v) && _.includes(['region', 'profile', 'assumeRoleArn'], k));
   const argsfileSettings = {profile: argsdata.Profile, assumeRoleArn: argsdata.AssumeRoleARN, region: argsdata.Region};
   const mergedAWSSettings = _.merge(argsfileSettings, cliOptionOverrides);
+
+  logger.debug(`loadStackArgs cliOptionOverrides`, cliOptionOverrides);
+  logger.debug(`loadStackArgs argsfileSettings`, argsfileSettings);
+  logger.debug(`loadStackArgs mergedAWSSettings`, mergedAWSSettings);
+
   await configureAWS(mergedAWSSettings); // cliOptionOverrides trump argsfile
 
   if (environment) {
@@ -1164,7 +1168,6 @@ abstract class AbstractCloudFormationStackCommand {
 
   async _setup() {
     const regionArg = this.argv.region || this.stackArgs.Region;
-    await configureAWS(_.merge({}, this, {region: regionArg}));
     this.region = def(getCurrentAWSRegion(), regionArg);
     this.cfn = new aws.CloudFormation()
     if (this.showPreviousEvents) {
