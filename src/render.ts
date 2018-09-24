@@ -36,14 +36,26 @@ export async function renderMain(argv: RenderArguments): Promise<number> {
   // Read from STDIN (0) if the template is `-`
   // For some reason, yargs converts the `-` to `true`
   const isStdin = typeof argv.template === 'boolean' && argv.template === true;
-  const rootDocLocation = pathmod.resolve(isStdin ? '-' : argv.template);
-  const file = isStdin ? 0 : rootDocLocation;
-
-  const content = fs.readFileSync(file);
-  const documents = yaml.loadStringAll(content, rootDocLocation);
+  const templatePath = pathmod.resolve(isStdin ? '-' : argv.template);
+  const file = isStdin ? 0 : templatePath;
+  let output: string[] = [];
 
   try {
-    const output = await render(rootDocLocation, documents, argv);
+    if(fs.statSync(templatePath).isDirectory()) {
+      for(const filename of fs.readdirSync(templatePath)) {
+        if(filename.match(/\.(yml|yaml)$/)) {
+          const filepath = pathmod.resolve(templatePath, filename);
+          const content = fs.readFileSync(filepath);
+          const documents = yaml.loadStringAll(content, filepath);
+          output = output.concat(await render(filepath, documents, argv, true));
+        }
+      }
+    } else {
+      const content = fs.readFileSync(file);
+      const documents = yaml.loadStringAll(content, templatePath);
+      output = await render(templatePath, documents, argv);
+    }
+
     writeOutput(output, argv);
   } catch(e) {
     logger.error(e);
@@ -53,8 +65,11 @@ export async function renderMain(argv: RenderArguments): Promise<number> {
   return SUCCESS;
 }
 
-export async function render(rootDocLocation: string, documents: ExtendedCfnDoc[], argv: RenderArguments) {
-  const multiDocument = documents.length > 1;
+export async function render(rootDocLocation: string,
+                             documents: ExtendedCfnDoc[],
+                             argv: RenderArguments,
+                             multiDocument?: boolean) {
+  const yamlHeader = documents.length > 1 || multiDocument;
   const output = [];
 
   for(const input of documents) {
@@ -79,7 +94,7 @@ export async function render(rootDocLocation: string, documents: ExtendedCfnDoc[
     }
 
     if (argv.format === 'yaml') {
-      if (multiDocument) {
+      if (yamlHeader) {
         output.push('---');
       }
 
@@ -90,10 +105,10 @@ export async function render(rootDocLocation: string, documents: ExtendedCfnDoc[
 
   };
 
-  return output.join('\n');
+  return output;
 };
 
-function writeOutput(output: string, argv: RenderArguments) {
+function writeOutput(output: string[], argv: RenderArguments) {
   let outputStream: NodeJS.WritableStream;
 
   if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
@@ -107,5 +122,5 @@ function writeOutput(output: string, argv: RenderArguments) {
     outputStream = fs.createWriteStream(argv.outfile);
   }
 
-  outputStream.write(output);
+  outputStream.write(output.join('\n'));
 }

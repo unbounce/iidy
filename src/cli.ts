@@ -390,6 +390,9 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     (args) => args
       .demandCommand(0, 0)
       .usage('Usage: iidy render <input-template.yaml>')
+      .positional('template', {
+        description: 'template file to render, `-` for STDIN, can also be a directory of templates (will only render *.yml and *.yaml files in directory)'
+      })
       .option('outfile', {
         type: 'string', default: 'stdout',
         description: description('yaml input template to preprocess')

@@ -21,7 +21,7 @@ describe('render', () => {
     const documents = [
       yaml.loadString('$defs:\n  foo: baz\nfoo: !$ foo', filename)
     ];
-    expect(await render(filename, documents, argv)).to.equal('foo: baz\n');
+    expect(await render(filename, documents, argv)).to.deep.equal(['foo: baz\n']);
   });
 
   it('can handle multiple documents', async () => {
@@ -29,7 +29,7 @@ describe('render', () => {
       yaml.loadString('$defs:\n  foo: bar\nfoo: !$ foo', filename),
       yaml.loadString('$defs:\n  foo: baz\nfoo: !$ foo', filename)
     ];
-    expect(await render(filename, documents, argv)).to.equal('---\nfoo: bar\n\n---\nfoo: baz\n');
+    expect(await render(filename, documents, argv)).to.deep.equal(['---', 'foo: bar\n', '---', 'foo: baz\n']);
   });
 
 });
