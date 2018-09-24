@@ -22,7 +22,7 @@
     "npm": ">=4.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.277.1",
+    "aws-sdk": "jpb/aws-sdk-js#6143bff11e7e6f6802e24f6bfb7724f952c9783a",
     "bluebird": "^3.5.1",
     "cli-color": "^1.2.0",
     "dateformat": "^3.0.3",

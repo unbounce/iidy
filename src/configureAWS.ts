@@ -43,7 +43,7 @@ function getCredentialsProviderChain(profile?: string) {
           cb(e);
         });
     };
-    return new aws.CredentialProviderChain([() => new aws.SharedIniFileCredentials({profile, tokenCodeFn})]);
+    return new aws.CredentialProviderChain([() => new aws.SharedIniFileCredentials({profile, tokenCodeFn, useCache: true})]);
   } else {
     return new aws.CredentialProviderChain();
   }
