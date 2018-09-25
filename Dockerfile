@@ -9,7 +9,7 @@ COPY . .
 ## Yarn is currently borked
 #  && yarn --frozen-lockfile \
 
-RUN apk update && apk add --no-cache binutils \
+RUN apk update && apk add --no-cache binutils git \
   && npm install . && npm run build \
   && $(npm bin)/pkg --out-path dist -t node8-alpine-x64 package.json \
   && strip /root/.pkg-cache/*/fetched-v8* \
