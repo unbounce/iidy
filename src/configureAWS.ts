@@ -31,7 +31,8 @@ function getCredentialsProviderChain(profile?: string) {
       throw new Error('AWS profile provided but ~/.aws/{config,credentials} not found.');
     }
     const tokenCodeFn = (serial: string, cb: (err?: Error, token?: string) => void) => {
-      const resp = inquirer.prompt<{token: string}>(
+      const prompt = inquirer.createPromptModule({output: process.stderr});
+      const resp = prompt<{token: string}>(
         {
           name: 'token',
           type: 'input',
