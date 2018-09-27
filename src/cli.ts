@@ -30,6 +30,7 @@ export interface GlobalArguments {
   profile?: string;
   assumeRoleArn?: string;
   debug?: boolean;
+  logFullError?: boolean;
   environment: string;
   clientRequestToken?: string;
 }
@@ -48,12 +49,14 @@ export const wrapCommandHandler = (handler: Handler) =>
       setLogLevel('debug');
     }
     handler(args)
+      .then(() => { throw new Error('boom') })
       .then(process.exit)
       .catch(error => {
-        if (error.message) {
+        if (debug() || args.logFullError || process.env.LOG_IIDY_ERROR) {
+          logger.error(error);
+        } else if(error.message) {
           logger.error(error.message);
-        }
-        if (debug() || process.env.LOG_IIDY_ERROR) {
+        } else {
           logger.error(error);
         }
         process.exit(1);
@@ -493,6 +496,10 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     .option('debug', {
       type: 'boolean', default: false,
       description: description('log debug information to stderr.')
+    })
+    .option('log-full-error', {
+      type: 'boolean', default: false,
+      description: description('log full error information to stderr.')
     })
     .command(fakeCommandSeparator, '')
 
