@@ -1,4 +1,4 @@
-FROM node:9-alpine
+FROM node:10-alpine
 
 WORKDIR /tmp/iidy
 
@@ -10,7 +10,7 @@ COPY . .
 #  && yarn --frozen-lockfile \
 
 RUN apk update && apk add --no-cache binutils git \
-  && npm install . && npm run build \
+  && npm ci . && npm run build \
   && $(npm bin)/pkg --out-path dist -t node8-alpine-x64 package.json \
   && strip /root/.pkg-cache/*/fetched-v8* \
   && $(npm bin)/pkg --out-path dist -t node8-alpine-x64 package.json
