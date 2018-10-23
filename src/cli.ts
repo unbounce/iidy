@@ -49,7 +49,6 @@ export const wrapCommandHandler = (handler: Handler) =>
       setLogLevel('debug');
     }
     handler(args)
-      .then(() => { throw new Error('boom') })
       .then(process.exit)
       .catch(error => {
         if (debug() || args.logFullError || process.env.LOG_IIDY_ERROR) {
