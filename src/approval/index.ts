@@ -90,8 +90,9 @@ export async function review(argv: ReviewArguments): Promise<number> {
         .catch((e) => {
           if (e.code !== 'NoSuchKey') {
             return Promise.reject(e);
+          } else {
+            return Promise.resolve(Buffer.from(''));
           }
-          return Buffer.from('');
         });
 
       diff(
