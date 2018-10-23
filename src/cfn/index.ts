@@ -1178,8 +1178,13 @@ abstract class AbstractCloudFormationStackCommand {
   protected watchStackEvents: boolean = true;
 
   constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
-    // note, this.region is set in _setup after the cal to configureAWS
-    this.profile = this.argv.profile || this.stackArgs.Profile;// tslint:disable-line
+    // region, profile, and assumeRoleArn are the only used for cli output here
+    // configureAWS is called by loadStackArgs prior to this constructor
+    // TODO We should cleanup / dry-up the resolution rules for these.
+    this.region = def(getCurrentAWSRegion(), this.argv.region || this.stackArgs.Region);
+    this.profile = (            // the resolved profile
+      this.argv.profile || this.stackArgs.Profile
+        || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE); // tslint:disable-line
     this.assumeRoleArn = this.argv.assumeRoleArn || this.stackArgs.AssumeRoleARN;// tslint:disable-line
 
     this.stackName = this.argv.stackName || this.stackArgs.StackName;// tslint:disable-line
@@ -1188,8 +1193,6 @@ abstract class AbstractCloudFormationStackCommand {
   }
 
   async _setup() {
-    const regionArg = this.argv.region || this.stackArgs.Region;
-    this.region = def(getCurrentAWSRegion(), regionArg);
     this.cfn = new aws.CloudFormation()
     if (this.showPreviousEvents) {
       this.previousStackEventsPromise = getAllStackEvents(this.stackName);
@@ -1314,8 +1317,8 @@ abstract class AbstractCloudFormationStackCommand {
         logger.info('No changes detected so no stack update needed.');
         return SUCCESS;
       } else if (e.message === 'UpdateStack cannot be used with templates containing Transforms.') {
-        logger.error(
-          `Your stack template contains an AWS:: Transform so you need to use 'iidy update-stack ${cli.red('--changeset')}'`)
+        const command = this.normalizeIidyCLICommand(`update-stack ${cli.red('--changeset')}'`);
+        logger.error(`Your stack template contains an AWS:: Transform so you need to use '${command}'`);
         return INTERRUPT;
       } else {
         throw e;
@@ -1332,6 +1335,14 @@ abstract class AbstractCloudFormationStackCommand {
     logger.error(`  iidy template-approval request ${this.argsfile}`);
     logger.error('to begin the approval process.');
     return FAILURE;
+  }
+
+  normalizeIidyCLICommand(command: string): string {
+    let cliArgs = `--region ${this.region}`;
+    if (this.profile) {
+        cliArgs += ` --profile ${this.profile}`;
+    }
+    return `iidy ${cliArgs} ${command}`;
   }
 
 }
@@ -1452,7 +1463,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
     // TODO diff createChangeSetInput.TemplateBody
     if (!stackExists) {
       console.log('Your new stack is now in REVIEW_IN_PROGRESS state. To create the resources run the following \n  ' +
-        `iidy exec-changeset --stack-name ${this.stackName} ${this.argsfile} ${ChangeSetName}`);
+        this.normalizeIidyCLICommand(`exec-changeset --stack-name ${this.stackName} ${this.argsfile} ${ChangeSetName}`));
       console.log();
     }
     showFinalComandSummary(true);
@@ -1583,8 +1594,10 @@ async function confirmChangesetExec(argv: GenericCLIArguments, changeSetRunner: 
     argv.changesetName = changeSetRunner.changeSetName;
     return new ExecuteChangeSet(argv, stackArgs).run();
   } else {
-    console.log(`You can do so later using\n`
-      + `  iidy exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`);
+    console.log(
+      `You can do so later using\n  `
+        + changeSetRunner.normalizeIidyCLICommand(
+          `exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`));
     return INTERRUPT;
   }
 }
