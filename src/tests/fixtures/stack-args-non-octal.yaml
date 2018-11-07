@@ -1,0 +1,5 @@
+$defs:
+  accountId: 001234567890
+
+ServiceRoleARN: 'arn:aws:iam::{{accountId}}:role/name'
+Template: /dev/null
