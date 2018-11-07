@@ -903,9 +903,10 @@ export async function addDefaultNotificationArn(args: StackArgs): Promise<StackA
   return args;
 }
 
-export async function loadStackArgs(argv: GenericCLIArguments): Promise<StackArgs> {
+export async function loadStackArgs(argv: GenericCLIArguments,
+                                    setupAWSCredentails = configureAWS): Promise<StackArgs> {
   // TODO json schema validation
-  const args = await _loadStackArgs(argv.argsfile, argv);
+  const args = await _loadStackArgs(argv.argsfile, argv, setupAWSCredentails);
   if (argv.clientRequestToken) {
     args.ClientRequestToken = argv.clientRequestToken;
   }
@@ -913,7 +914,9 @@ export async function loadStackArgs(argv: GenericCLIArguments): Promise<StackArg
 }
 
 //export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
-export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments): Promise<StackArgs> {
+export async function _loadStackArgs(argsfile: string,
+                                     argv: GenericCLIArguments,
+                                     setupAWSCredentails = configureAWS): Promise<StackArgs> {
   const profile: string | undefined = argv.profile;
   const assumeRoleArn: string | undefined = argv.assumeRoleArn;
   const environment: string | undefined = argv.environment;
@@ -954,7 +957,7 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
   logger.debug(`loadStackArgs argsfileSettings`, argsfileSettings);
   logger.debug(`loadStackArgs mergedAWSSettings`, mergedAWSSettings);
 
-  await configureAWS(mergedAWSSettings); // cliOptionOverrides trump argsfile
+  await setupAWSCredentails(mergedAWSSettings); // cliOptionOverrides trump argsfile
 
   if (environment) {
     if (!_.get(argsdata, ['Tags', 'environment'])) {
@@ -1012,9 +1015,27 @@ export async function _loadStackArgs(argsfile: string, argv: GenericCLIArguments
     }
   }
   const stackArgsPass2 = await transform(argsdata, argsfile) as StackArgs;
-  logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgsPass2);
-  return stackArgsPass2;
+  const stackArgsPass3 = recursivelyMapValues(stackArgsPass2, (value: any) => {
+    if(typeof value === 'string') {
+      // $0string is an encoding added in preprocess/index.ts:visitString
+      return value.replace(/\$0string (0\d+)/g, '$1');
+    } else {
+      return value;
+    }
+  });
+  logger.debug('argsdata -> stackArgs', argsdata, '\n', stackArgsPass3);
+  return stackArgsPass3;
 };
+
+function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
+  return _.mapValues(o, function(a: any) {
+    if(typeof a === 'object') {
+      return recursivelyMapValues(a, f);
+    } else {
+      return f(a);
+    }
+  }) as T;
+}
 
 async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, environment: string, stackName?: string)
   : Promise<aws.CloudFormation.CreateStackInput> {
