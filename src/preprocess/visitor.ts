@@ -683,13 +683,7 @@ export class Visitor {
 }
 
 export class VariablesVisitor extends Visitor {
-  public variables: string[];
-
-  constructor() {
-    super();
-    const variables: string[] = [];
-    this.variables = variables;
-  }
+  public variables: string[] = [];
 
   visitHandlebarsString(node: string, path: string, env: Env): string {
     const regex = /{{ *(.*?) *}}/g;
