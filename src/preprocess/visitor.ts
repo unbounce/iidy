@@ -5,15 +5,17 @@ import * as handlebars from 'handlebars';
 import * as yaml from '../yaml';
 import {logger} from '../logger';
 
-import {Env,
-        AnyButUndefined,
-        ExtendedCfnDoc,
-        mkSubEnv,
-        GlobalSection,
-        GlobalSectionNames,
-        validateTemplateParameter,
-        interpolateHandlebarsString,
-        appendPath} from './index';
+import {
+  Env,
+  AnyButUndefined,
+  ExtendedCfnDoc,
+  mkSubEnv,
+  GlobalSection,
+  GlobalSectionNames,
+  validateTemplateParameter,
+  interpolateHandlebarsString,
+  appendPath
+} from './index';
 
 const HANDLEBARS_RE = /{{(.*?)}}/;
 const CFN_SUB_RE = /\${([^!].*?)}/g;
@@ -47,17 +49,17 @@ function mapCustomResourceToGlobalSections(
         _.fromPairs(
           // TOOD is this the right place to be visiting the subsections
           _.map(_.toPairs(visitor.visitNode(resourceDoc[section], appendPath(path, section), env)),
-                ([k, v]: [string, any]) => {
-                  const isGlobal = _.has(v, '$global');
-                  delete v.$global;
-                  if (isGlobal) {
-                    // TODO validate that there is no clash with
-                    // values already in env.GlobalAccumulator
-                    return [k, v];
-                  } else {
-                    return [`${env.$envValues.Prefix}${k}`, v];
-                  }
-                }))
+            ([k, v]: [string, any]) => {
+              const isGlobal = _.has(v, '$global');
+              delete v.$global;
+              if (isGlobal) {
+                // TODO validate that there is no clash with
+                // values already in env.GlobalAccumulator
+                return [k, v];
+              } else {
+                return [`${env.$envValues.Prefix}${k}`, v];
+              }
+            }))
       );
       return res;
     }
@@ -564,7 +566,7 @@ export class Visitor {
   }
 
   // TODO tighten up the return type here: {[key: string]: any}
-  _visitResourceNode (node: object, path: string, env: Env): AnyButUndefined {
+  _visitResourceNode(node: object, path: string, env: Env): AnyButUndefined {
     const visitor = new Visitor();
     return _.fromPairs(
       _flatten( // as we may output > 1 resource for each template
@@ -572,8 +574,8 @@ export class Visitor {
           if (_.has(env.$envValues, resource.Type)) {
             return this.visitCustomResource(name, resource, path, env);
           } else if (resource.Type &&
-                     (resource.Type.indexOf('AWS') === 0
-                      || resource.Type.indexOf('Custom') === 0)) {
+            (resource.Type.indexOf('AWS') === 0
+              || resource.Type.indexOf('Custom') === 0)) {
             return [[name, visitor.visitNode(resource, appendPath(path, name), env)]]
           } else {
             throw new Error(
@@ -680,7 +682,7 @@ export class VariablesVisitor extends Visitor {
     this.handlebars.registerHelper('helperMissing', function() {
       const options = arguments[arguments.length - 1];
       const name = arguments[arguments.length - 1].name;
-      if(arguments.length === 1) {
+      if (arguments.length === 1) {
         variables.push(name);
       } else {
         throw new Error(`Missing helper: "${name}"`);
