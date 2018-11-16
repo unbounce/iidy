@@ -36,6 +36,8 @@ export interface GlobalArguments {
 }
 export type GenericCLIArguments = GlobalArguments & yargs.Arguments;
 
+export type GenericCLIArguments = GlobalArguments & yargs.Arguments;
+
 export type ExitCode = number;
 export type Handler = (args: GlobalArguments & yargs.Arguments) => Promise<ExitCode>
 
