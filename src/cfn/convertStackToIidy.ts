@@ -114,7 +114,7 @@ export async function convertStackToIIDY(argv: ConvertStackArguments): Promise<n
   const TemplateStage = def('Original', argv.stage);
 
   const cfn = new aws.CloudFormation();
-  const {TemplateBody} = await cfn.getTemplate({StackName, TemplateStage: 'Original'}).promise();
+  const {TemplateBody} = await cfn.getTemplate({StackName, TemplateStage}).promise();
   if (!TemplateBody) {
     throw new Error(`Invalid cfn template found for ${StackName}`);
   }
