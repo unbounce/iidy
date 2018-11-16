@@ -22,10 +22,10 @@ export function spinnerSupported() {
   return _.isNumber(tty.columns) && ! _.includes(INCOMPATIBLE_TERMS, process.env.TERM)
 }
 
-export default function (): Spinner {
+export default function (text: string=''): Spinner {
   return ora({
     spinner: 'dots12',
-    text: '',
+    text,
     enabled: spinnerSupported()
   });
 }
