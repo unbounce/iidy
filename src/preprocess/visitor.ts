@@ -691,12 +691,12 @@ export class VariablesVisitor extends Visitor {
     while (matches = regex.exec(node)) {
       this.variables.push(matches[1]);
     }
-    return super.visitHandlebarsString(node, path, env);
+    return node;
   }
 
   visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
     this.variables.push(node.data);
-    return super.visit$include(node, path, env);
+    return node.data;
   }
 
 }
