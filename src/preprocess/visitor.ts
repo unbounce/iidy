@@ -684,28 +684,19 @@ export class Visitor {
 
 export class VariablesVisitor extends Visitor {
   public variables: string[];
-  private handlebars: typeof handlebars;
 
   constructor() {
     super();
     const variables: string[] = [];
     this.variables = variables;
-
-    this.handlebars = handlebars.create();
-    this.handlebars.registerHelper('helperMissing', function() {
-      const options = arguments[arguments.length - 1];
-      if (arguments.length === 1) {
-        variables.push(options.name);
-      } else {
-        throw new Error(`Missing helper: "${options.name}"`);
-      }
-    });
   }
 
   visitHandlebarsString(node: string, path: string, env: Env): string {
-    const f = this.handlebars.compile(node);
-    // Don't provide any variables so that `helperMissing` gets called
-    f({});
+    const regex = /{{ *(.*?) *}}/g;
+    let matches;
+    while (matches = regex.exec(node)) {
+      this.variables.push(matches[1]);
+    }
     return super.visitHandlebarsString(node, path, env);
   }
 
