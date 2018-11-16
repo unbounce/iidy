@@ -4,7 +4,7 @@ import * as process from 'process';
 import * as child_process from 'child_process';
 import * as url from 'url';
 import didYouMean from 'didyoumean2';
-
+import {Arguments} from 'yargs';
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
 import {Md5} from 'ts-md5/dist/md5';
@@ -15,13 +15,10 @@ import * as jmespath from 'jmespath';
 
 import * as dateformat from 'dateformat';
 
-import {Arguments} from 'yargs';
-
 import * as querystring from 'querystring';
 import {sprintf} from 'sprintf-js';
 import * as cli from 'cli-color';
 import * as wrapAnsi from 'wrap-ansi';
-import * as ora from 'ora';
 import * as nameGenerator from 'project-name-generator';
 
 let getStrippedLength: (s: string) => number;
@@ -49,43 +46,13 @@ import {
   transform,
   PreprocessOptions,
   interpolateHandlebarsString,
-  importLoaders,
-  ExtendedCfnDoc,
+  ExtendedCfnDoc
 } from '../preprocess';
+import {StackArgs, CfnOperation} from './types';
 import {extendedCfnDocKeys} from '../preprocess/visitor';
-import {getKMSAliasForParameter} from '../params';
 import {GlobalArguments} from '../cli';
 
 export type GenericCLIArguments = GlobalArguments & Arguments;
-
-export type CfnOperation = 'CREATE_STACK' | 'UPDATE_STACK' | 'CREATE_CHANGESET' | 'EXECUTE_CHANGESET' | 'ESTIMATE_COST';
-
-export type StackArgs = {
-  StackName: string
-  Template: string
-  ApprovedTemplateLocation?: string
-  Region?: AWSRegion
-  Profile?: string
-  Capabilities?: aws.CloudFormation.Capabilities
-  Tags?: {[key: string]: string}
-  Parameters?: {[key: string]: string}
-  NotificationARNs?: aws.CloudFormation.NotificationARNs
-  AssumeRoleARN?: string
-  ServiceRoleARN?: string
-  RoleARN?: string // DEPRECATED in favour of ServiceRoleArn
-  TimeoutInMinutes?: number
-  OnFailure?: 'ROLLBACK' | 'DELETE' | 'DO_NOTHING'
-  DisableRollback?: boolean
-  EnableTerminationProtection?: boolean
-  StackPolicy?: string | object,
-  ResourceTypes?: string[],
-
-  ClientRequestToken?: string, //aws.CloudFormation.ClientToken,
-  // for updates
-  UsePreviousTemplate?: boolean,
-
-  CommandsBefore?: string[]
-}
 
 const stackArgsProperties: Array<keyof StackArgs> = [
   'ApprovedTemplateLocation',
@@ -117,7 +84,6 @@ async function getReliableStartTime(): Promise<Date> {
   // TODO warn about inaccurate local clocks as that will affect the calculation of elapsed time.
   return startTime;
 }
-
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-listing-event-history.html
 // CREATE_COMPLETE | CREATE_FAILED | CREATE_IN_PROGRESS |

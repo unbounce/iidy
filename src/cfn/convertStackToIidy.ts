@@ -2,9 +2,9 @@ import * as fs from 'fs';
 import * as pathmod from 'path';
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
-import {Arguments} from 'yargs';
 
-import {getStackDescription, parseTemplateBody, StackArgs} from './index';
+import {getStackDescription, parseTemplateBody} from './index';
+import {StackArgs} from "./types";
 import * as yaml from '../yaml';
 import configureAWS from '../configureAWS';
 import def from '../default';
