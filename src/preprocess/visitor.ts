@@ -7,11 +7,12 @@ import {logger} from '../logger';
 
 import {
   Env,
+  $EnvValues,
   AnyButUndefined,
   ExtendedCfnDoc,
-  mkSubEnv,
   GlobalSection,
   GlobalSectionNames,
+  MaybeStackFrame,
   validateTemplateParameter,
   interpolateHandlebarsString,
   appendPath
@@ -28,6 +29,18 @@ const _isPlainMap = (node: any): node is object =>
   !_.isDate(node) &&
   !_.isRegExp(node) &&
   !_.isFunction(node);
+
+export const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env => {
+  const stackFrame = {
+    location: frame.location || env.Stack[env.Stack.length - 1].location, // tslint:disable-line
+    path: frame.path
+  };
+  return {
+    GlobalAccumulator: env.GlobalAccumulator,
+    $envValues,
+    Stack: env.Stack.concat([stackFrame])
+  };
+};
 
 
 const _liftKVPairs = (objects: {key: string, value: any}[]) =>

@@ -111,7 +111,7 @@ export type GlobalSection = keyof typeof GlobalSections;
 export const GlobalSectionNames = _.values(GlobalSections) as GlobalSection[];
 
 export type StackFrame = {location: string, path: string};
-type MaybeStackFrame = {location?: string, path: string};
+export type MaybeStackFrame = {location?: string, path: string};
 
 export type Env = {
   GlobalAccumulator: CfnDoc,
@@ -161,18 +161,6 @@ function gitValue(valueType: GitValue): string {
 
 const sha256Digest = (content: string | Buffer): SHA256Digest =>
   crypto.createHash('sha256').update(content.toString()).digest('hex');
-
-export const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env => {
-  const stackFrame = {
-    location: frame.location || env.Stack[env.Stack.length - 1].location, // tslint:disable-line
-    path: frame.path
-  };
-  return {
-    GlobalAccumulator: env.GlobalAccumulator,
-    $envValues,
-    Stack: env.Stack.concat([stackFrame])
-  };
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Import handling
