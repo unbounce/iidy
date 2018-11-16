@@ -1,8 +1,6 @@
 import * as _ from 'lodash';
 import * as escapeStringRegexp from 'escape-string-regexp';
 import * as handlebars from 'handlebars';
-// @ts-ignore
-// import JavaScriptCompiler from 'handlebars/lib/handlebars/compiler/javascript-compiler';
 
 import * as yaml from '../yaml';
 import {logger} from '../logger';
@@ -95,6 +93,8 @@ function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
 }
 
 export class Visitor {
+  // The functions in this class are stateless - they are only wrapped in a
+  // class so that the functionality can be extended
 
   visitYamlTagNode(node: yaml.Tag, path: string, env: Env): AnyButUndefined {
     if (node instanceof yaml.$include) {
@@ -667,48 +667,31 @@ export class Visitor {
 
 }
 
-// Typescript doesn't seem to like importing handlebars' JavaScriptCompiler source
-// class HandlebarsVariableExtractor extends JavaScriptCompiler {
-//   public variables: string[] = [];
-
-//   nameLookup(parent: string, name: string): string[] {
-//     this.variables.push(`${parent}.${name}`);
-//     return super.nameLookup(arguments);
-//   }
-// }
-
 export class VariablesVisitor extends Visitor {
   public variables: string[];
-  private h: typeof handlebars;
+  private handlebars: typeof handlebars;
 
   constructor() {
     super();
-    function MyCompiler() {
-      // @ts-ignore
-      handlebars.JavaScriptCompiler.apply(this, arguments);
-    }
     const variables: string[] = [];
     this.variables = variables;
 
-    // @ts-ignore
-    MyCompiler.prototype = new handlebars.JavaScriptCompiler();
-    MyCompiler.prototype.compiler = MyCompiler;
-    MyCompiler.prototype.nameLookup = function (parent: string, name: string, t: string) {
-      if (t === 'context') {
+    this.handlebars = handlebars.create();
+    this.handlebars.registerHelper('helperMissing', function() {
+      const options = arguments[arguments.length - 1];
+      const name = arguments[arguments.length - 1].name;
+      if(arguments.length === 1) {
         variables.push(name);
+      } else {
+        throw new Error(`Missing helper: "${name}"`);
       }
-      // @ts-ignore
-      return handlebars.JavaScriptCompiler.prototype.nameLookup.call(this, parent, name, t);
-    }
-    this.h = handlebars.create();
-    // @ts-ignore
-    this.h.JavaScriptCompiler = MyCompiler;
-    const that = this;
+    });
   }
 
   visitHandlebarsString(node: string, path: string, env: Env): string {
-    const f = this.h.compile(node);
-    f(env.$envValues);
+    const f = this.handlebars.compile(node);
+    // Don't provide any variables so that `helperMissing` gets called
+    f({});
     return super.visitHandlebarsString(node, path, env);
   }
 
