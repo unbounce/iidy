@@ -1,17 +1,16 @@
+import * as aws from 'aws-sdk';
 import * as fs from 'fs';
-import * as pathmod from 'path';
 import * as _ from 'lodash';
-import * as aws from 'aws-sdk'
-
-import {getStackDescription, parseTemplateBody} from './index';
-import {StackArgs} from "./types";
-import * as yaml from '../yaml';
+import * as pathmod from 'path';
+import {GlobalArguments} from '../cli';
 import configureAWS from '../configureAWS';
 import def from '../default';
 import {getKMSAliasForParameter} from '../params';
-
-import {GlobalArguments} from '../cli';
 import {SUCCESS} from '../statusCodes';
+import * as yaml from '../yaml';
+import {getStackDescription} from './getStackDescription';
+import {parseTemplateBody} from './index';
+import {StackArgs} from "./types";
 
 function parameterizeEnv(s0: string, environments = ['development', 'integration', 'staging', 'production']): string {
   let s = s0;
