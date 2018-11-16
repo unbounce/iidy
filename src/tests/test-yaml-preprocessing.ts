@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
 
 import * as pre from '../preprocess';
+import {Visitor} from '../preprocess/visitor';
 import * as yaml from '../yaml';
 
 // TODO test various bad paths & error handling
@@ -15,7 +16,7 @@ import {
   $let
 } from './support';
 
-const visitor = new pre.Visitor();
+const visitor = new Visitor();
 
 const waitConditionTemplate = {
   Resources: {
