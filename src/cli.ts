@@ -34,6 +34,7 @@ export interface GlobalArguments {
   environment: string;
   clientRequestToken?: string;
 }
+export type GenericCLIArguments = GlobalArguments & yargs.Arguments;
 
 export type ExitCode = number;
 export type Handler = (args: GlobalArguments & yargs.Arguments) => Promise<ExitCode>
@@ -94,37 +95,66 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './cfn/convertStackToIidy' | './preprocess' | './demo' | './lint' | './render' | './initStackArgs';
-const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
-  (args) => {
-    // note, the requires must be literal for `pkg` to find the modules to include
-    if (modName === './preprocess') {
-      return require('./preprocess')[fnname](args);
-    } else if (modName === './cfn') {
-      return require('./cfn')[fnname](args);
-    } else if (modName === './cfn/convertStackToIidy') {
-      return require('./cfn/convertStackToIidy')[fnname](args);
-    } else if (modName === './lint') {
-      return require('./lint')[fnname](args);
-    } else if (modName === './demo') {
-      return require('./demo')[fnname](args);
-    } else if (modName === './render') {
-      return require('./render')[fnname](args);
-    } else if (modName === './initStackArgs') {
-      return require('./initStackArgs')[fnname](args);
-    }
+type LazyLoadModules =
+  './cfn'
+  | './cfn/listStacks'
+  | './cfn/describeStack'
+  | './cfn/convertStackToIidy'
+  | './cfn/deleteStack'
+  | './cfn/getStackTemplate'
+  | './cfn/watchStack'
+  | './preprocess'
+  | './demo'
+  | './lint'
+  | './render'
+  | './initStackArgs';
+
+const _loadModule = (modName: LazyLoadModules): any => {
+  // note, the requires must be literal for `pkg` to find the modules to include
+  if (modName === './preprocess') {
+    return require('./preprocess');
+  } else if (modName === './cfn') {
+    return require('./cfn');
+  } else if (modName === './cfn/listStacks') {
+    return require('./cfn/listStacks');
+  } else if (modName === './cfn/deleteStack') {
+    return require('./cfn/deleteStack');
+  } else if (modName === './cfn/describeStack') {
+    return require('./cfn/describeStack');
+  } else if (modName === './cfn/getStackTemplate') {
+    return require('./cfn/getStackTemplate');
+  } else if (modName === './cfn/convertStackToIidy') {
+    return require('./cfn/convertStackToIidy');
+  } else if (modName === './lint') {
+    return require('./lint');
+  } else if (modName === './cfn/watchStack') {
+    return require('./cfn/watchStack');
+  } else if (modName === './demo') {
+    return require('./demo');
+  } else if (modName === './render') {
+    return require('./render');
+  } else if (modName === './initStackArgs') {
+    return require('./initStackArgs');
   }
+}
+
+function lazyLoad (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler {
+  return (args) => {
+    const module = _loadModule(modName);
+    return module[fnname](args);
+  }
+}
 
 const lazy: Commands = {
   createStackMain: lazyLoad('createStackMain'),
   createOrUpdateStackMain: lazyLoad('createOrUpdateStackMain'),
-  updateStackMain: lazyLoad('updateStackMain'),
-  listStacksMain: lazyLoad('listStacksMain'),
-  watchStackMain: lazyLoad('watchStackMain'),
-  describeStackMain: lazyLoad('describeStackMain'),
-  getStackTemplateMain: lazyLoad('getStackTemplateMain'),
-  getStackInstancesMain: lazyLoad('getStackInstancesMain'),
-  deleteStackMain: lazyLoad('deleteStackMain'),
+  updateStackMain: lazyLoad('updateStackMain'), // TODO
+  listStacksMain: lazyLoad('listStacksMain', './cfn/listStacks'),
+  watchStackMain: lazyLoad('watchStackMain', './cfn/watchStack'),
+  describeStackMain: lazyLoad('describeStackMain', './cfn/describeStack'),
+  getStackTemplateMain: lazyLoad('getStackTemplateMain', './cfn/getStackTemplate'),
+  getStackInstancesMain: lazyLoad('getStackInstancesMain'), // TODO
+  deleteStackMain: lazyLoad('deleteStackMain', './cfn/deleteStack'),
 
   createChangesetMain: lazyLoad('createChangesetMain'),
   executeChangesetMain: lazyLoad('executeChangesetMain'),

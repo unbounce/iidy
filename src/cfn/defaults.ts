@@ -1,0 +1,1 @@
+export const DEFAULT_EVENT_POLL_INTERVAL = 2;
