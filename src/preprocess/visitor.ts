@@ -1,5 +1,8 @@
 import * as _ from 'lodash';
 import * as escapeStringRegexp from 'escape-string-regexp';
+import * as handlebars from 'handlebars';
+// @ts-ignore
+// import JavaScriptCompiler from 'handlebars/lib/handlebars/compiler/javascript-compiler';
 
 import * as yaml from '../yaml';
 import {logger} from '../logger';
@@ -90,7 +93,6 @@ function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
     return res;
   }
 }
-
 
 export class Visitor {
 
@@ -519,10 +521,14 @@ export class Visitor {
     return _.map(node, (v, i) => this.visitNode(v, appendPath(path, i.toString()), env));
   }
 
+  visitHandlebarsString(node: string, path: string, env: Env): string {
+    return interpolateHandlebarsString(node, env.$envValues, path);
+  }
+
   visitString(node: string, path: string, env: Env): string {
     let res: string;
     if (node.search(HANDLEBARS_RE) > -1) {
-      res = interpolateHandlebarsString(node, env.$envValues, path);
+      res = this.visitHandlebarsString(node, path, env);
     } else {
       res = node;
     }
@@ -657,6 +663,58 @@ export class Visitor {
         return [`${subEnv.$envValues.Prefix}${resname}`, val];
       }
     });
+  }
+
+}
+
+// Typescript doesn't seem to like importing handlebars' JavaScriptCompiler source
+// class HandlebarsVariableExtractor extends JavaScriptCompiler {
+//   public variables: string[] = [];
+
+//   nameLookup(parent: string, name: string): string[] {
+//     this.variables.push(`${parent}.${name}`);
+//     return super.nameLookup(arguments);
+//   }
+// }
+
+export class VariablesVisitor extends Visitor {
+  public variables: string[];
+  private h: typeof handlebars;
+
+  constructor() {
+    super();
+    function MyCompiler() {
+      // @ts-ignore
+      handlebars.JavaScriptCompiler.apply(this, arguments);
+    }
+    const variables: string[] = [];
+    this.variables = variables;
+
+    // @ts-ignore
+    MyCompiler.prototype = new handlebars.JavaScriptCompiler();
+    MyCompiler.prototype.compiler = MyCompiler;
+    MyCompiler.prototype.nameLookup = function (parent: string, name: string, t: string) {
+      if (t === 'context') {
+        variables.push(name);
+      }
+      // @ts-ignore
+      return handlebars.JavaScriptCompiler.prototype.nameLookup.call(this, parent, name, t);
+    }
+    this.h = handlebars.create();
+    // @ts-ignore
+    this.h.JavaScriptCompiler = MyCompiler;
+    const that = this;
+  }
+
+  visitHandlebarsString(node: string, path: string, env: Env): string {
+    const f = this.h.compile(node);
+    f(env.$envValues);
+    return super.visitHandlebarsString(node, path, env);
+  }
+
+  visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
+    this.variables.push(node.data);
+    return super.visit$include(node, path, env);
   }
 
 }
