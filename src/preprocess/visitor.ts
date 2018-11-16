@@ -681,11 +681,10 @@ export class VariablesVisitor extends Visitor {
     this.handlebars = handlebars.create();
     this.handlebars.registerHelper('helperMissing', function() {
       const options = arguments[arguments.length - 1];
-      const name = arguments[arguments.length - 1].name;
       if (arguments.length === 1) {
-        variables.push(name);
+        variables.push(options.name);
       } else {
-        throw new Error(`Missing helper: "${name}"`);
+        throw new Error(`Missing helper: "${options.name}"`);
       }
     });
   }
