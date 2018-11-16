@@ -11,7 +11,7 @@ import {getStackDescription} from './getStackDescription';
 import {
   getStackNameFromArgsAndConfigureAWS,
   showFinalComandSummary,
-  summarizeCompletedStackOperation,
+  summarizeStackContents,
   summarizeStackDefinition
 } from './index';
 import {showStackEvents} from './showStackEvents';
@@ -47,7 +47,7 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
   console.log(formatSectionHeading('Previous Stack Events (max 10):'));
   await showStackEvents(StackName, 10);
   console.log();
-  await summarizeCompletedStackOperation(StackId);
+  await summarizeStackContents(StackId);
   console.log();
   let confirmed: boolean;
   if (argv.yes) {

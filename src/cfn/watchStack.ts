@@ -16,7 +16,7 @@ import {formatSectionHeading, formatTimestamp, renderTimestamp} from './formatti
 import {getAllStackEvents} from './getAllStackEvents';
 import getReliableStartTime from './getReliableStartTime';
 import {getStackDescription} from './getStackDescription';
-import {getStackNameFromArgsAndConfigureAWS, summarizeCompletedStackOperation, summarizeStackDefinition} from './index';
+import {getStackNameFromArgsAndConfigureAWS, summarizeStackContents, summarizeStackDefinition} from './index';
 import {showStackEvents} from './showStackEvents';
 import terminalStackStates from './terminalStackStates';
 
@@ -115,7 +115,7 @@ export async function watchStackMain(argv: GenericCLIArguments): Promise<number>
   console.log();
   await watchStack(StackId, startTime, DEFAULT_EVENT_POLL_INTERVAL, argv.inactivityTimeout);
   console.log();
-  await summarizeCompletedStackOperation(StackId);
+  await summarizeStackContents(StackId);
   return SUCCESS;
 }
 

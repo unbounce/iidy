@@ -120,8 +120,7 @@ async function showPendingChangesets(StackId: string, changeSetsPromise?: Promis
   }
 }
 
-// TODO rename this
-export async function summarizeCompletedStackOperation(StackId: string, stackPromise?: Promise<aws.CloudFormation.Stack>): Promise<aws.CloudFormation.Stack> {
+export async function summarizeStackContents(StackId: string, stackPromise?: Promise<aws.CloudFormation.Stack>): Promise<aws.CloudFormation.Stack> {
   // TODO handle this part for when OnFailure=DELETE and stack is gone ...
   //   this would be using a stackId instead
   const cfn = new aws.CloudFormation();
@@ -805,7 +804,7 @@ abstract class AbstractCloudFormationStackCommand {
     }
 
     console.log();
-    const stack = await summarizeCompletedStackOperation(stackId);
+    const stack = await summarizeStackContents(stackId);
 
     return showFinalComandSummary(_.includes(this.expectedFinalStackStatus, stack.StackStatus));
   }
@@ -1181,7 +1180,7 @@ export async function createChangesetMain(argv: GenericCLIArguments): Promise<nu
     console.log();
     await watchStack(changesetRunner.stackName, new Date(), DEFAULT_EVENT_POLL_INTERVAL, argv.watchInactivityTimeout);
     console.log();
-    await summarizeCompletedStackOperation(changesetRunner.stackName);
+    await summarizeStackContents(changesetRunner.stackName);
     return SUCCESS;
   } else {
     return changesetExitCode;
@@ -1215,7 +1214,7 @@ export async function watchStackMain(argv: GenericCLIArguments): Promise<number>
   console.log();
   await watchStack(StackId, startTime, DEFAULT_EVENT_POLL_INTERVAL, argv.inactivityTimeout);
   console.log();
-  await summarizeCompletedStackOperation(StackId);
+  await summarizeStackContents(StackId);
   return SUCCESS;
 }
 

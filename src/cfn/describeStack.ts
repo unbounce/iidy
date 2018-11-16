@@ -11,7 +11,7 @@ import {GenericCLIArguments} from '../cli';
 import {
   getStackNameFromArgsAndConfigureAWS,
   summarizeStackDefinition,
-  summarizeCompletedStackOperation
+  summarizeStackContents
 } from './index';
 import {getAllStackEvents} from "./getAllStackEvents";
 import {showStackEvents} from './showStackEvents';
@@ -39,7 +39,7 @@ export async function describeStackMain(argv: GenericCLIArguments): Promise<numb
     console.log(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`));
     await showStackEvents(StackName, eventCount, stackEventsPromise);
     console.log();
-    await summarizeCompletedStackOperation(StackId, stackPromise);
+    await summarizeStackContents(StackId, stackPromise);
     return SUCCESS;
   }
 }
