@@ -85,12 +85,37 @@ export type StackArgs = {
   CommandsBefore?: string[]
 }
 
+const stackArgsProperties = [
+  'ApprovedTemplateLocation',
+  'AssumeRoleARN',
+  'Capabilities',
+  'ClientRequestToken',
+  'CommandsBefore',
+  'DisableRollback',
+  'EnableTerminationProtection',
+  'NotificationARNs',
+  'OnFailure',
+  'Parameters',
+  'Profile',
+  'Region',
+  'ResourceTypes',
+  'RoleARN',
+  'ServiceRoleARN',
+  'StackName',
+  'StackPolicy',
+  'Tags',
+  'Template',
+  'TimeoutInMinutes',
+  'UsePreviousTemplate',
+];
+
 async function getReliableStartTime(): Promise<Date> {
   const startTime = await getReliableTime();
   startTime.setTime(startTime.getTime() - 500); // to be safe
   // TODO warn about inaccurate local clocks as that will affect the calculation of elapsed time.
   return startTime;
 }
+
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-listing-event-history.html
 // CREATE_COMPLETE | CREATE_FAILED | CREATE_IN_PROGRESS |
@@ -915,6 +940,13 @@ export async function loadStackArgs(argv: GenericCLIArguments,
   return addDefaultNotificationArn(args);
 }
 
+function showArgsfileWarnings(argsdata: object, filename: string) {
+  const invalidProperties = _.difference(_.keys(argsdata), stackArgsProperties);
+  _.forEach(invalidProperties, (name: string) => {
+    logger.warn(`Invalid property '${name}' in ${filename}`);
+  });
+}
+
 //export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
 export async function _loadStackArgs(argsfile: string,
                                      argv: GenericCLIArguments,
@@ -939,6 +971,8 @@ export async function _loadStackArgs(argsfile: string,
   if(!_.isEmpty(filterKeys)) {
     argsdata = filter(filterKeys, argsdata, argsfile);
   }
+
+  showArgsfileWarnings(argsdata, argsfile);
 
   // There is chicken-and-egg situation between use of imports for
   // profile or region and the call to configureAWS. We need to
