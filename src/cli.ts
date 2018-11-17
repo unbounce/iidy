@@ -55,7 +55,7 @@ export const wrapCommandHandler = (handler: Handler) =>
       .catch(error => {
         if (debug() || args.logFullError || process.env.LOG_IIDY_ERROR) {
           logger.error(error);
-        } else if(error.message) {
+        } else if (error.message) {
           logger.error(error.message);
         } else {
           logger.error(error);
@@ -142,7 +142,7 @@ const _loadModule = (modName: LazyLoadModules): any => {
   }
 }
 
-function lazyLoad (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler {
+function lazyLoad(fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler {
   return (args) => {
     const module = _loadModule(modName);
     return module[fnname](args);
@@ -205,361 +205,361 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
   return yargs
     .env('IIDY')
     .command(
-    'create-stack     <argsfile>',
-    description('create a cfn stack based on stack-args.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .usage('Usage: iidy create-stack <stack-args.yaml>')
-      .option('stack-name', stackNameOpt),
-    wrapMainHandler(commands.createStackMain))
-
-    .command(
-    'update-stack     <argsfile>',
-    description('update a cfn stack based on stack-args.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .usage('Usage: iidy update-stack <stack-args.yaml>')
-      .option('stack-name', stackNameOpt)
-      .option('changeset', {
-        type: 'boolean', default: false,
-        description: description('review & confirm changes via a changeset')
-      })
-      .option('yes', {
-        type: 'boolean', default: false,
-        description: description('Confirm and execute changeset if --changeset option is used')
-      })
-      .option('diff', {
-        type: 'boolean', default: true,
-        description: description('diff & review changes to the template body as part of changeset review')
-      })
-      .option('stack-policy-during-update', {
-        type: 'string', default: null,
-        description: description('override original stack-policy for this update only')
-      }),
-    wrapMainHandler(commands.updateStackMain))
-
-    .command(
-    'create-or-update <argsfile>',
-    description('create or update a cfn stack based on stack-args.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .usage('Usage: iidy create-or-update <stack-args.yaml>')
-      .option('stack-name', stackNameOpt)
-      .option('changeset', {
-        type: 'boolean', default: false,
-        description: description('review & confirm changes via a changeset')
-      })
-      .option('yes', {
-        type: 'boolean', default: false,
-        description: description('Confirm and execute changeset if --changeset option is used')
-      })
-      .option('diff', {
-        type: 'boolean', default: true,
-        description: description('diff & review changes to the template body as part of changeset review')
-      })
-      .option('stack-policy-during-update', {
-        type: 'string', default: null,
-        description: description('override original stack-policy for this update only')
-      }),
-    wrapMainHandler(commands.createOrUpdateStackMain))
-
-    .command(
-    'estimate-cost    <argsfile>',
-    description('estimate aws costs based on stack-args.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('stack-name', stackNameOpt),
-    wrapMainHandler(commands.estimateCost))
-
-    .command(fakeCommandSeparator, '')
-
-    .command(
-    'create-changeset           <argsfile> [changesetName]',
-    description('create a cfn changeset based on stack-args.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('watch', {
-        type: 'boolean', default: false,
-        description: description('Watch stack after creating changeset. This is useful when exec-changeset is called by others.')
-      })
-      .option('watch-inactivity-timeout', {
-        type: 'number', default: (60 * 3),
-        description: description('how long to wait for events when the stack is in a terminal state')
-      })
-      .option('description', {
-        type: 'string', default: undefined,
-        description: description('optional description of changeset')
-      })
-      .option('stack-name', stackNameOpt),
-    wrapMainHandler(commands.createChangesetMain))
-
-    .command(
-    'exec-changeset             <argsfile> <changesetName>',
-    description('execute a cfn changeset based on stack-args.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('stack-name', stackNameOpt),
-    wrapMainHandler(commands.executeChangesetMain))
-
-    .command(fakeCommandSeparator, '')
-
-    .command(
-    'describe-stack      <stackname>',
-    description('describe a stack'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('events', {
-        type: 'number', default: 50,
-        description: description('how many stack events to display')
-      })
-      .option('query', {
-        type: 'string', default: null,
-        description: description('jmespath search query to select a subset of the output')
-      })
-      .usage('Usage: iidy describe-stack <stackname-or-argsfile>'),
-    wrapMainHandler(commands.describeStackMain))
-
-    .command(
-    'watch-stack         <stackname>',
-    description('watch a stack that is already being created or updated'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('inactivity-timeout', {
-        type: 'number', default: (60 * 3),
-        description: description('how long to wait for events when the stack is in a terminal state')
-      })
-      .usage('Usage: iidy watch-stack <stackname-or-argsfile>'),
-    wrapMainHandler(commands.watchStackMain))
-
-    .command(
-    'delete-stack        <stackname>',
-    description('delete a stack (after confirmation)'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('role-arn', {
-        type: 'string',
-        description: description('Role to assume for delete operation')
-      })
-      .option('retain-resources', {
-        type: 'string',
-        array: true,
-        description: description('For stacks in the DELETE_FAILED, list of logical resource ids to retain')
-      })
-      .option('yes', {
-        type: 'boolean', default: false,
-        description: description('Confirm deletion of stack')
-      })
-      .option('fail-if-absent', {
-        type: 'boolean', default: false,
-        description: description('Fail if stack is absent (exit code = 1). Default is to tolerate absence.')
-      })
-      .usage('Usage: iidy delete-stack <stackname-or-argsfile>'),
-    wrapMainHandler(commands.deleteStackMain))
-
-    .command(
-    'get-stack-template  <stackname>',
-    description('download the template of a live stack'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('format', {
-        type: 'string', default: 'original',
-        choices: ['original', 'yaml', 'json'],
-        description: description('Template stage to show')
-      })
-      .option('stage', {
-        type: 'string', default: 'Original',
-        choices: ['Original', 'Processed'],
-        description: description('Template stage to show')
-      })
-      .usage('Usage: iidy get-stack-template <stackname-or-argsfile>'),
-    wrapMainHandler(commands.getStackTemplateMain))
-
-    .command(
-    'get-stack-instances <stackname>',
-    description('list the ec2 instances of a live stack'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('short', {
-        type: 'boolean', default: false,
-        description: description('Show only instance dns names')
-      })
-      .usage('Usage: iidy get-stack-instances <stackname-or-argsfile>'),
-    wrapMainHandler(commands.getStackInstancesMain))
-
-    .command(
-    'list-stacks',
-    description('list all stacks within a region'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('tag-filter', {
-        type: 'string', default: [],
-        array: true,
-        description: description('Filter by tags: key=value')
-      })
-      .option('jmespath-filter', {
-        type: 'string', default: null,
-        description: description('jmespath search query to select a subset of the stacks')
-      })
-      .option('query', {
-        type: 'string', default: null,
-        description: description('jmespath search query to select a subset of the output')
-      })
-      .option('tags', {
-        type: 'boolean', default: false,
-        description: description('Show stack tags')
-      }),
-    wrapMainHandler(commands.listStacksMain))
-
-    .command(fakeCommandSeparator, '')
-
-    .command('param',
-    description('sub commands for working with AWS SSM Parameter Store'),
-    buildParamCommands)
-
-    .command(fakeCommandSeparator, '')
-
-    .command('template-approval',
-    description('sub commands for template approval'),
-    buildApprovalCommands)
-
-    .command(fakeCommandSeparator, '')
-
-    .command(
-    'render <template>',
-    description('pre-process and render yaml template'),
-    (args) => args
-      .demandCommand(0, 0)
-      .usage('Usage: iidy render <input-template.yaml>')
-      .positional('template', {
-        description: 'template file to render, `-` for STDIN, can also be a directory of templates (will only render *.yml and *.yaml files in directory)'
-      })
-      .option('outfile', {
-        type: 'string', default: 'stdout',
-        description: description('yaml input template to preprocess')
-      })
-      .option('format', {
-        type: 'string', default: 'yaml',
-        choices: ['yaml', 'json'],
-        description: description('output serialization syntax')
-      })
-      .option('query', {
-        type: 'string', default: null,
-        description: description('jmespath search query to select a subset of the output')
-      })
-      .option('overwrite', {
-        type: 'boolean', default: false,
-        description: description('Whether to overwrite an existing <outfile>.')
-      })
-      .strict(),
-    wrapMainHandler(commands.renderMain))
-
-    .command(
-      'demo   <demoscript>',
-      description('run a demo script'),
+      'create-stack     <argsfile>',
+      description('create a cfn stack based on stack-args.yaml'),
       (args) => args
         .demandCommand(0, 0)
-        .option('timescaling', {
-          type: 'number', default: 1,
-          description: description('time scaling factor for sleeps, etc.')
+        .usage('Usage: iidy create-stack <stack-args.yaml>')
+        .option('stack-name', stackNameOpt),
+      wrapMainHandler(commands.createStackMain))
+
+    .command(
+      'update-stack     <argsfile>',
+      description('update a cfn stack based on stack-args.yaml'),
+      (args) => args
+        .demandCommand(0, 0)
+        .usage('Usage: iidy update-stack <stack-args.yaml>')
+        .option('stack-name', stackNameOpt)
+        .option('changeset', {
+          type: 'boolean', default: false,
+          description: description('review & confirm changes via a changeset')
         })
-        .strict(),
-      wrapMainHandler(commands.demoMain))
+        .option('yes', {
+          type: 'boolean', default: false,
+          description: description('Confirm and execute changeset if --changeset option is used')
+        })
+        .option('diff', {
+          type: 'boolean', default: true,
+          description: description('diff & review changes to the template body as part of changeset review')
+        })
+        .option('stack-policy-during-update', {
+          type: 'string', default: null,
+          description: description('override original stack-policy for this update only')
+        }),
+      wrapMainHandler(commands.updateStackMain))
 
     .command(
-      'lint-template   <argsfile>',
-      description('lint a CloudFormation template'),
+      'create-or-update <argsfile>',
+      description('create or update a cfn stack based on stack-args.yaml'),
       (args) => args
         .demandCommand(0, 0)
-        .strict(),
-      wrapMainHandler(commands.lintMain))
+        .usage('Usage: iidy create-or-update <stack-args.yaml>')
+        .option('stack-name', stackNameOpt)
+        .option('changeset', {
+          type: 'boolean', default: false,
+          description: description('review & confirm changes via a changeset')
+        })
+        .option('yes', {
+          type: 'boolean', default: false,
+          description: description('Confirm and execute changeset if --changeset option is used')
+        })
+        .option('diff', {
+          type: 'boolean', default: true,
+          description: description('diff & review changes to the template body as part of changeset review')
+        })
+        .option('stack-policy-during-update', {
+          type: 'string', default: null,
+          description: description('override original stack-policy for this update only')
+        }),
+      wrapMainHandler(commands.createOrUpdateStackMain))
 
     .command(
-    'convert-stack-to-iidy <stackname> <outputDir>',
-    description('create an iidy project directory from an existing CFN stack'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('move-params-to-ssm', {
-        type: 'boolean', default: false,
-        description: description('automatically create an AWS SSM parameter namespace populated with the stack Parameters')
-      })
-      .option('sortkeys', {
-        type: 'boolean', default: true,
-        description: description('sort keys in cloudformation maps')
-      })
-      .option('project', {
-        type: 'string', default: null,
-        description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
-      }),
-    wrapMainHandler(commands.convertStackToIIDY))
+      'estimate-cost    <argsfile>',
+      description('estimate aws costs based on stack-args.yaml'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('stack-name', stackNameOpt),
+      wrapMainHandler(commands.estimateCost))
 
-    .command(
-    'init-stack-args',
-    description('initialize stack-args.yaml and cfn-template.yaml'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('force', {
-        type: 'boolean', default: false,
-        description: description('Overwrite the current stack-args.yaml and cfn-template.yaml')
-      })
-      .option('force-stack-args', {
-        type: 'boolean', default: false,
-        description: description('Overwrite the current stack-args.yaml')
-      })
-      .option('force-cfn-template', {
-        type: 'boolean', default: false,
-        description: description('Overwrite the current cfn-template.yaml')
-      }),
-    wrapMainHandler(commands.initStackArgs))
-
-    .option('environment', environmentOpt)
-    .option('client-request-token', {
-      type: 'string', default: null,
-      group: 'AWS Options:',
-      description: description('a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.')
-    })
-    .option('region', {
-      type: 'string', default: null,
-      group: 'AWS Options:',
-      description: description('AWS region. Can also be set via --environment & stack-args.yaml:Region.')
-    })
-    .option('profile', {
-      type: 'string', default: null,
-      group: 'AWS Options:',
-      description: description(
-        'AWS profile. Can also be set via --environment & stack-args.yaml:Profile. '
-        + 'Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env vars.')
-    })
-    .option('assume-role-arn', {
-      type: 'string', default: null,
-      group: 'AWS Options:',
-      description: description(
-        'AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. '
-          + 'This is mutually exclusive with --profile. '
-          + 'Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars.')
-    })
-
-    .option('debug', {
-      type: 'boolean', default: false,
-      description: description('log debug information to stderr.')
-    })
-    .option('log-full-error', {
-      type: 'boolean', default: false,
-      description: description('log full error information to stderr.')
-    })
     .command(fakeCommandSeparator, '')
 
-    .demandCommand(1)
-    .usage(usage)
-    .version()
-    .alias('v', 'version')
-    .describe('version', description('show version information'))
-    .help('help', description('show help'))
-    .alias('h', 'help')
-    .completion('completion', description('generate bash completion script. To use: "source <(iidy completion)"'))
-    .recommendCommands()
-    .epilogue(epilogue)
-    .strict()
-    .wrap(yargs.terminalWidth());
+    .command(
+      'create-changeset           <argsfile> [changesetName]',
+      description('create a cfn changeset based on stack-args.yaml'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('watch', {
+          type: 'boolean', default: false,
+          description: description('Watch stack after creating changeset. This is useful when exec-changeset is called by others.')
+        })
+        .option('watch-inactivity-timeout', {
+          type: 'number', default: (60 * 3),
+          description: description('how long to wait for events when the stack is in a terminal state')
+        })
+        .option('description', {
+          type: 'string', default: undefined,
+          description: description('optional description of changeset')
+        })
+        .option('stack-name', stackNameOpt),
+      wrapMainHandler(commands.createChangesetMain))
+
+    .command(
+      'exec-changeset             <argsfile> <changesetName>',
+      description('execute a cfn changeset based on stack-args.yaml'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('stack-name', stackNameOpt),
+      wrapMainHandler(commands.executeChangesetMain))
+
+    .command(fakeCommandSeparator, '')
+
+    .command(
+      'describe-stack      <stackname>',
+      description('describe a stack'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('events', {
+          type: 'number', default: 50,
+          description: description('how many stack events to display')
+        })
+        .option('query', {
+          type: 'string', default: null,
+          description: description('jmespath search query to select a subset of the output')
+        })
+        .usage('Usage: iidy describe-stack <stackname-or-argsfile>'),
+      wrapMainHandler(commands.describeStackMain))
+
+    .command(
+      'watch-stack         <stackname>',
+      description('watch a stack that is already being created or updated'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('inactivity-timeout', {
+          type: 'number', default: (60 * 3),
+          description: description('how long to wait for events when the stack is in a terminal state')
+        })
+        .usage('Usage: iidy watch-stack <stackname-or-argsfile>'),
+      wrapMainHandler(commands.watchStackMain))
+
+    .command(
+
+    .command(
+        'delete-stack        <stackname>',
+        description('delete a stack (after confirmation)'),
+        (args) => args
+          .demandCommand(0, 0)
+          .option('role-arn', {
+            type: 'string',
+            description: description('Role to assume for delete operation')
+          })
+          .option('retain-resources', {
+            type: 'string',
+            array: true,
+            description: description('For stacks in the DELETE_FAILED, list of logical resource ids to retain')
+          })
+          .option('yes', {
+            type: 'boolean', default: false,
+            description: description('Confirm deletion of stack')
+          })
+          .option('fail-if-absent', {
+            type: 'boolean', default: false,
+            description: description('Fail if stack is absent (exit code = 1). Default is to tolerate absence.')
+          })
+          .usage('Usage: iidy delete-stack <stackname-or-argsfile>'),
+        wrapMainHandler(commands.deleteStackMain))
+
+        .command(
+          'get-stack-template  <stackname>',
+          description('download the template of a live stack'),
+          (args) => args
+            .demandCommand(0, 0)
+            .option('format', {
+              type: 'string', default: 'original',
+              choices: ['original', 'yaml', 'json'],
+              description: description('Template stage to show')
+            })
+            .option('stage', {
+              type: 'string', default: 'Original',
+              choices: ['Original', 'Processed'],
+              description: description('Template stage to show')
+            })
+            .usage('Usage: iidy get-stack-template <stackname-or-argsfile>'),
+          wrapMainHandler(commands.getStackTemplateMain))
+
+        .command(
+          'get-stack-instances <stackname>',
+          description('list the ec2 instances of a live stack'),
+          (args) => args
+            .demandCommand(0, 0)
+            .option('short', {
+              type: 'boolean', default: false,
+              description: description('Show only instance dns names')
+            })
+            .usage('Usage: iidy get-stack-instances <stackname-or-argsfile>'),
+          wrapMainHandler(commands.getStackInstancesMain))
+
+        .command(
+          'list-stacks',
+          description('list all stacks within a region'),
+          (args) => args
+            .demandCommand(0, 0)
+            .option('tag-filter', {
+              type: 'string', default: [],
+              array: true,
+              description: description('Filter by tags: key=value')
+            })
+            .option('jmespath-filter', {
+              type: 'string', default: null,
+              description: description('jmespath search query to select a subset of the stacks')
+            })
+            .option('query', {
+              type: 'string', default: null,
+              description: description('jmespath search query to select a subset of the output')
+            })
+            .option('tags', {
+              type: 'boolean', default: false,
+              description: description('Show stack tags')
+            }),
+          wrapMainHandler(commands.listStacksMain))
+
+        .command(fakeCommandSeparator, '')
+
+        .command('param',
+          description('sub commands for working with AWS SSM Parameter Store'),
+          buildParamCommands)
+
+        .command(fakeCommandSeparator, '')
+
+        .command('template-approval',
+          description('sub commands for template approval'),
+          buildApprovalCommands)
+
+        .command(fakeCommandSeparator, '')
+
+        .command(
+          'render <template>',
+          description('pre-process and render yaml template'),
+          (args) => args
+            .demandCommand(0, 0)
+            .usage('Usage: iidy render <input-template.yaml>')
+            .positional('template', {
+              description: 'template file to render, `-` for STDIN, can also be a directory of templates (will only render *.yml and *.yaml files in directory)'
+            })
+            .option('outfile', {
+              type: 'string', default: 'stdout',
+              description: description('yaml input template to preprocess')
+            })
+            .option('format', {
+              type: 'string', default: 'yaml',
+              choices: ['yaml', 'json'],
+              description: description('output serialization syntax')
+            })
+            .option('query', {
+              type: 'string', default: null,
+              description: description('jmespath search query to select a subset of the output')
+            })
+            .option('overwrite', {
+              type: 'boolean', default: false,
+              description: description('Whether to overwrite an existing <outfile>.')
+            })
+            .strict(),
+          wrapMainHandler(commands.renderMain))
+
+        .command(
+          'demo   <demoscript>',
+          description('run a demo script'),
+          (args) => args
+            .demandCommand(0, 0)
+            .option('timescaling', {
+              type: 'number', default: 1,
+              description: description('time scaling factor for sleeps, etc.')
+            })
+            .strict(),
+          wrapMainHandler(commands.demoMain))
+        .command(
+          'lint-template   <argsfile>',
+          description('lint a CloudFormation template'),
+          (args) => args
+            .demandCommand(0, 0)
+            .strict(),
+          wrapMainHandler(commands.lintMain))
+        .command(
+          'convert-stack-to-iidy <stackname> <outputDir>',
+          description('create an iidy project directory from an existing CFN stack'),
+          (args) => args
+            .demandCommand(0, 0)
+            .option('move-params-to-ssm', {
+              type: 'boolean', default: false,
+              description: description('automatically create an AWS SSM parameter namespace populated with the stack Parameters')
+            })
+            .option('sortkeys', {
+              type: 'boolean', default: true,
+              description: description('sort keys in cloudformation maps')
+            })
+            .option('project', {
+              type: 'string', default: null,
+              description: description('The name of the project (service or app). If not specified the "project" Tag is checked.')
+            }),
+          wrapMainHandler(commands.convertStackToIIDY))
+
+        .command(
+          'init-stack-args',
+          description('initialize stack-args.yaml and cfn-template.yaml'),
+          (args) => args
+            .demandCommand(0, 0)
+            .option('force', {
+              type: 'boolean', default: false,
+              description: description('Overwrite the current stack-args.yaml and cfn-template.yaml')
+            })
+            .option('force-stack-args', {
+              type: 'boolean', default: false,
+              description: description('Overwrite the current stack-args.yaml')
+            })
+            .option('force-cfn-template', {
+              type: 'boolean', default: false,
+              description: description('Overwrite the current cfn-template.yaml')
+            }),
+          wrapMainHandler(commands.initStackArgs))
+
+        .option('environment', environmentOpt)
+        .option('client-request-token', {
+          type: 'string', default: null,
+          group: 'AWS Options:',
+          description: description('a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.')
+        })
+        .option('region', {
+          type: 'string', default: null,
+          group: 'AWS Options:',
+          description: description('AWS region. Can also be set via --environment & stack-args.yaml:Region.')
+        })
+        .option('profile', {
+          type: 'string', default: null,
+          group: 'AWS Options:',
+          description: description(
+            'AWS profile. Can also be set via --environment & stack-args.yaml:Profile. '
+            + 'Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env vars.')
+        })
+        .option('assume-role-arn', {
+          type: 'string', default: null,
+          group: 'AWS Options:',
+          description: description(
+            'AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. '
+            + 'This is mutually exclusive with --profile. '
+            + 'Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars.')
+        })
+
+        .option('debug', {
+          type: 'boolean', default: false,
+          description: description('log debug information to stderr.')
+        })
+        .option('log-full-error', {
+          type: 'boolean', default: false,
+          description: description('log full error information to stderr.')
+        })
+        .command(fakeCommandSeparator, '')
+
+        .demandCommand(1)
+        .usage(usage)
+        .version()
+        .alias('v', 'version')
+        .describe('version', description('show version information'))
+        .help('help', description('show help'))
+        .alias('h', 'help')
+        .completion('completion', description('generate bash completion script. To use: "source <(iidy completion)"'))
+        .recommendCommands()
+        .epilogue(epilogue)
+        .strict()
+        .wrap(yargs.terminalWidth());
 }
 
 export async function main(commands = lazy) {
