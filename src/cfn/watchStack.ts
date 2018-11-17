@@ -16,7 +16,9 @@ import {formatSectionHeading, formatTimestamp, renderTimestamp} from './formatti
 import {getAllStackEvents} from './getAllStackEvents';
 import getReliableStartTime from './getReliableStartTime';
 import {getStackDescription} from './getStackDescription';
-import {getStackNameFromArgsAndConfigureAWS, summarizeStackContents, summarizeStackDefinition} from './index';
+import {getStackNameFromArgsAndConfigureAWS} from './index';
+import {summarizeStackContents} from "./summarizeStackContents";
+import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {showStackEvents} from './showStackEvents';
 import terminalStackStates from './terminalStackStates';
 
@@ -116,46 +118,5 @@ export async function watchStackMain(argv: GenericCLIArguments): Promise<number>
   await watchStack(StackId, startTime, DEFAULT_EVENT_POLL_INTERVAL, argv.inactivityTimeout);
   console.log();
   await summarizeStackContents(StackId);
-  return SUCCESS;
-}
-
-export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<number> {
-  const StackName = await getStackNameFromArgsAndConfigureAWS(argv);
-  const region = getCurrentAWSRegion();
-
-  const ec2 = new aws.EC2();
-  const instances = await ec2.describeInstances(
-    {
-      Filters: [{
-        Name: 'tag:aws:cloudformation:stack-name',
-        Values: [StackName]
-      }]
-    })
-    .promise();
-
-  for (const reservation of instances.Reservations || []) {
-    for (const instance of reservation.Instances || []) {
-      if (argv.short) {
-        console.log(instance.PublicDnsName ? instance.PublicDnsName : instance.PrivateIpAddress);
-      } else {
-        const state = instance.State ? instance.State.Name : 'unknown';
-        const placement = instance.Placement ? instance.Placement.AvailabilityZone : '';
-        console.log(sprintf(
-          '%-42s %-15s %s %-11s %s %s %s',
-          instance.PublicDnsName,
-          instance.PrivateIpAddress,
-          instance.InstanceId,
-          instance.InstanceType,
-          state,
-          placement,
-          formatTimestamp(renderTimestamp(instance.LaunchTime as Date))
-        ));
-      }
-    }
-  }
-
-  console.log(
-    cli.blackBright(
-      `https://console.aws.amazon.com/ec2/v2/home?region=${region}#Instances:tag:aws:cloudformation:stack-name=${StackName};sort=desc:launchTime`));
   return SUCCESS;
 }

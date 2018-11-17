@@ -34,7 +34,6 @@ export interface GlobalArguments {
   environment: string;
   clientRequestToken?: string;
 }
-export type GenericCLIArguments = GlobalArguments & yargs.Arguments;
 
 export type GenericCLIArguments = GlobalArguments & yargs.Arguments;
 
@@ -105,6 +104,7 @@ type LazyLoadModules =
   | './cfn/deleteStack'
   | './cfn/getStackTemplate'
   | './cfn/watchStack'
+  | './cfn/getStackInstances'
   | './preprocess'
   | './demo'
   | './lint'
@@ -127,10 +127,12 @@ const _loadModule = (modName: LazyLoadModules): any => {
     return require('./cfn/getStackTemplate');
   } else if (modName === './cfn/convertStackToIidy') {
     return require('./cfn/convertStackToIidy');
-  } else if (modName === './lint') {
-    return require('./lint');
+  } else if (modName === './cfn/getStackInstances') {
+    return require('./cfn/getStackInstances');
   } else if (modName === './cfn/watchStack') {
     return require('./cfn/watchStack');
+  } else if (modName === './lint') {
+    return require('./lint');
   } else if (modName === './demo') {
     return require('./demo');
   } else if (modName === './render') {
@@ -155,7 +157,7 @@ const lazy: Commands = {
   watchStackMain: lazyLoad('watchStackMain', './cfn/watchStack'),
   describeStackMain: lazyLoad('describeStackMain', './cfn/describeStack'),
   getStackTemplateMain: lazyLoad('getStackTemplateMain', './cfn/getStackTemplate'),
-  getStackInstancesMain: lazyLoad('getStackInstancesMain'), // TODO
+  getStackInstancesMain: lazyLoad('getStackInstancesMain', './cfn/getStackInstances'),
   deleteStackMain: lazyLoad('deleteStackMain', './cfn/deleteStack'),
 
   createChangesetMain: lazyLoad('createChangesetMain'),

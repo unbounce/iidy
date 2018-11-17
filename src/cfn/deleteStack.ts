@@ -10,10 +10,10 @@ import getReliableStartTime from './getReliableStartTime';
 import {getStackDescription} from './getStackDescription';
 import {
   getStackNameFromArgsAndConfigureAWS,
-  showFinalComandSummary,
-  summarizeStackContents,
-  summarizeStackDefinition
+  showFinalComandSummary
 } from './index';
+import {summarizeStackContents} from "./summarizeStackContents";
+import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {showStackEvents} from './showStackEvents';
 import {watchStack} from './watchStack';
 

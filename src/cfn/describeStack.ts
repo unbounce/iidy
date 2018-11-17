@@ -9,10 +9,10 @@ import {formatSectionHeading} from './formatting';
 import {GenericCLIArguments} from '../cli';
 
 import {
-  getStackNameFromArgsAndConfigureAWS,
-  summarizeStackDefinition,
-  summarizeStackContents
+  getStackNameFromArgsAndConfigureAWS
 } from './index';
+import {summarizeStackContents} from "./summarizeStackContents";
+import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {getAllStackEvents} from "./getAllStackEvents";
 import {showStackEvents} from './showStackEvents';
 import {getStackDescription} from './getStackDescription';
