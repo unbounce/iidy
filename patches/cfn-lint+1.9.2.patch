@@ -1,0 +1,25 @@
+diff --git a/node_modules/cfn-lint/lib/samData.js b/node_modules/cfn-lint/lib/samData.js.bak
+index 8f1ac0b..29e61ce 100644
+--- a/node_modules/cfn-lint/lib/samData.js
++++ b/node_modules/cfn-lint/lib/samData.js.bak
+@@ -4,13 +4,13 @@ var sms = require("source-map-support");
+ sms.install();
+ exports.samPrimitiveTypes = ['string', 'number', 'boolean'];
+ exports.samSchema20161031Filepath = '../data/sam_20161031_schema.json';
+-exports.samSchema20161031 = require(exports.samSchema20161031Filepath);
++exports.samSchema20161031 = require('../data/sam_20161031_schema.json');
+ exports.samImplicitResources20161031Filepath = '../data/sam_20161031_output_resources.json';
+-exports.samImplicitResources20161031 = require(exports.samImplicitResources20161031Filepath);
++exports.samImplicitResources20161031 = require('../data/sam_20161031_output_resources.json');
+ exports.samCustomSpecification20161031Filepath = '../data/sam_20161031_custom_specification.json';
+-exports.samCustomSpecification20161031 = require(exports.samCustomSpecification20161031Filepath);
++exports.samCustomSpecification20161031 = require('../data/sam_20161031_custom_specification.json');
+ exports.samResources20161031Filepath = '../data/sam_20161031_cfn.json';
+-exports.samResources20161031 = require(exports.samResources20161031Filepath);
++exports.samResources20161031 = require('../data/sam_20161031_cfn.json');
+ exports.samGlobals20161031Filepath = '../data/sam_20161031_globals.json';
+-exports.samGlobals20161031 = require(exports.samGlobals20161031Filepath);
+-//# sourceMappingURL=samData.js.map
+\ No newline at end of file
++exports.samGlobals20161031 = require('../data/sam_20161031_globals.json');
++//# sourceMappingURL=samData.js.map
