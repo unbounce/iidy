@@ -110,6 +110,8 @@ const stackArgsProperties: Array<keyof StackArgs> = [
   'UsePreviousTemplate',
 ];
 
+const stackArgsMetaProperties = ['$imports', '$defs'];
+
 async function getReliableStartTime(): Promise<Date> {
   const startTime = await getReliableTime();
   startTime.setTime(startTime.getTime() - 500); // to be safe
@@ -942,7 +944,9 @@ export async function loadStackArgs(argv: GenericCLIArguments,
 }
 
 function showArgsfileWarnings(argsdata: object, filename: string) {
-  const invalidProperties = _.difference(_.keys(argsdata), stackArgsProperties);
+  const invalidProperties = _.difference(_.keys(argsdata),
+                                         stackArgsProperties,
+                                         stackArgsMetaProperties);
   _.forEach(invalidProperties, (name: string) => {
     let suggestion = '';
     const suggestedProperty = didYouMean(name, stackArgsProperties);
