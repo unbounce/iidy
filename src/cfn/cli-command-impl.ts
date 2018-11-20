@@ -14,7 +14,7 @@ import {watchStackMain} from './watchStack';
 import {deleteStackMain} from './deleteStack';
 import {createChangesetMain} from './createChangeset';
 import {convertStackToIIDY} from './convertStackToIidy';
-import {lintMain} from '../lint';
+import {lintMain} from './lint';
 
 export const implementations: CfnStackCommands = {
   // TODO rename these do be consistent
