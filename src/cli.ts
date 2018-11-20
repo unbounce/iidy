@@ -84,6 +84,7 @@ export interface MiscCommands {
   initStackArgs: Handler;
   renderMain: Handler;
   demoMain: Handler;
+  lintMain: Handler;
   convertStackToIIDY: Handler;
 }
 
@@ -93,7 +94,7 @@ export interface Commands extends CfnStackCommands, MiscCommands {};
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules = './cfn' | './cfn/convertStackToIidy' | './preprocess' | './demo' | './render' | './initStackArgs';
+type LazyLoadModules = './cfn' | './cfn/convertStackToIidy' | './preprocess' | './demo' | './lint' | './render' | './initStackArgs';
 const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler =>
   (args) => {
     // note, the requires must be literal for `pkg` to find the modules to include
@@ -103,6 +104,8 @@ const lazyLoad = (fnname: keyof Commands, modName: LazyLoadModules = './cfn'): H
       return require('./cfn')[fnname](args);
     } else if (modName === './cfn/convertStackToIidy') {
       return require('./cfn/convertStackToIidy')[fnname](args);
+    } else if (modName === './lint') {
+      return require('./lint')[fnname](args);
     } else if (modName === './demo') {
       return require('./demo')[fnname](args);
     } else if (modName === './render') {
@@ -131,6 +134,7 @@ const lazy: Commands = {
   estimateCost: lazyLoad('estimateCost'),
 
   demoMain: lazyLoad('demoMain', './demo'),
+  lintMain: lazyLoad('lintMain', './lint'),
   convertStackToIIDY: lazyLoad('convertStackToIIDY', './cfn/convertStackToIidy'),
   initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
   // TODO example command pull down an examples dir
@@ -416,16 +420,24 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
     wrapMainHandler(commands.renderMain))
 
     .command(
-    'demo   <demoscript>',
-    description('run a demo script'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('timescaling', {
-        type: 'number', default: 1,
-        description: description('time scaling factor for sleeps, etc.')
-      })
-      .strict(),
-    wrapMainHandler(commands.demoMain))
+      'demo   <demoscript>',
+      description('run a demo script'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('timescaling', {
+          type: 'number', default: 1,
+          description: description('time scaling factor for sleeps, etc.')
+        })
+        .strict(),
+      wrapMainHandler(commands.demoMain))
+
+    .command(
+      'lint-template   <argsfile>',
+      description('lint a CloudFormation template'),
+      (args) => args
+        .demandCommand(0, 0)
+        .strict(),
+      wrapMainHandler(commands.lintMain))
 
     .command(
     'convert-stack-to-iidy <stackname> <outputDir>',
