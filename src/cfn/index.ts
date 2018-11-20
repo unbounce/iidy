@@ -41,6 +41,7 @@ import mkSpinner from '../spinner';
 import {diff} from '../diff';
 import confirmationPrompt from '../confirmationPrompt';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
+import {filter} from '../preprocess/filter';
 
 import {
   readFromImportLocation,
@@ -904,9 +905,10 @@ export async function addDefaultNotificationArn(args: StackArgs): Promise<StackA
 }
 
 export async function loadStackArgs(argv: GenericCLIArguments,
+                                    filterKeys: string[] = [],
                                     setupAWSCredentails = configureAWS): Promise<StackArgs> {
   // TODO json schema validation
-  const args = await _loadStackArgs(argv.argsfile, argv, setupAWSCredentails);
+  const args = await _loadStackArgs(argv.argsfile, argv, filterKeys, setupAWSCredentails);
   if (argv.clientRequestToken) {
     args.ClientRequestToken = argv.clientRequestToken;
   }
@@ -916,6 +918,7 @@ export async function loadStackArgs(argv: GenericCLIArguments,
 //export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
 export async function _loadStackArgs(argsfile: string,
                                      argv: GenericCLIArguments,
+                                     filterKeys: string[] = [],
                                      setupAWSCredentails = configureAWS): Promise<StackArgs> {
   const profile: string | undefined = argv.profile;
   const assumeRoleArn: string | undefined = argv.assumeRoleArn;
@@ -931,6 +934,10 @@ export async function _loadStackArgs(argsfile: string,
     argsdata = yaml.loadString(fs.readFileSync(argsfile), argsfile)
   } else {
     throw new Error(`Invalid stack args file "${argsfile}" extension`);
+  }
+
+  if(!_.isEmpty(filterKeys)) {
+    argsdata = filter(filterKeys, argsdata, argsfile);
   }
 
   // There is chicken-and-egg situation between use of imports for

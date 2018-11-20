@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
 
 import * as pre from '../preprocess';
+import {Visitor} from '../preprocess/visitor';
 import * as yaml from '../yaml';
 
 // TODO test various bad paths & error handling
@@ -14,6 +15,8 @@ import {
   mkMockImportLoader,
   $let
 } from './support';
+
+const visitor = new Visitor();
 
 const waitConditionTemplate = {
   Resources: {
@@ -313,11 +316,11 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
       ]) {
 
         expect(
-          pre.visitSubStringTemplate(input, 'test', testEnvInsideCustomResource))
+          visitor.visitSubStringTemplate(input, 'test', testEnvInsideCustomResource))
           .to.equal(output);
 
         expect(
-          pre.visitSubStringTemplate(input, 'test', testEnvOutsideCustomResource))
+          visitor.visitSubStringTemplate(input, 'test', testEnvOutsideCustomResource))
           .to.equal(input);
 
       }
@@ -338,23 +341,23 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
       ]) {
         expect(
-          pre.visitRef(
+          visitor.visitRef(
             new yaml.Ref(input), 'test', testEnvInsideCustomResource))
           .to.deep.equal(new yaml.Ref(output));
 
         expect(
-          pre.visitGetAtt(
+          visitor.visitGetAtt(
             new yaml.GetAtt(input), 'test', testEnvInsideCustomResource))
           .to.deep.equal(new yaml.GetAtt(output));
 
         // no rewrite
         expect(
-          pre.visitRef(
+          visitor.visitRef(
             new yaml.Ref(input), 'test', testEnvOutsideCustomResource))
           .to.deep.equal(new yaml.Ref(input));
 
         expect(
-          pre.visitGetAtt(
+          visitor.visitGetAtt(
             new yaml.GetAtt(input), 'test', testEnvOutsideCustomResource))
           .to.deep.equal(new yaml.GetAtt(input));
       }

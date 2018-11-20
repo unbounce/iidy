@@ -20,7 +20,8 @@ export type RequestArguments = GlobalArguments & {
 };
 
 export async function request(argv: RequestArguments): Promise<number> {
-  const stackArgs = await loadStackArgs(argv as any); // this calls configureAWS internally
+  const stackArgsKeys = ['ApprovedTemplateLocation', 'Template'];
+  const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
 
   if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
     const s3 = new S3();
