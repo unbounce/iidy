@@ -86,7 +86,7 @@ export type StackArgs = {
   CommandsBefore?: string[]
 }
 
-const stackArgsProperties = [
+const stackArgsProperties: Array<keyof StackArgs> = [
   'ApprovedTemplateLocation',
   'AssumeRoleARN',
   'Capabilities',
