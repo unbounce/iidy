@@ -682,7 +682,7 @@ export class Visitor {
 
 }
 
-class HandlebarsVariablesVisitor extends handlebars.Visitor {
+class HandlebarsVariablesTrackingVisitor extends handlebars.Visitor {
   constructor(public variables: string[]) {
     super();
   };
@@ -731,12 +731,12 @@ class HandlebarsVariablesVisitor extends handlebars.Visitor {
   }
 }
 
-export class VariablesVisitor extends Visitor {
+export class VariablesTrackingVisitor extends Visitor {
   public variables: string[] = [];
 
   visitHandlebarsString(node: string, path: string, env: Env): string {
     const ast = handlebars.parse(node);
-    const v = new HandlebarsVariablesVisitor(this.variables);
+    const v = new HandlebarsVariablesTrackingVisitor(this.variables);
     v.accept(ast);
     return node;
   }

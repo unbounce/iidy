@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
 import * as yaml from '../yaml';
-import {VariablesVisitor} from './visitor';
+import {VariablesTrackingVisitor} from './visitor';
 
 export function filter(keys: string[], input: any, filename: string) {
-  const visitor = new VariablesVisitor();
+  const visitor = new VariablesTrackingVisitor();
   const env = {
     GlobalAccumulator: {},
     $envValues: {},

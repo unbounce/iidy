@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import * as yaml from '../yaml';
 import * as pre from '../preprocess';
-import {VariablesVisitor} from '../preprocess/visitor';
+import {VariablesTrackingVisitor} from '../preprocess/visitor';
 
 const mkTestEnv = ($envValues: pre.$EnvValues, GlobalAccumulator = {}) => ({
   GlobalAccumulator,
@@ -9,9 +9,9 @@ const mkTestEnv = ($envValues: pre.$EnvValues, GlobalAccumulator = {}) => ({
   Stack: [{ location: '0', path: '0' }]
 })
 
-describe('VariablesVisitor', () => {
+describe('VariablesTrackingVisitor', () => {
   it('extracts $! variables', function() {
-    const visitor = new VariablesVisitor();
+    const visitor = new VariablesTrackingVisitor();
     visitor.visitNode({
       foo: new yaml.$include('bar')
     }, 'test', mkTestEnv({bar: 'baz'}));
@@ -19,7 +19,7 @@ describe('VariablesVisitor', () => {
   });
 
   it('extracts nested $! variables', function() {
-    const visitor = new VariablesVisitor();
+    const visitor = new VariablesTrackingVisitor();
     visitor.visitNode({
       a: new yaml.$include('foo.bar')
     }, 'test', mkTestEnv({foo: {bar: 'baz'}}));
@@ -27,7 +27,7 @@ describe('VariablesVisitor', () => {
   });
 
   it('extracts handlebars variables', function() {
-    const visitor = new VariablesVisitor();
+    const visitor = new VariablesTrackingVisitor();
     visitor.visitNode({
       foo: '{{ bar }}'
     }, 'test', mkTestEnv({bar: 'baz'}));
@@ -35,7 +35,7 @@ describe('VariablesVisitor', () => {
   });
 
   it('extracts nested handlebars variables', function() {
-    const visitor = new VariablesVisitor();
+    const visitor = new VariablesTrackingVisitor();
     visitor.visitNode({
       foo: '{{ foo.bar }}'
     }, 'test', mkTestEnv({foo: {bar: 'baz'} }));
@@ -43,7 +43,7 @@ describe('VariablesVisitor', () => {
   });
 
   it('extracts variables from handlebars functions', function() {
-    const visitor = new VariablesVisitor();
+    const visitor = new VariablesTrackingVisitor();
     visitor.visitNode({
       foo: '{{ toLowerCase foo.bar }}'
     }, 'test', mkTestEnv({foo: {bar: 'baz'} }));
@@ -51,7 +51,7 @@ describe('VariablesVisitor', () => {
   });
 
   it('extracts variables from handlebars blocks', function() {
-    const visitor = new VariablesVisitor();
+    const visitor = new VariablesTrackingVisitor();
     visitor.visitNode({
       foo: '{{#if foo.bar }}{{/if}}'
     }, 'test', mkTestEnv({foo: {bar: 'baz'} }));
