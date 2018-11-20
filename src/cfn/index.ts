@@ -3,6 +3,7 @@ import * as pathmod from 'path';
 import * as process from 'process';
 import * as child_process from 'child_process';
 import * as url from 'url';
+import didYouMean from 'didyoumean2';
 
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
@@ -943,7 +944,12 @@ export async function loadStackArgs(argv: GenericCLIArguments,
 function showArgsfileWarnings(argsdata: object, filename: string) {
   const invalidProperties = _.difference(_.keys(argsdata), stackArgsProperties);
   _.forEach(invalidProperties, (name: string) => {
-    logger.warn(`Invalid property '${name}' in ${filename}`);
+    let suggestion = '';
+    const suggestedProperty = didYouMean(name, stackArgsProperties);
+    if (suggestedProperty) {
+      suggestion = `. Did you mean '${suggestedProperty}'?`
+    }
+    logger.warn(`Invalid property '${name}' in ${filename}${suggestion}`);
   });
 }
 
