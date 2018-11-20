@@ -50,8 +50,9 @@ import {
   PreprocessOptions,
   interpolateHandlebarsString,
   importLoaders,
-  ExtendedCfnDoc
+  ExtendedCfnDoc,
 } from '../preprocess';
+import {extendedCfnDocKeys} from '../preprocess/visitor';
 import {getKMSAliasForParameter} from '../params';
 import {GlobalArguments} from '../cli';
 
@@ -109,8 +110,6 @@ const stackArgsProperties: Array<keyof StackArgs> = [
   'TimeoutInMinutes',
   'UsePreviousTemplate',
 ];
-
-const stackArgsMetaProperties = ['$imports', '$defs'];
 
 async function getReliableStartTime(): Promise<Date> {
   const startTime = await getReliableTime();
@@ -946,7 +945,7 @@ export async function loadStackArgs(argv: GenericCLIArguments,
 function showArgsfileWarnings(argsdata: object, filename: string) {
   const invalidProperties = _.difference(_.keys(argsdata),
                                          stackArgsProperties,
-                                         stackArgsMetaProperties);
+                                         extendedCfnDocKeys);
   _.forEach(invalidProperties, (name: string) => {
     let suggestion = '';
     const suggestedProperty = didYouMean(name, stackArgsProperties);
@@ -981,8 +980,6 @@ export async function _loadStackArgs(argsfile: string,
   if(!_.isEmpty(filterKeys)) {
     argsdata = filter(filterKeys, argsdata, argsfile);
   }
-
-  showArgsfileWarnings(argsdata, argsfile);
 
   // There is chicken-and-egg situation between use of imports for
   // profile or region and the call to configureAWS. We need to
@@ -1046,6 +1043,7 @@ export async function _loadStackArgs(argsfile: string,
       // because of the multiple passes. TODO use transformPostImports
       // instead and loadImports only once.
       const stackArgsPass1 = await transform(argsdataPass1, argsfile) as StackArgs;
+
       // TODO what about the rest of the $envValues from the imports and defs?
       const CommandsBeforeEnv = _.merge({
         iidy: {
@@ -1066,6 +1064,9 @@ export async function _loadStackArgs(argsfile: string,
     }
   }
   const stackArgsPass2 = await transform(argsdata, argsfile) as StackArgs;
+
+  showArgsfileWarnings(stackArgsPass2, argsfile);
+
   const stackArgsPass3 = recursivelyMapValues(stackArgsPass2, (value: any) => {
     if(typeof value === 'string') {
       // $0string is an encoding added in preprocess/index.ts:visitString
