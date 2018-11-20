@@ -41,4 +41,20 @@ describe('VariablesVisitor', () => {
     }, 'test', mkTestEnv({foo: {bar: 'baz'} }));
     expect(visitor.variables).to.deep.equal(['foo.bar'])
   });
+
+  it('extracts variables from handlebars functions', function() {
+    const visitor = new VariablesVisitor();
+    visitor.visitNode({
+      foo: '{{ toLowerCase foo.bar }}'
+    }, 'test', mkTestEnv({foo: {bar: 'baz'} }));
+    expect(visitor.variables).to.deep.equal(['foo.bar'])
+  });
+
+  it('extracts variables from handlebars blocks', function() {
+    const visitor = new VariablesVisitor();
+    visitor.visitNode({
+      foo: '{{#if foo.bar }}{{/if}}'
+    }, 'test', mkTestEnv({foo: {bar: 'baz'} }));
+    expect(visitor.variables).to.deep.equal(['foo.bar'])
+  });
 });

@@ -12,7 +12,7 @@ describe('cfn', () => {
         _: [''],
         '$0': ''
       };
-      const args = await loadStackArgs(argv, async () => {
+      const args = await loadStackArgs(argv, [], async () => {
         // Mock out with fake credentials. This is required for things like
         // addDefaultNotificationArn to fail silently
         aws.config.credentials = new aws.EnvironmentCredentials('TEST');

@@ -682,21 +682,68 @@ export class Visitor {
 
 }
 
+class HandlebarsVariablesVisitor extends handlebars.Visitor {
+  constructor(public variables: string[]) {
+    super();
+  };
+
+  BlockStatement(block: hbs.AST.BlockStatement): void {
+    if(_.isEmpty(block.params)) {
+      if('original' in block.path) {
+        this.variables.push(block.path.original);
+      }
+    } else {
+      for(let expression of block.params) {
+        this.Expression(expression);
+      }
+    }
+  }
+
+  PartialBlockStatement(partial: hbs.AST.PartialBlockStatement): void {
+    for(let expression of partial.params) {
+      this.Expression(expression);
+    }
+  }
+
+  MustacheStatement(mustache: hbs.AST.MustacheStatement): void {
+    if(_.isEmpty(mustache.params)) {
+      if('original' in mustache.path) {
+        this.variables.push(mustache.path.original);
+      }
+    } else {
+      for(let expression of mustache.params) {
+        this.Expression(expression);
+      }
+    }
+  }
+
+  // Expression is not part of handlebars.Visitor
+  Expression(expression: hbs.AST.Expression): void {
+    if('params' in expression) {
+      for(let ex of (expression as hbs.AST.SubExpression).params) {
+        this.Expression(ex);
+      }
+    } else {
+      if('original' in expression) {
+        this.variables.push((expression as hbs.AST.PathExpression).original);
+      }
+    }
+  }
+}
+
 export class VariablesVisitor extends Visitor {
   public variables: string[] = [];
 
   visitHandlebarsString(node: string, path: string, env: Env): string {
-    const regex = /{{ *(.*?) *}}/g;
-    let matches;
-    while (matches = regex.exec(node)) {
-      this.variables.push(matches[1]);
-    }
-    return super.visitHandlebarsString(node, path, env);
+    const ast = handlebars.parse(node);
+    const v = new HandlebarsVariablesVisitor(this.variables);
+    v.accept(ast);
+    return node;
   }
 
   visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
     this.variables.push(node.data);
-    return super.visit$include(node, path, env);
+    return node.data;
   }
 
 }
