@@ -1,5 +1,5 @@
 require('./support'); // for side-effect
-import {assert, expect} from 'chai';
+import {expect} from 'chai';
 
 import * as yaml from '../yaml';
 import {render} from '../render';

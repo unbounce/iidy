@@ -3,9 +3,10 @@ import * as aws from 'aws-sdk'
 import * as yaml from '../yaml';
 import def from '../default';
 import {SUCCESS} from '../statusCodes';
-import {GenericCLIArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 
-import {getStackNameFromArgsAndConfigureAWS, parseTemplateBody} from './index';
+import {parseTemplateBody} from "./parseTemplateBody";
+import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConfigureAWS";
 
 export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<number> {
   const StackName = await getStackNameFromArgsAndConfigureAWS(argv);

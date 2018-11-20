@@ -3,9 +3,7 @@ import * as aws from 'aws-sdk'
 
 import * as jsyaml from 'js-yaml';
 
-import {Arguments} from 'yargs';
-
-import {GlobalArguments} from '../cli';
+import {GlobalArguments} from '../cli-util';
 
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import configureAWS from '../configureAWS';
@@ -72,7 +70,7 @@ export async function setParam(argv: SetParamArgs): Promise<number> {
   const Type = argv.type;
   const Overwrite = argv.overwrite;
   const KeyId = Type === 'SecureString' ? await getKMSAliasForParameter(Name) : undefined;
-  const res = await ssm.putParameter({Name, Value, Type, KeyId, Overwrite}).promise();
+  await ssm.putParameter({Name, Value, Type, KeyId, Overwrite}).promise();
 
   if (argv.withApproval) {
     const region = getCurrentAWSRegion();

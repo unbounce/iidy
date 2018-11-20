@@ -6,11 +6,9 @@ import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import def from '../default';
 import {SUCCESS} from '../statusCodes';
 import {formatSectionHeading} from './formatting';
-import {GenericCLIArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 
-import {
-  getStackNameFromArgsAndConfigureAWS
-} from './index';
+import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConfigureAWS";
 import {summarizeStackContents} from "./summarizeStackContents";
 import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {getAllStackEvents} from "./getAllStackEvents";

@@ -2,7 +2,8 @@ import * as aws from 'aws-sdk';
 import {diff} from '../diff';
 import {readFromImportLocation} from '../preprocess';
 import * as yaml from '../yaml';
-import {loadCFNTemplate, parseTemplateBody} from './index';
+import {parseTemplateBody} from "./parseTemplateBody";
+import {loadCFNTemplate} from "./loadCFNTemplate";
 import {StackArgs} from './types';
 
 export async function diffStackTemplates(StackName: string, stackArgs: StackArgs, argsfile: string, environment: string) {

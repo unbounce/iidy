@@ -9,11 +9,21 @@ import {logger} from '../logger';
 import def from '../default';
 import mkSpinner from '../spinner';
 import {SUCCESS} from '../statusCodes';
-import {GenericCLIArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 
-import {renderTimestamp, formatTimestamp, prettyFormatTags} from './formatting';
-import {getAllStacks} from "./getAllStacks";
+import {renderTimestamp, formatTimestamp, prettyFormatTags, calcPadding} from './formatting';
 import {colorizeResourceStatus} from "./formatting";
+
+export async function getAllStacks() {
+  const cfn = new aws.CloudFormation();
+  let res = await cfn.describeStacks().promise();
+  let stacks = def([], res.Stacks);
+  while (!_.isUndefined(res.NextToken)) {
+    res = await cfn.describeStacks({NextToken: res.NextToken}).promise();
+    stacks = stacks.concat(def([], res.Stacks));
+  }
+  return stacks;
+}
 
 export async function listStacks(showTags = false, query?: string, tagsFilter?: [string, string][], jmespathFilter?: string) {
   const stacksPromise = getAllStacks();
@@ -26,7 +36,7 @@ export async function listStacks(showTags = false, query?: string, tagsFilter?: 
     return SUCCESS;
   }
   const timePadding = 24;
-  const statusPadding = _.max(_.map(stacks, ev => ev.StackStatus.length));
+  const statusPadding = calcPadding(stacks, s => s.StackStatus);
   let filteredStacks: aws.CloudFormation.Stack[];
   if (tagsFilter || jmespathFilter) {
     const predicates = [];

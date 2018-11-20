@@ -1,6 +1,4 @@
-import * as yargs from 'yargs';
-
-import {description, Handler, wrapCommandHandler} from '../cli';
+import {Handler, Argv, Options, description, wrapCommandHandler} from '../cli-util';
 
 export interface ParamCommands {
   setParam: Handler;
@@ -21,18 +19,18 @@ const lazy: ParamCommands = {
   getParamHistory: lazyLoad('getParamHistory'),
 }
 
-const decryptOption: yargs.Options = {
+const decryptOption: Options = {
   type: 'boolean', default: true,
   description: 'decrypt or not'
 };
 
-const formatOption: yargs.Options = {
+const formatOption: Options = {
   type: 'string', default: 'simple',
   description: 'output format. simple = values only not meta data',
   choices: ['simple', 'yaml', 'json']
 };
 
-export function buildParamCommands(args: yargs.Argv, commands = lazy): yargs.Argv {
+export function buildParamCommands(args: Argv, commands = lazy): Argv {
   return args
     .strict()
     .demandCommand(1, 0)

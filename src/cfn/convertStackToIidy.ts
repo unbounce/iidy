@@ -2,14 +2,14 @@ import * as aws from 'aws-sdk';
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
-import {GlobalArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 import configureAWS from '../configureAWS';
 import def from '../default';
 import {getKMSAliasForParameter} from '../params';
 import {SUCCESS} from '../statusCodes';
 import * as yaml from '../yaml';
 import {getStackDescription} from './getStackDescription';
-import {parseTemplateBody} from './index';
+import {parseTemplateBody} from "./parseTemplateBody";
 import {StackArgs} from "./types";
 
 function parameterizeEnv(s0: string, environments = ['development', 'integration', 'staging', 'production']): string {
@@ -97,7 +97,7 @@ function sortMapByWeights(node0: any, weights: any): any {
   return _.fromPairs(nodePairs);
 }
 
-export type ConvertStackArguments = GlobalArguments & {
+export type ConvertStackArguments = GenericCLIArguments & {
   outputDir: string;
   stackname: string;
   stage?: string;
@@ -106,7 +106,8 @@ export type ConvertStackArguments = GlobalArguments & {
   moveParamsToSsm: boolean;
 };
 
-export async function convertStackToIIDY(argv: ConvertStackArguments): Promise<number> {
+export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<number> {
+  const argv = argv0 as ConvertStackArguments;
   await configureAWS(argv);
   const outputDir = argv.outputDir;
   const StackName = argv.stackname;

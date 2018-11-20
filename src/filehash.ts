@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as pathmod from 'path';
 import * as child_process from 'child_process';
 
 import normalizePath from './normalizePath';

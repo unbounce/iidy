@@ -1,6 +1,4 @@
-import * as yargs from 'yargs';
-
-import {description, Handler, wrapCommandHandler} from '../cli';
+import {description, Handler, wrapCommandHandler, Argv} from '../cli-util';
 
 export interface ApprovalCommands {
   request: Handler;
@@ -15,7 +13,7 @@ const lazy: ApprovalCommands = {
   review: lazyLoad('review')
 }
 
-export function buildApprovalCommands(args: yargs.Argv, commands = lazy): yargs.Argv {
+export function buildApprovalCommands(args: Argv, commands = lazy): Argv {
   return args
     .strict()
     .demandCommand(1, 0)
@@ -41,5 +39,4 @@ export function buildApprovalCommands(args: yargs.Argv, commands = lazy): yargs.
       .strict(),
     wrapCommandHandler(commands.review)
     );
-
 }

@@ -1,4 +1,4 @@
 #!/bin/sh
 ":" //# see http://sambal.org/2014/02/passing-options-node-shebang-line/; exec /usr/bin/env node --harmony "$0" "$@"
 
-require('../lib/cli.js').main();
+require('../lib/main.js').main();

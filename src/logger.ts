@@ -1,13 +1,12 @@
 import * as process from 'process';
 import * as _ from 'lodash';
 import * as winston from 'winston';
-import * as cli from 'cli-color';
 
 import * as util from 'util';
 
 import debug from './debug';
 
-const {combine, timestamp, printf} = winston.format;
+const {combine, printf} = winston.format;
 
 const useColor = process.stdout.isTTY;
 const inspectArgs = {

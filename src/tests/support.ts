@@ -3,7 +3,6 @@ import * as _ from 'lodash';
 
 import * as pre from '../preprocess';
 import * as yaml from '../yaml';
-import * as jsyaml from 'js-yaml';
 
 export async function transform(input0: any, inputLoader = pre.readFromImportLocation) {
   const input = _.isString(input0) ? yaml.loadString(input0, 'root') : input0;
