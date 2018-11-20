@@ -8,24 +8,49 @@ import * as url from 'url';
 import {Arguments} from 'yargs';
 
 import {loadStackArgs, loadCFNTemplate, approvedTemplateVersionLocation} from '../cfn/index';
+import {lintTemplate} from '../cfn/lint';
 import configureAWS from '../configureAWS';
 import {logger} from '../logger';
 import {diff} from '../diff';
 import {GlobalArguments} from '../cli';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 import confirmationPrompt from '../confirmationPrompt';
+import * as yaml from '../yaml';
 
 export type RequestArguments = GlobalArguments & {
   argsfile: string;
+  lint: boolean;
 };
 
 export async function request(argv: RequestArguments): Promise<number> {
   const stackArgsKeys = ['ApprovedTemplateLocation', 'Template'];
   const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
 
+  const cfnTemplate = await loadCFNTemplate(stackArgs.Template,
+                                            argv.argsfile,
+                                            argv.environment,
+                                            {omitMetadata: true});
+
+  if(argv.lint) {
+    if(cfnTemplate.TemplateBody) {
+      const template = yaml.loadString(cfnTemplate.TemplateBody, stackArgs.Template);
+      const lint = lintTemplate(template);
+      if(!_.isEmpty(lint)) {
+        _.forEach(lint, (value, index) => logger.warn(value));
+        logger.error('Aborting due to template lint failures');
+        return FAILURE;
+      }
+    } else {
+      logger.warn('Unable to read template for linting');
+    }
+  }
+
   if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
     const s3 = new S3();
-    const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile, argv.environment);
+    const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation,
+                                                         stackArgs.Template,
+                                                         argv.argsfile,
+                                                         argv.environment);
 
     try {
       await s3.headObject(s3Args).promise();
@@ -33,7 +58,6 @@ export async function request(argv: RequestArguments): Promise<number> {
     } catch (e) {
       if (e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
-        const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true});
         await s3.putObject({
           Body: cfnTemplate.TemplateBody,
           ...s3Args

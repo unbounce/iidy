@@ -20,26 +20,30 @@ export function buildApprovalCommands(args: yargs.Argv, commands = lazy): yargs.
     .strict()
     .demandCommand(1, 0)
     .command(
-    'request <argsfile>',
-    description('request template approval'),
-    (args) => args
-      .demandCommand(0, 0)
-      .usage('Usage: iidy template-approval request stack-args.yaml')
-      .strict(),
-    wrapCommandHandler(commands.request))
+      'request <argsfile>',
+      description('request template approval'),
+      (args) => args
+        .demandCommand(0, 0)
+        .usage('Usage: iidy template-approval request stack-args.yaml')
+        .option('lint', {
+          type: 'boolean', default: true,
+          description: description('lint CloudFormation template')
+        })
+        .strict(),
+      wrapCommandHandler(commands.request))
 
     .command(
-    'review <url>',
-    description('review pending template approval request'),
-    (args) => args
-      .demandCommand(0, 0)
-      .option('context', {
-        type: 'number', default: 100,
-        description: description('how many lines of diff context to show')
-      })
-      .usage('Usage: iidy template-approval review s3://bucket/path.pending')
-      .strict(),
-    wrapCommandHandler(commands.review)
+      'review <url>',
+      description('review pending template approval request'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('context', {
+          type: 'number', default: 100,
+          description: description('how many lines of diff context to show')
+        })
+        .usage('Usage: iidy template-approval review s3://bucket/path.pending')
+        .strict(),
+      wrapCommandHandler(commands.review)
     );
 
 }
