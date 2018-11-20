@@ -46,7 +46,13 @@ export const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFram
 const _liftKVPairs = (objects: {key: string, value: any}[]) =>
   _.fromPairs(_.map(objects, ({key, value}) => [key, value]))
 
-const extendedCfnDocKeys = ['$imports', '$defs', '$params', '$location', '$envValues'];
+export const extendedCfnDocKeys = [
+  '$imports',
+  '$defs',
+  '$params',
+  '$location',
+  '$envValues'
+];
 
 function mapCustomResourceToGlobalSections(
   resourceDoc: ExtendedCfnDoc,

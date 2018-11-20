@@ -3,6 +3,7 @@ import * as pathmod from 'path';
 import * as process from 'process';
 import * as child_process from 'child_process';
 import * as url from 'url';
+import didYouMean from 'didyoumean2';
 
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
@@ -49,8 +50,9 @@ import {
   PreprocessOptions,
   interpolateHandlebarsString,
   importLoaders,
-  ExtendedCfnDoc
+  ExtendedCfnDoc,
 } from '../preprocess';
+import {extendedCfnDocKeys} from '../preprocess/visitor';
 import {getKMSAliasForParameter} from '../params';
 import {GlobalArguments} from '../cli';
 
@@ -85,12 +87,37 @@ export type StackArgs = {
   CommandsBefore?: string[]
 }
 
+const stackArgsProperties: Array<keyof StackArgs> = [
+  'ApprovedTemplateLocation',
+  'AssumeRoleARN',
+  'Capabilities',
+  'ClientRequestToken',
+  'CommandsBefore',
+  'DisableRollback',
+  'EnableTerminationProtection',
+  'NotificationARNs',
+  'OnFailure',
+  'Parameters',
+  'Profile',
+  'Region',
+  'ResourceTypes',
+  'RoleARN',
+  'ServiceRoleARN',
+  'StackName',
+  'StackPolicy',
+  'Tags',
+  'Template',
+  'TimeoutInMinutes',
+  'UsePreviousTemplate',
+];
+
 async function getReliableStartTime(): Promise<Date> {
   const startTime = await getReliableTime();
   startTime.setTime(startTime.getTime() - 500); // to be safe
   // TODO warn about inaccurate local clocks as that will affect the calculation of elapsed time.
   return startTime;
 }
+
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-listing-event-history.html
 // CREATE_COMPLETE | CREATE_FAILED | CREATE_IN_PROGRESS |
@@ -915,6 +942,20 @@ export async function loadStackArgs(argv: GenericCLIArguments,
   return addDefaultNotificationArn(args);
 }
 
+function showArgsfileWarnings(argsdata: object, filename: string) {
+  const invalidProperties = _.difference(_.keys(argsdata),
+                                         stackArgsProperties,
+                                         extendedCfnDocKeys);
+  _.forEach(invalidProperties, (name: string) => {
+    let suggestion = '';
+    const suggestedProperty = didYouMean(name, stackArgsProperties);
+    if (suggestedProperty) {
+      suggestion = `. Did you mean '${suggestedProperty}'?`
+    }
+    logger.warn(`Invalid property '${name}' in ${filename}${suggestion}`);
+  });
+}
+
 //export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
 export async function _loadStackArgs(argsfile: string,
                                      argv: GenericCLIArguments,
@@ -1002,6 +1043,7 @@ export async function _loadStackArgs(argsfile: string,
       // because of the multiple passes. TODO use transformPostImports
       // instead and loadImports only once.
       const stackArgsPass1 = await transform(argsdataPass1, argsfile) as StackArgs;
+
       // TODO what about the rest of the $envValues from the imports and defs?
       const CommandsBeforeEnv = _.merge({
         iidy: {
@@ -1022,6 +1064,9 @@ export async function _loadStackArgs(argsfile: string,
     }
   }
   const stackArgsPass2 = await transform(argsdata, argsfile) as StackArgs;
+
+  showArgsfileWarnings(stackArgsPass2, argsfile);
+
   const stackArgsPass3 = recursivelyMapValues(stackArgsPass2, (value: any) => {
     if(typeof value === 'string') {
       // $0string is an encoding added in preprocess/index.ts:visitString

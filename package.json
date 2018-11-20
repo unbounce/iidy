@@ -27,6 +27,7 @@
     "cli-color": "^1.4.0",
     "cfn-lint": "^1.9.2",
     "dateformat": "^3.0.3",
+    "didyoumean2": "^2.0.0",
     "escape-string-regexp": "^1.0.5",
     "handlebars": "^4.0.12",
     "inquirer": "^6.2.0",
