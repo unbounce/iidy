@@ -10,7 +10,6 @@ import {iniLoader} from 'aws-sdk/lib/shared-ini';
 
 import {AWSRegions} from '../aws-regions';
 import configureAWS from '../configureAWS';
-import {AWSConfig} from '../configureAWS';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 
 const awsUserDir = process.env.HOME ? path.join(process.env.HOME as string, '.aws') : null;

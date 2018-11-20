@@ -33,8 +33,7 @@ export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPaddi
   if (getStrippedLength(line) + LogicalResourceId.length < screenWidth) {
     process.stdout.write(formatLogicalId(LogicalResourceId));
     line += LogicalResourceId;
-  }
-  else {
+  } else {
     line = ' '.repeat(columnOfResourceType + 3) + formatLogicalId(LogicalResourceId);
     process.stdout.write('\n' + line);
   }
@@ -42,22 +41,19 @@ export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPaddi
     let reasonColor;
     if (status.indexOf('FAIL') > -1 || reason.indexOf('fail') > -1) {
       reasonColor = cli.red;
-    }
-    else {
+    } else {
       reasonColor = cli.blackBright;
     }
     if (reason.length + getStrippedLength(line) < screenWidth) {
       console.log(' ' + reasonColor(reason));
-    }
-    else {
+    } else {
       process.stdout.write('\n');
       const breakColumn = screenWidth - (COLUMN2_START + 1);
       for (const ln of wrapAnsi(reasonColor(reason), breakColumn).split('\n')) {
         console.log(' '.repeat(COLUMN2_START + 1) + ln);
       }
     }
-  }
-  else {
+  } else {
     process.stdout.write('\n');
   }
 }

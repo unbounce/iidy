@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as process from 'process';
@@ -18,164 +19,45 @@ global.Promise = bluebird;
 
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
-
-import {logger, setLogLevel} from './logger';
-import debug from './debug';
-import {AWSRegion} from './aws-regions';
+import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt} from './cli-util';
+import {Commands} from './cli-commands-type';
 import {buildParamCommands} from './params/cli'
 import {buildApprovalCommands} from './approval/cli'
-
-export interface GlobalArguments {
-  region?: AWSRegion;
-  profile?: string;
-  assumeRoleArn?: string;
-  debug?: boolean;
-  logFullError?: boolean;
-  environment: string;
-  clientRequestToken?: string;
-}
-
-export type GenericCLIArguments = GlobalArguments & yargs.Arguments;
-
-export type ExitCode = number;
-export type Handler = (args: GlobalArguments & yargs.Arguments) => Promise<ExitCode>
-
-export const wrapCommandHandler = (handler: Handler) =>
-  function(args0: yargs.Arguments) {
-    const args: GlobalArguments & yargs.Arguments = args0 as any; // coerce type
-    if (!args.environment) {
-      args.environment = 'development';
-    }
-    if (args.debug) {
-      process.env.DEBUG = 'true';
-      setLogLevel('debug');
-    }
-    handler(args)
-      .then(process.exit)
-      .catch(error => {
-        if (debug() || args.logFullError || process.env.LOG_IIDY_ERROR) {
-          logger.error(error);
-        } else if (error.message) {
-          logger.error(error.message);
-        } else {
-          logger.error(error);
-        }
-        process.exit(1);
-      });
-  };
-
-export interface CfnStackCommands {
-  createStackMain: Handler;
-  createOrUpdateStackMain: Handler;
-  updateStackMain: Handler;
-  listStacksMain: Handler;
-  watchStackMain: Handler;
-  describeStackMain: Handler;
-  getStackTemplateMain: Handler;
-  getStackInstancesMain: Handler;
-  deleteStackMain: Handler;
-
-  estimateCost: Handler; // TODO fix inconsistent name
-
-  createChangesetMain: Handler;
-  executeChangesetMain: Handler;
-  // TODO add an activate stack command wrapper
-}
-
-export interface MiscCommands {
-  initStackArgs: Handler;
-  renderMain: Handler;
-  demoMain: Handler;
-  lintMain: Handler;
-  convertStackToIIDY: Handler;
-}
-
-export interface Commands extends CfnStackCommands, MiscCommands {};
 
 // We lazy load the actual command fns to make bash command completion
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-type LazyLoadModules =
-  './cfn'
-  | './cfn/listStacks'
-  | './cfn/describeStack'
-  | './cfn/convertStackToIidy'
-  | './cfn/deleteStack'
-  | './cfn/getStackTemplate'
-  | './cfn/watchStack'
-  | './cfn/getStackInstances'
-  | './preprocess'
-  | './demo'
-  | './lint'
-  | './render'
-  | './initStackArgs';
-
-const _loadModule = (modName: LazyLoadModules): any => {
-  // note, the requires must be literal for `pkg` to find the modules to include
-  if (modName === './preprocess') {
-    return require('./preprocess');
-  } else if (modName === './cfn') {
-    return require('./cfn');
-  } else if (modName === './cfn/listStacks') {
-    return require('./cfn/listStacks');
-  } else if (modName === './cfn/deleteStack') {
-    return require('./cfn/deleteStack');
-  } else if (modName === './cfn/describeStack') {
-    return require('./cfn/describeStack');
-  } else if (modName === './cfn/getStackTemplate') {
-    return require('./cfn/getStackTemplate');
-  } else if (modName === './cfn/convertStackToIidy') {
-    return require('./cfn/convertStackToIidy');
-  } else if (modName === './cfn/getStackInstances') {
-    return require('./cfn/getStackInstances');
-  } else if (modName === './cfn/watchStack') {
-    return require('./cfn/watchStack');
-  } else if (modName === './lint') {
-    return require('./lint');
-  } else if (modName === './demo') {
-    return require('./demo');
-  } else if (modName === './render') {
-    return require('./render');
-  } else if (modName === './initStackArgs') {
-    return require('./initStackArgs');
-  }
-}
-
-function lazyLoad(fnname: keyof Commands, modName: LazyLoadModules = './cfn'): Handler {
+function lazyLoad(fnname: keyof Commands): Handler {
   return (args) => {
-    const module = _loadModule(modName);
-    return module[fnname](args);
+    const {implementations} = require('./cli-commands-impl');
+    return implementations[fnname](args);
   }
 }
 
-const lazy: Commands = {
-  createStackMain: lazyLoad('createStackMain'),
-  createOrUpdateStackMain: lazyLoad('createOrUpdateStackMain'),
-  updateStackMain: lazyLoad('updateStackMain'), // TODO
-  listStacksMain: lazyLoad('listStacksMain', './cfn/listStacks'),
-  watchStackMain: lazyLoad('watchStackMain', './cfn/watchStack'),
-  describeStackMain: lazyLoad('describeStackMain', './cfn/describeStack'),
-  getStackTemplateMain: lazyLoad('getStackTemplateMain', './cfn/getStackTemplate'),
-  getStackInstancesMain: lazyLoad('getStackInstancesMain', './cfn/getStackInstances'),
-  deleteStackMain: lazyLoad('deleteStackMain', './cfn/deleteStack'),
+function lazyGetter(target: any, key: keyof Commands) {
+  Object.defineProperty(target, key, {value: lazyLoad(key)});
+}
 
-  createChangesetMain: lazyLoad('createChangesetMain'),
-  executeChangesetMain: lazyLoad('executeChangesetMain'),
-
-  renderMain: lazyLoad('renderMain', './render'),
-
-  estimateCost: lazyLoad('estimateCost'),
-
-  demoMain: lazyLoad('demoMain', './demo'),
-  lintMain: lazyLoad('lintMain', './lint'),
-  convertStackToIIDY: lazyLoad('convertStackToIIDY', './cfn/convertStackToIidy'),
-  initStackArgs: lazyLoad('initStackArgs', './initStackArgs'),
-  // TODO example command pull down an examples dir
-
-};
-
-export const description = cli.xterm(250);
+class LazyCommands implements Commands {
+  @lazyGetter createStackMain: Handler
+  @lazyGetter createOrUpdateStackMain: Handler
+  @lazyGetter updateStackMain: Handler
+  @lazyGetter listStacksMain: Handler
+  @lazyGetter watchStackMain: Handler
+  @lazyGetter describeStackMain: Handler
+  @lazyGetter getStackTemplateMain: Handler
+  @lazyGetter getStackInstancesMain: Handler
+  @lazyGetter deleteStackMain: Handler
+  @lazyGetter createChangesetMain: Handler
+  @lazyGetter executeChangesetMain: Handler
+  @lazyGetter lintMain: Handler
+  @lazyGetter renderMain: Handler
+  @lazyGetter estimateCost: Handler
+  @lazyGetter demoMain: Handler
+  @lazyGetter convertStackToIIDY: Handler
+  @lazyGetter initStackArgs: Handler
+}
 
 const environmentOpt: yargs.Options = {
   type: 'string', default: 'development',
@@ -183,18 +65,7 @@ const environmentOpt: yargs.Options = {
   description: description('used to load environment based settings: AWS Profile, Region, etc.')
 };
 
-const stackNameOpt: yargs.Options = {
-  type: 'string', default: null,
-  alias: 's',
-  description: description('override the StackName from <argsfile>')
-};
-
-const fakeCommandSeparator = `\b\b\b\b\b     ${cli.black('...')}`;
-// ^ the \b's are ansi backspace control chars to delete 'iidy' from
-// help output on these fake commands. This allows us to visually
-// separate the iidy help output into sets of commands.
-
-export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler) {
+export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapCommandHandler) {
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
     + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
   const epilogue = ('Status Codes:\n'
@@ -331,7 +202,17 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         .usage('Usage: iidy watch-stack <stackname-or-argsfile>'),
       wrapMainHandler(commands.watchStackMain))
 
-    .command(
+    // .command(
+    //   'describe-stack-drift <stackname>',
+    //   description('describe stack drift'),
+    //   (args) => args
+    //     .demandCommand(0, 0)
+    //     .option('drift-cache', {
+    //       type: 'number', default: (60 * 5),
+    //       description: description('how long to cache previous drift detection results (seconds)')
+    //     })
+    //     .usage('Usage: iidy describe-stack-drift <stackname-or-argsfile>'),
+    //   wrapMainHandler(commands.describeStackDriftMain))
 
     .command(
         'delete-stack        <stackname>',
@@ -562,9 +443,9 @@ export function buildArgs(commands = lazy, wrapMainHandler = wrapCommandHandler)
         .wrap(yargs.terminalWidth());
 }
 
-export async function main(commands = lazy) {
+export async function main() {
   // called for side-effect to force parsing / handling
-  buildArgs(commands).argv;
+  buildArgs().argv;
 }
 
 

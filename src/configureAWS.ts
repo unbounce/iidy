@@ -13,8 +13,6 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
   //  Error: ENOENT: no such file or directory, open '.../.aws/credentials
 }
 
-const USE_AWS_CLI_STS_CACHE = process.env.iidy_use_sts_cache !== undefined;
-
 import * as _ from 'lodash';
 import * as aws from 'aws-sdk';
 
@@ -32,7 +30,7 @@ function getCredentialsProviderChain(profile?: string) {
     }
     const tokenCodeFn = (serial: string, cb: (err?: Error, token?: string) => void) => {
       const prompt = inquirer.createPromptModule({output: process.stderr});
-      const resp = prompt<{token: string}>(
+      prompt<{token: string}>(
         {
           name: 'token',
           type: 'input',

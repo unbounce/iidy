@@ -1,17 +1,16 @@
 import * as _ from 'lodash';
 import {S3} from 'aws-sdk';
-import * as fs from 'fs';
 import * as cli from 'cli-color';
 import * as path from 'path';
 import * as url from 'url';
 
-import {Arguments} from 'yargs';
-
-import {loadStackArgs, loadCFNTemplate, approvedTemplateVersionLocation} from '../cfn/index';
+import {loadCFNTemplate} from "../cfn/loadCFNTemplate";
+import {loadStackArgs} from "../cfn/loadStackArgs";
+import {approvedTemplateVersionLocation} from "../cfn/approvedTemplateVersionLocation";
 import configureAWS from '../configureAWS';
 import {logger} from '../logger';
 import {diff} from '../diff';
-import {GlobalArguments} from '../cli';
+import {GlobalArguments} from '../cli-util';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 import confirmationPrompt from '../confirmationPrompt';
 

@@ -5,7 +5,8 @@ import {Arguments} from 'yargs';
 import {logger} from '../logger';
 import * as yaml from '../yaml';
 import {SUCCESS, FAILURE} from '../statusCodes';
-import {loadStackArgs, loadCFNTemplate} from '../cfn/index';
+import {loadStackArgs} from '../cfn/loadStackArgs';
+import {loadCFNTemplate} from '../cfn/loadCFNTemplate';
 
 export function lint(input: object): string[] {
   const result = [];

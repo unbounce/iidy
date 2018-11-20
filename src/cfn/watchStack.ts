@@ -1,9 +1,7 @@
-import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
-import {sprintf} from 'sprintf-js';
 import calcElapsedSeconds from '../calcElapsedSeconds';
-import {GenericCLIArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {logger} from '../logger';
 import mkSpinner from '../spinner';
@@ -12,11 +10,11 @@ import timeout from '../timeout';
 import {DEFAULT_EVENT_POLL_INTERVAL} from './defaults';
 import {displayStackEvent} from './displayStackEvent';
 import eventIsFromSubstack from './eventIsFromSubstack';
-import {formatSectionHeading, formatTimestamp, renderTimestamp} from './formatting';
+import {formatSectionHeading, calcPadding} from './formatting';
 import {getAllStackEvents} from './getAllStackEvents';
 import getReliableStartTime from './getReliableStartTime';
 import {getStackDescription} from './getStackDescription';
-import {getStackNameFromArgsAndConfigureAWS} from './index';
+import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConfigureAWS";
 import {summarizeStackContents} from "./summarizeStackContents";
 import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {showStackEvents} from './showStackEvents';
@@ -58,7 +56,7 @@ export async function watchStack(
   const subStacksToIgnore = new Set();
   while (!DONE) {
     let evs = await getAllStackEvents(StackName, true, subStacksToIgnore);
-    const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
+    const statusPadding = calcPadding(evs, ev => ev.ResourceStatus!);
     for (const ev of evs) {
       if (eventIsFromSubstack(ev) && !seen[ev.EventId]) {
         if (_.includes(terminalStackStates, ev.ResourceStatus) && ev.Timestamp > startTime) {

@@ -1,18 +1,15 @@
 import * as fs from 'fs';
-import * as pathmod from 'path';
-
-import * as _ from 'lodash';
-import {Arguments} from 'yargs';
 import {search} from 'jmespath';
-
+import * as _ from 'lodash';
+import * as pathmod from 'path';
+import {_loadStackArgs} from "./cfn/loadStackArgs";
+import {GenericCLIArguments} from './cli-util';
 import configureAWS from './configureAWS';
-import * as yaml from './yaml';
-import {ExtendedCfnDoc, transform} from './preprocess';
-import {_loadStackArgs} from './cfn';
-import {logger} from './logger';
 import getCurrentAWSRegion from './getCurrentAWSRegion';
-import {GlobalArguments} from './cli';
-import {SUCCESS, FAILURE} from './statusCodes';
+import {logger} from './logger';
+import {ExtendedCfnDoc, transform} from './preprocess';
+import {FAILURE, SUCCESS} from './statusCodes';
+import * as yaml from './yaml';
 
 export function isStackArgsFile(location: string, doc: any): boolean {
   if (pathmod.basename(location).match(/stack-args/)) {
@@ -22,7 +19,7 @@ export function isStackArgsFile(location: string, doc: any): boolean {
   }
 }
 
-export type RenderArguments = GlobalArguments & Arguments & {
+export type RenderArguments = GenericCLIArguments & {
   template: string;
   outfile: string;
   overwrite: boolean;
@@ -30,7 +27,8 @@ export type RenderArguments = GlobalArguments & Arguments & {
   format?: string;
 };
 
-export async function renderMain(argv: RenderArguments): Promise<number> {
+export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
+  const argv = argv0 as RenderArguments // ts, trust me
   await configureAWS(argv);
 
   // Read from STDIN (0) if the template is `-`

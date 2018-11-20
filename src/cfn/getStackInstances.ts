@@ -1,11 +1,11 @@
 import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import {sprintf} from 'sprintf-js';
-import {GenericCLIArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {SUCCESS} from '../statusCodes';
 import {formatTimestamp, renderTimestamp} from './formatting';
-import {getStackNameFromArgsAndConfigureAWS} from './index';
+import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConfigureAWS";
 
 export async function getStackInstancesMain(argv: GenericCLIArguments): Promise<number> {
   const StackName = await getStackNameFromArgsAndConfigureAWS(argv);

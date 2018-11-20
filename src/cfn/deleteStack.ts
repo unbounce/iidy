@@ -1,22 +1,18 @@
 import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
-import {GenericCLIArguments} from '../cli';
+import {GenericCLIArguments} from '../cli-util';
 import confirmationPrompt from '../confirmationPrompt';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {logger} from '../logger';
 import {FAILURE, INTERRUPT, SUCCESS} from '../statusCodes';
-import {formatSectionHeading} from './formatting';
+import {formatSectionHeading, showFinalComandSummary} from './formatting';
 import getReliableStartTime from './getReliableStartTime';
 import {getStackDescription} from './getStackDescription';
-import {
-  getStackNameFromArgsAndConfigureAWS,
-  showFinalComandSummary
-} from './index';
+import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConfigureAWS";
+import {showStackEvents} from './showStackEvents';
 import {summarizeStackContents} from "./summarizeStackContents";
 import {summarizeStackDefinition} from "./summarizeStackDefinition";
-import {showStackEvents} from './showStackEvents';
 import {watchStack} from './watchStack';
-
 
 export async function deleteStackMain(argv: GenericCLIArguments): Promise<number> {
   const StackName = await getStackNameFromArgsAndConfigureAWS(argv);

@@ -4,12 +4,13 @@ import * as cli from 'cli-color';
 
 import {displayStackEvent} from './displayStackEvent';
 import {getAllStackEvents} from './getAllStackEvents';
+import {calcPadding} from './formatting';
 
 export async function showStackEvents(StackName: string, limit = 10, eventsPromise?: Promise<aws.CloudFormation.StackEvent[]>) {
   let evs = eventsPromise ? await eventsPromise : await getAllStackEvents(StackName);
   evs = _.sortBy(evs, (ev) => ev.Timestamp)
   const selectedEvs = evs.slice(Math.max(0, evs.length - limit), evs.length);
-  const statusPadding = _.max(_.map(evs, (ev) => (ev.ResourceStatus as string).length))
+  const statusPadding = calcPadding(evs, ev => ev.ResourceStatus!);
   for (const ev of selectedEvs) {
     displayStackEvent(ev, statusPadding);
   }
