@@ -1081,7 +1081,9 @@ export async function _loadStackArgs(argsfile: string,
 
 function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   return _.mapValues(o, function(a: any) {
-    if(typeof a === 'object') {
+    if(_.isArray(a)) {
+      return _.map(a, f);
+    } else if(_.isObject(a)) {
       return recursivelyMapValues(a, f);
     } else {
       return f(a);
