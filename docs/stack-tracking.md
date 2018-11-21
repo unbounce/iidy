@@ -92,20 +92,21 @@ stack-name-2
 Filename:
 
 ```
-hash(<stack-args filename> + <CLI args: region, profile, environment> + imported ENV variables + AWS_PROFILE etc).yaml
+.iidy/stacks.yaml
 ```
 
 Contents:
 
 ```
-stack_args: stack-args.yaml
-args:
-  - --environment production
-  - --region us-east-1
-  - --profile sandbox
-env:
-  APP_VERSION: ... # for example
-  AWS_PROFILE: ... # if this environment variable was set when `iidy create-stack --track` was run
+existingStacks:
+  - stackArgs: stack-args.yaml
+    args:
+      - --environment production
+      - --region us-east-1
+      - --profile sandbox
+    env:
+      APP_VERSION: ... # for example
+      AWS_PROFILE: ... # if this environment variable was set when `iidy create-stack --track` was run
 ```
 
 Questions:
