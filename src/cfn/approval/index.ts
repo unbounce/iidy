@@ -1,18 +1,18 @@
-import * as _ from 'lodash';
 import {S3} from 'aws-sdk';
 import * as cli from 'cli-color';
+import * as _ from 'lodash';
 import * as path from 'path';
 import * as url from 'url';
+import {GlobalArguments} from '../../cli-util';
+import configureAWS from '../../configureAWS';
+import confirmationPrompt from '../../confirmationPrompt';
+import {diff} from '../../diff';
+import {logger} from '../../logger';
+import {FAILURE, INTERRUPT, SUCCESS} from '../../statusCodes';
+import {approvedTemplateVersionLocation} from "../approvedTemplateVersionLocation";
+import {loadCFNTemplate} from "../loadCFNTemplate";
+import {loadStackArgs} from "../loadStackArgs";
 
-import {loadCFNTemplate} from "../cfn/loadCFNTemplate";
-import {loadStackArgs} from "../cfn/loadStackArgs";
-import {approvedTemplateVersionLocation} from "../cfn/approvedTemplateVersionLocation";
-import configureAWS from '../configureAWS';
-import {logger} from '../logger';
-import {diff} from '../diff';
-import {GlobalArguments} from '../cli-util';
-import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
-import confirmationPrompt from '../confirmationPrompt';
 
 export type RequestArguments = GlobalArguments & {
   argsfile: string;
