@@ -21,8 +21,10 @@ import * as yargs from 'yargs';
 import * as cli from 'cli-color';
 import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt} from './cli-util';
 import {Commands} from './cli-commands-type';
+
+// TODO bring these two in line with the new lazy load scheme
 import {buildParamCommands} from './params/cli'
-import {buildApprovalCommands} from './approval/cli'
+import {buildApprovalCommands} from './cfn/approval/cli'
 
 // We lazy load the actual command fns to make bash command completion
 // faster. See the git history of this file to see the non-lazy form.

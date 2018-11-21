@@ -1,4 +1,4 @@
-import {description, Handler, wrapCommandHandler, Argv} from '../cli-util';
+import {description, Handler, wrapCommandHandler, Argv} from '../../cli-util';
 
 export interface ApprovalCommands {
   request: Handler;
@@ -6,7 +6,7 @@ export interface ApprovalCommands {
 }
 
 const lazyLoad = (fnname: keyof ApprovalCommands): Handler =>
-  (args) => require('../approval')[fnname](args);
+  (args) => require('./index')[fnname](args);
 
 const lazy: ApprovalCommands = {
   request: lazyLoad('request'),
