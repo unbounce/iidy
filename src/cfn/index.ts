@@ -43,6 +43,7 @@ import {diff} from '../diff';
 import confirmationPrompt from '../confirmationPrompt';
 import {SUCCESS, FAILURE, INTERRUPT} from '../statusCodes';
 import {filter} from '../preprocess/filter';
+import {lintTemplate} from './lint';
 
 import {
   readFromImportLocation,
@@ -111,13 +112,22 @@ const stackArgsProperties: Array<keyof StackArgs> = [
   'UsePreviousTemplate',
 ];
 
+type LoadedTemplate = {
+  TemplateBody?: string,
+  TemplateURL?: string
+};
+
+type LoadedStackPolicy = {
+  StackPolicyBody?: string,
+  StackPolicyURL?: string
+};
+
 async function getReliableStartTime(): Promise<Date> {
   const startTime = await getReliableTime();
   startTime.setTime(startTime.getTime() - 500); // to be safe
   // TODO warn about inaccurate local clocks as that will affect the calculation of elapsed time.
   return startTime;
 }
-
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-listing-event-history.html
 // CREATE_COMPLETE | CREATE_FAILED | CREATE_IN_PROGRESS |
@@ -652,7 +662,7 @@ function maybeSignS3HttpUrl(location: string) {
 }
 
 async function loadCFNStackPolicy(policy: string | object | undefined, baseLocation: string):
-  Promise<{StackPolicyBody?: string, StackPolicyURL?: string}> {
+  Promise<LoadedStackPolicy> {
 
   if (_.isUndefined(policy)) {
     return {};
@@ -681,8 +691,12 @@ async function loadCFNStackPolicy(policy: string | object | undefined, baseLocat
 }
 
 const TEMPLATE_MAX_BYTES = 51199
-export async function loadCFNTemplate(location0: string, baseLocation: string, environment: string, options: PreprocessOptions = {}):
-  Promise<{TemplateBody?: string, TemplateURL?: string}> {
+export async function loadCFNTemplate(
+  location0: string,
+  baseLocation: string,
+  environment: string,
+  options: PreprocessOptions = {}
+): Promise<LoadedTemplate> {
   if (_.isUndefined(location0)) {
     return {};
   }
@@ -931,9 +945,11 @@ export async function addDefaultNotificationArn(args: StackArgs): Promise<StackA
   return args;
 }
 
-export async function loadStackArgs(argv: GenericCLIArguments,
-                                    filterKeys: string[] = [],
-                                    setupAWSCredentails = configureAWS): Promise<StackArgs> {
+export async function loadStackArgs(
+  argv: GenericCLIArguments,
+  filterKeys: string[] = [],
+  setupAWSCredentails = configureAWS
+): Promise<StackArgs> {
   // TODO json schema validation
   const args = await _loadStackArgs(argv.argsfile, argv, filterKeys, setupAWSCredentails);
   if (argv.clientRequestToken) {
@@ -943,9 +959,10 @@ export async function loadStackArgs(argv: GenericCLIArguments,
 }
 
 function showArgsfileWarnings(argsdata: object, filename: string) {
-  const invalidProperties = _.difference(_.keys(argsdata),
-                                         stackArgsProperties,
-                                         extendedCfnDocKeys);
+  const invalidProperties = _.difference(
+    _.keys(argsdata),
+    stackArgsProperties,
+    extendedCfnDocKeys);
   _.forEach(invalidProperties, (name: string) => {
     let suggestion = '';
     const suggestedProperty = didYouMean(name, stackArgsProperties);
@@ -958,9 +975,9 @@ function showArgsfileWarnings(argsdata: object, filename: string) {
 
 //export async function _loadStackArgs(argsfile: string, region?: AWSRegion, profile?: string, environment?: string): Promise<StackArgs> {
 export async function _loadStackArgs(argsfile: string,
-                                     argv: GenericCLIArguments,
-                                     filterKeys: string[] = [],
-                                     setupAWSCredentails = configureAWS): Promise<StackArgs> {
+  argv: GenericCLIArguments,
+  filterKeys: string[] = [],
+  setupAWSCredentails = configureAWS): Promise<StackArgs> {
   const profile: string | undefined = argv.profile;
   const assumeRoleArn: string | undefined = argv.assumeRoleArn;
   const environment: string | undefined = argv.environment;
@@ -977,7 +994,7 @@ export async function _loadStackArgs(argsfile: string,
     throw new Error(`Invalid stack args file "${argsfile}" extension`);
   }
 
-  if(!_.isEmpty(filterKeys)) {
+  if (!_.isEmpty(filterKeys)) {
     argsdata = filter(filterKeys, argsdata, argsfile);
   }
 
@@ -1068,7 +1085,7 @@ export async function _loadStackArgs(argsfile: string,
   showArgsfileWarnings(stackArgsPass2, argsfile);
 
   const stackArgsPass3 = recursivelyMapValues(stackArgsPass2, (value: any) => {
-    if(typeof value === 'string') {
+    if (typeof value === 'string') {
       // $0string is an encoding added in preprocess/index.ts:visitString
       return value.replace(/\$0string (0\d+)/g, '$1');
     } else {
@@ -1081,9 +1098,9 @@ export async function _loadStackArgs(argsfile: string,
 
 function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   return _.mapValues(o, function(a: any) {
-    if(_.isArray(a)) {
+    if (_.isArray(a)) {
       return _.map(a, f);
-    } else if(_.isObject(a)) {
+    } else if (_.isObject(a)) {
       return recursivelyMapValues(a, f);
     } else {
       return f(a);
@@ -1091,11 +1108,25 @@ function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   }) as T;
 }
 
-async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: string, environment: string, stackName?: string)
-  : Promise<aws.CloudFormation.CreateStackInput> {
+async function loadCFNTemplateUsingApprovedTemplateLocation(stackArgs: StackArgs,
+  argsFilePath: string,
+  environment: string) {
   let templateLocation;
 
   if (stackArgs.ApprovedTemplateLocation) {
+    if (stackArgs.ApprovedTemplateLocation) {
+      const approvedLocation = await approvedTemplateVersionLocation(
+        stackArgs.ApprovedTemplateLocation,
+        stackArgs.Template,
+        argsFilePath,
+        environment
+      );
+      templateLocation = `https://s3.amazonaws.com/${approvedLocation.Bucket}/${approvedLocation.Key}`;
+    } else {
+      templateLocation = stackArgs.Template;
+    }
+    // Template is optional for updates and update changesets
+    const {TemplateBody, TemplateURL} = await loadCFNTemplate(templateLocation, argsFilePath, environment);
     const approvedLocation = await approvedTemplateVersionLocation(
       stackArgs.ApprovedTemplateLocation,
       stackArgs.Template,
@@ -1106,10 +1137,16 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
   } else {
     templateLocation = stackArgs.Template;
   }
-  // Template is optional for updates and update changesets
-  const {TemplateBody, TemplateURL} = await loadCFNTemplate(templateLocation, argsFilePath, environment);
-  const {StackPolicyBody, StackPolicyURL} = await loadCFNStackPolicy(stackArgs.StackPolicy, argsFilePath);
 
+  return loadCFNTemplate(templateLocation, argsFilePath, environment);
+}
+
+async function stackArgsToCreateStackInput(
+  {TemplateBody, TemplateURL}: LoadedTemplate,
+  {StackPolicyBody, StackPolicyURL}: LoadedStackPolicy,
+  stackArgs: StackArgs,
+  stackName?: string)
+  : Promise<aws.CloudFormation.CreateStackInput> {
   // TODO: DisableRollback
   // specify either DisableRollback or OnFailure, but not both
   const OnFailure = def('ROLLBACK', stackArgs.OnFailure)
@@ -1144,12 +1181,12 @@ async function stackArgsToCreateStackInput(stackArgs: StackArgs, argsFilePath: s
 }
 
 async function stackArgsToUpdateStackInput(
+  template: LoadedTemplate,
+  stackPolicy: LoadedStackPolicy,
   stackArgs: StackArgs,
-  argsFilePath: string,
-  environment: string,
   stackName?: string)
   : Promise<aws.CloudFormation.UpdateStackInput> {
-  const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, environment, stackName);
+  const input0 = await stackArgsToCreateStackInput(template, stackPolicy, stackArgs, stackName);
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
   const input = input0 as aws.CloudFormation.UpdateStackInput;
@@ -1158,14 +1195,14 @@ async function stackArgsToUpdateStackInput(
 }
 
 async function stackArgsToCreateChangeSetInput(
-  changeSetName: string,
+  template: LoadedTemplate,
+  stackPolicy: LoadedStackPolicy,
   stackArgs: StackArgs,
-  argsFilePath: string,
-  environment: string,
+  changeSetName: string,
   stackName?: string)
   : Promise<aws.CloudFormation.CreateChangeSetInput> {
   // TODO: ResourceTypes optionally locked down for changeset
-  const input0 = await stackArgsToCreateStackInput(stackArgs, argsFilePath, environment, stackName);
+  const input0 = await stackArgsToCreateStackInput(template, stackPolicy, stackArgs, stackName);
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
   delete input0.StackPolicyBody;
@@ -1213,6 +1250,21 @@ export async function doesStackExist(StackName: string): Promise<boolean> {
   return await cfn.describeStacks({StackName}).promise().thenReturn(true).catchReturn(false);
 }
 
+function lintCFNTemplate(cfnTemplate: LoadedTemplate, templatePath: string): boolean {
+  if (cfnTemplate.TemplateBody) {
+    const template = yaml.loadString(cfnTemplate.TemplateBody, templatePath);
+    const lint = lintTemplate(template);
+    if (!_.isEmpty(lint)) {
+      _.forEach(lint, (value, index) => logger.warn(value));
+      logger.error('Aborting due to template lint failures');
+      return true;
+    }
+  } else {
+    logger.warn('Unable to read template for linting');
+  }
+  return false;
+}
+
 abstract class AbstractCloudFormationStackCommand {
   public region: AWSRegion
 
@@ -1221,6 +1273,7 @@ abstract class AbstractCloudFormationStackCommand {
   readonly stackName: string;
   readonly argsfile: string;
   readonly environment: string;
+  readonly lintTemplate: boolean;
 
   protected cfnOperation: CfnOperation;
   protected startTime: Date;
@@ -1230,6 +1283,9 @@ abstract class AbstractCloudFormationStackCommand {
   protected showPreviousEvents: boolean = true;
   protected previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>;
   protected watchStackEvents: boolean = true;
+  protected template: LoadedTemplate;
+  protected stackPolicy: LoadedStackPolicy;
+  protected loadTemplate: boolean = true;
 
   constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
     // region, profile, and assumeRoleArn are the only used for cli output here
@@ -1238,18 +1294,27 @@ abstract class AbstractCloudFormationStackCommand {
     this.region = def(getCurrentAWSRegion(), this.argv.region || this.stackArgs.Region);
     this.profile = (            // the resolved profile
       this.argv.profile || this.stackArgs.Profile
-        || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE); // tslint:disable-line
+      || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE); // tslint:disable-line
     this.assumeRoleArn = this.argv.assumeRoleArn || this.stackArgs.AssumeRoleARN;// tslint:disable-line
 
     this.stackName = this.argv.stackName || this.stackArgs.StackName;// tslint:disable-line
     this.argsfile = argv.argsfile;
     this.environment = argv.environment;
+    this.lintTemplate = argv.lint;
   }
 
   async _setup() {
     this.cfn = new aws.CloudFormation()
     if (this.showPreviousEvents) {
       this.previousStackEventsPromise = getAllStackEvents(this.stackName);
+    }
+
+    if (this.loadTemplate) {
+      if (_.isEmpty(this.stackArgs.Template)) {
+        throw new Error('You must provide at Template: parameter in your argsfile')
+      };
+      this.template = await loadCFNTemplateUsingApprovedTemplateLocation(this.stackArgs, this.argsfile, this.environment);
+      this.stackPolicy = await loadCFNStackPolicy(this.stackArgs, this.argsfile);
     }
   }
 
@@ -1327,14 +1392,22 @@ abstract class AbstractCloudFormationStackCommand {
   }
 
   async _runCreate() {
-    if (_.isEmpty(this.stackArgs.Template)) {
-      throw new Error('For create-stack you must provide at Template: parameter in your argsfile')
-    };
     try {
-      const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
-      if (await this._requiresTemplateApproval(createStackInput.TemplateURL)) {
+      if (await this._requiresTemplateApproval(this.template.TemplateURL)) {
         return this._exitWithTemplateApprovalFailure();
       }
+
+      if (this.lintTemplate) {
+        const shouldExit = lintCFNTemplate(this.template, this.stackArgs.Template);
+        if (shouldExit) {
+          return FAILURE;
+        }
+      }
+
+      const createStackInput = await stackArgsToCreateStackInput(this.template,
+        this.stackPolicy,
+        this.stackArgs,
+        this.stackName);
       const createStackOutput = await this.cfn.createStack(createStackInput).promise();
       await this._updateStackTerminationPolicy();
       return this._watchAndSummarize(createStackOutput.StackId as string);
@@ -1351,10 +1424,16 @@ abstract class AbstractCloudFormationStackCommand {
 
   async _runUpdate() {
     try {
-      let updateStackInput = await stackArgsToUpdateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
-      if (await this._requiresTemplateApproval(updateStackInput.TemplateURL)) {
+      if (await this._requiresTemplateApproval(this.template.TemplateURL)) {
         return this._exitWithTemplateApprovalFailure();
       }
+      if (this.lintTemplate) {
+        const shouldExit = lintCFNTemplate(this.template, this.stackArgs.Template);
+        if (shouldExit) {
+          return FAILURE;
+        }
+      }
+      let updateStackInput = await stackArgsToUpdateStackInput(this.template, this.stackPolicy, this.stackArgs, this.stackName);
       if (this.argv.stackPolicyDuringUpdate) {
         const {
           StackPolicyBody: StackPolicyDuringUpdateBody,
@@ -1394,7 +1473,7 @@ abstract class AbstractCloudFormationStackCommand {
   normalizeIidyCLICommand(command: string): string {
     let cliArgs = `--region ${this.region}`;
     if (this.profile) {
-        cliArgs += ` --profile ${this.profile}`;
+      cliArgs += ` --profile ${this.profile}`;
     }
     return `iidy ${cliArgs} ${command}`;
   }
@@ -1480,19 +1559,27 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
   async _run() {
     // TODO remove argv as an arg here. Too general
 
+    if (await this._requiresTemplateApproval(this.template.TemplateURL)) {
+      return this._exitWithTemplateApprovalFailure();
+    }
+
+    if (this.lintTemplate) {
+      const shouldExit = lintCFNTemplate(this.template, this.stackArgs.Template);
+      if (shouldExit) {
+        return FAILURE;
+      }
+    }
+
     const ChangeSetName = this.argv.changesetName || nameGenerator().dashed; // TODO parameterize
     this.changeSetName = ChangeSetName;
-    const createChangeSetInput =
-      await stackArgsToCreateChangeSetInput(ChangeSetName, this.stackArgs, this.argsfile, this.environment, this.stackName);
+    const createChangeSetInput = await stackArgsToCreateChangeSetInput(
+      this.template, this.stackPolicy, this.stackArgs, ChangeSetName, this.stackName);
     const StackName = createChangeSetInput.StackName;
     createChangeSetInput.Description = this.argv.description;
 
     const stackExists = await doesStackExist(StackName);
     createChangeSetInput.ChangeSetType = stackExists ? 'UPDATE' : 'CREATE';
 
-    if (await this._requiresTemplateApproval(createChangeSetInput.TemplateURL)) {
-      return this._exitWithTemplateApprovalFailure();
-    }
     // TODO check for exception: 'ResourceNotReady: Resource is not in the state changeSetCreateComplete'
     const _changeSetResult = await this.cfn.createChangeSet(createChangeSetInput).promise();
     await this._waitForChangeSetCreateComplete().catch(() => null); // catch for failed changesets
@@ -1553,6 +1640,7 @@ class CreateChangeSet extends AbstractCloudFormationStackCommand {
 class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
   cfnOperation: CfnOperation = 'EXECUTE_CHANGESET'
   expectedFinalStackStatus = ['UPDATE_COMPLETE', 'CREATE_COMPLETE']
+  loadTemplate = false;
 
   async _run() {
     await this.cfn.executeChangeSet(
@@ -1567,10 +1655,11 @@ class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
 
 class EstimateStackCost extends AbstractCloudFormationStackCommand {
   cfnOperation: CfnOperation = 'ESTIMATE_COST'
+  loadTemplate = false;
 
   async _run() {
     const {TemplateBody, TemplateURL, Parameters} =
-      await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName)
+      await stackArgsToCreateStackInput(this.template, this.stackPolicy, this.stackArgs, this.stackName)
     const estimateResp = await this.cfn.estimateTemplateCost({TemplateBody, TemplateURL, Parameters}).promise();
     console.log('Stack cost estimator: ', estimateResp.Url);
     return SUCCESS;
@@ -1650,8 +1739,8 @@ async function confirmChangesetExec(argv: GenericCLIArguments, changeSetRunner: 
   } else {
     console.log(
       `You can do so later using\n  `
-        + changeSetRunner.normalizeIidyCLICommand(
-          `exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`));
+      + changeSetRunner.normalizeIidyCLICommand(
+        `exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`));
     return INTERRUPT;
   }
 }
