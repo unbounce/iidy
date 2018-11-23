@@ -56,9 +56,9 @@ export function colorizeResourceStatus(status: string, padding = DEFAULT_STATUS_
       return complete(padded);
     case 'UPDATE_IN_PROGRESS':
       return progress(padded);
-    case 'UPDexport export export ATE_COMPLETE_CLEANUP_IN_PROGRESS':
+    case 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS':
       return progress(padded);
-    case 'UPDATE_export ROLLBACexport K_COMPLexport ETE':
+    case 'UPDATE_ROLLBACK_COMPLETE':
       return complete(padded);
     case 'UPDATE_ROLLBACK_IN_PROGRESS':
       return progress(padded);
