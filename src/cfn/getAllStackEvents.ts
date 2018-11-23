@@ -4,7 +4,7 @@ import * as aws from 'aws-sdk'
 import def from '../default';
 import eventIsFromSubstack from './eventIsFromSubstack';
 
-export const getSubStacksFromEvents = (events: aws.CloudFormation.StackEvents): Set<string> => {
+const getSubStacksFromEvents = (events: aws.CloudFormation.StackEvents): Set<string> => {
   const subStackIds = new Set();
   events.forEach((ev) => {
     if (eventIsFromSubstack(ev)) {

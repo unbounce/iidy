@@ -12,9 +12,11 @@ import {runCommandSet} from './runCommandSet';
 import {StackArgs} from './types';
 import {filter} from '../preprocess/filter';
 
-export function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
+function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   return _.mapValues(o, function(a: any) {
-    if (typeof a === 'object') {
+    if(_.isArray(a)) {
+      return _.map(a, f);
+    } else if(_.isObject(a)) {
       return recursivelyMapValues(a, f);
     } else {
       return f(a);
@@ -22,7 +24,7 @@ export function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any)
   }) as T;
 }
 
-export async function addDefaultNotificationArn(args: StackArgs): Promise<StackArgs> {
+async function addDefaultNotificationArn(args: StackArgs): Promise<StackArgs> {
   const ssm = new aws.SSM();
   const ssmLookup = await ssm.getParameter(
     {Name: '/iidy/default-notification-arn', WithDecryption: true}).promise().catch(() => null);

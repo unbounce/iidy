@@ -1,7 +1,7 @@
 import * as aws from 'aws-sdk'
 import * as url from 'url';
 
-export function parseS3HttpUrl(input: string) {
+function parseS3HttpUrl(input: string) {
   const error = new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
   const uri = url.parse(input);
 
