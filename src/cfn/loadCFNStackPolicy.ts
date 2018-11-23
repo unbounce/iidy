@@ -2,8 +2,6 @@ import * as _ from 'lodash';
 import {readFromImportLocation, transform} from '../preprocess';
 import maybeSignS3HttpUrl from './maybeSignS3HttpUrl';
 
-
-// TODO is this used?
 export async function loadCFNStackPolicy(policy: string | object | undefined, baseLocation: string): Promise<{
   StackPolicyBody?: string;
   StackPolicyURL?: string;
