@@ -1,9 +1,10 @@
 import * as cli from 'cli-color';
 import * as yargs from 'yargs';
-import {GlobalArguments, Handler} from './cli-types';
-import debug from './debug';
-import {logger, setLogLevel} from './logger';
-export {Handler, GlobalArguments, GenericCLIArguments, Argv, Options, ExitCode} from './cli-types';
+import {GlobalArguments, Handler} from './types';
+import debug from '../debug';
+import {logger, setLogLevel} from '../logger';
+
+export {Handler, GlobalArguments, GenericCLIArguments, Argv, Options, ExitCode} from './types';
 
 export const description = cli.xterm(250);
 

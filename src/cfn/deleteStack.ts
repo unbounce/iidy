@@ -1,6 +1,6 @@
 import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {logger} from '../logger';

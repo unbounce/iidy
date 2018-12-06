@@ -3,7 +3,7 @@ import {search} from 'jmespath';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
 import {_loadStackArgs} from "./cfn/loadStackArgs";
-import {GenericCLIArguments} from './cli-util';
+import {GenericCLIArguments} from './cli/utils';
 import configureAWS from './configureAWS';
 import getCurrentAWSRegion from './getCurrentAWSRegion';
 import {logger} from './logger';

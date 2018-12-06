@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import configureAWS from '../configureAWS';
 import {_loadStackArgs} from './loadStackArgs';
 

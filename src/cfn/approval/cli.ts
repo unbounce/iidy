@@ -1,4 +1,4 @@
-import {description, Handler, wrapCommandHandler, Argv} from '../../cli-util';
+import {description, Handler, wrapCommandHandler, Argv} from '../../cli/utils';
 
 export interface ApprovalCommands {
   request: Handler;

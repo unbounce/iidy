@@ -3,7 +3,7 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as path from 'path';
 import * as url from 'url';
-import {GlobalArguments} from '../../cli-util';
+import {GlobalArguments} from '../../cli/utils';
 import configureAWS from '../../configureAWS';
 import confirmationPrompt from '../../confirmationPrompt';
 import {diff} from '../../diff';

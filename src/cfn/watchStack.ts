@@ -1,7 +1,7 @@
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import calcElapsedSeconds from '../calcElapsedSeconds';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {logger} from '../logger';
 import mkSpinner from '../spinner';

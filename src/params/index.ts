@@ -3,7 +3,7 @@ import * as aws from 'aws-sdk'
 
 import * as jsyaml from 'js-yaml';
 
-import {GlobalArguments} from '../cli-util';
+import {GlobalArguments} from '../cli/utils';
 
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import configureAWS from '../configureAWS';

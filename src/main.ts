@@ -19,8 +19,8 @@ global.Promise = bluebird;
 
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
-import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt} from './cli-util';
-import {Commands} from './cli-commands-type';
+import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt} from './cli/utils';
+import {Commands} from './cli/command-types';
 
 // TODO bring these two in line with the new lazy load scheme
 import {buildParamCommands} from './params/cli'
