@@ -277,8 +277,6 @@ export class Visitor {
       template: node.data.template,
       'var': varName
     });
-    // TODO / BUG? is this a bug: values is unused below
-    const values = this.visit$map(valuesMap, path, env);
     return _.fromPairs(_.zip(keys, this.visitNode(valuesMap, path, env)));
   }
 
