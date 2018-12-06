@@ -2,7 +2,7 @@ import * as aws from 'aws-sdk';
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import configureAWS from '../configureAWS';
 import def from '../default';
 import {getKMSAliasForParameter} from '../params';

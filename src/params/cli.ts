@@ -1,4 +1,4 @@
-import {Handler, Argv, Options, description, wrapCommandHandler} from '../cli-util';
+import {Handler, Argv, Options, description, wrapCommandHandler} from '../cli/utils';
 
 export interface ParamCommands {
   setParam: Handler;

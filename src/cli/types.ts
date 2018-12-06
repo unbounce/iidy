@@ -1,4 +1,4 @@
-import {AWSRegion} from './aws-regions';
+import {AWSRegion} from '../aws-regions';
 import * as yargs from 'yargs';
 
 export {Argv, Options} from 'yargs';

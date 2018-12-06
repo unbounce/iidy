@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import * as pathmod from 'path';
 import * as request from 'request-promise-native';
 import {AWSRegion} from '../aws-regions';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import def from '../default';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {logger} from '../logger';

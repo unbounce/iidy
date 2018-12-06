@@ -1,7 +1,7 @@
 import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import {sprintf} from 'sprintf-js';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {SUCCESS} from '../statusCodes';
 import {formatTimestamp, renderTimestamp} from './formatting';

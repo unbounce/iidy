@@ -3,7 +3,7 @@ import * as aws from 'aws-sdk'
 import * as yaml from '../yaml';
 import def from '../default';
 import {SUCCESS} from '../statusCodes';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 
 import {parseTemplateBody} from "./parseTemplateBody";
 import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConfigureAWS";

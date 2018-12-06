@@ -9,7 +9,7 @@ import {logger} from '../logger';
 import def from '../default';
 import mkSpinner from '../spinner';
 import {SUCCESS} from '../statusCodes';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 
 import {renderTimestamp, formatTimestamp, prettyFormatTags, calcPadding} from './formatting';
 import {colorizeResourceStatus} from "./formatting";

@@ -1,5 +1,5 @@
-import {Handler} from './cli-types';
-import {CfnStackCommands} from './cfn/cli-types';
+import {Handler} from './types';
+import {CfnStackCommands} from '../cfn/cli-types';
 
 export interface MiscCommands {
   initStackArgs: Handler;

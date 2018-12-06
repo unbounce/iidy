@@ -1,4 +1,4 @@
-import {Handler} from '../cli-types';
+import {Handler} from '../cli/types';
 
 export interface CfnStackCommands {
   createStackMain: Handler;

@@ -1,4 +1,4 @@
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import {SUCCESS} from '../statusCodes';
 import {DEFAULT_EVENT_POLL_INTERVAL} from './defaults';
 import {loadStackArgs} from './loadStackArgs';

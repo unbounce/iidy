@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
 import calcElapsedSeconds from '../calcElapsedSeconds';
-import {GenericCLIArguments} from '../cli-util';
+import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import {logger} from '../logger';
