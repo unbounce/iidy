@@ -1,5 +1,4 @@
 import * as _ from 'lodash';
-import * as yaml from '../yaml';
 import {VariablesTrackingVisitor} from './visitor';
 
 export function filter(keys: string[], input: any, filename: string) {

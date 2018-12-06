@@ -93,7 +93,7 @@ function deepMapValues(object: any, callback: any, propertyPath: any): any {
 const DEFAULT_SORT_WEIGHT = 9999;
 function sortMapByWeights(node0: any, weights: any): any {
   let nodePairs: any = _.sortBy(_.toPairs(node0));
-  nodePairs = _.sortBy(nodePairs, ([k, v]) => _.get(weights, k, DEFAULT_SORT_WEIGHT));
+  nodePairs = _.sortBy(nodePairs, ([k, _v]) => _.get(weights, k, DEFAULT_SORT_WEIGHT));
   return _.fromPairs(nodePairs);
 }
 

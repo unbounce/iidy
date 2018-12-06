@@ -262,7 +262,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
   "filehash-base64": async (location, baseLocation) => filehashLoader(location, baseLocation, 'base64'),
 
   s3: async (location, baseLocation) => {
-    let resolvedLocation: ImportLocation, format: string;
+    let resolvedLocation: ImportLocation;
     if (location.indexOf('s3:') === 0) {
       resolvedLocation = location;
     } else {
@@ -287,7 +287,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     throw new Error(`Invalid s3 uri ${location} under ${baseLocation}`);
   },
 
-  cfn: async (location, baseLocation) => {
+  cfn: async (location, _baseLocation) => {
     let resolvedLocationParts, StackName, field, fieldKey;
     let data: any, doc: any;
 
@@ -361,7 +361,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     }
   },
 
-  http: async (location, baseLocation) => {
+  http: async (location, _baseLocation) => {
     const resolvedLocation = location;
     const data = await request.get(location);
     const doc = resolveDocFromImportData(data, resolvedLocation);
@@ -378,7 +378,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     return {resolvedLocation, data, doc: data};
   },
 
-  git: async (location, baseLocation) => {
+  git: async (location, _baseLocation) => {
     const resolvedLocation = location.split(':')[1]
     if (_.includes(gitValues, resolvedLocation)) {
       const data = gitValue(resolvedLocation as GitValue);
@@ -418,7 +418,7 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     }
   },
 
-  "ssm-path": async (location, baseLocation) => {
+  "ssm-path": async (location, _baseLocation) => {
     let resolvedLocation: ImportLocation, format: string;
     [, resolvedLocation, format] = location.split(':')
     if (!resolvedLocation.endsWith('/')) {

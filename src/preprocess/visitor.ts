@@ -167,7 +167,7 @@ export class Visitor {
     }
   }
 
-  visit$escape(node: yaml.$escape, path: string, env: Env): AnyButUndefined {
+  visit$escape(node: yaml.$escape, _path: string, _env: Env): AnyButUndefined {
     return node.data;
   }
 
@@ -188,7 +188,7 @@ export class Visitor {
             (v) => [
               v.Name,
               this.visitNode(v.Default, appendPath(path, `$params.${v.Name}`), $paramDefaultsEnv)]),
-          ([k, v]) => !_.isUndefined(v)));
+          ([_k, v]) => !_.isUndefined(v)));
       const providedParams = this.visitNode(params, appendPath(path, 'params'), env);
       const mergedParams = _.assign({}, $paramDefaults, providedParams);
       _.forEach(template.$params, (param) => validateTemplateParameter(param, mergedParams, '!$expand', env));
@@ -253,7 +253,7 @@ export class Visitor {
     // TODO handle nested maps
     const varName = node.data.var || 'item';
     const SENTINEL = {};
-    const mapped = _.without(_.map(this.visitNode(node.data.items, path, env), (item0: any, idx: number) => {
+    const mapped = _.without(_.map(this.visitNode(items, path, env), (item0: any, idx: number) => {
       // TODO improve stackFrame details
       const subPath = appendPath(path, idx.toString());
       const item = this.visitNode(item0, subPath, env); // visit pre expansion
@@ -277,6 +277,7 @@ export class Visitor {
       template: node.data.template,
       'var': varName
     });
+    // TODO / BUG? is this a bug: values is unused below
     const values = this.visit$map(valuesMap, path, env);
     return _.fromPairs(_.zip(keys, this.visitNode(valuesMap, path, env)));
   }
@@ -481,7 +482,7 @@ export class Visitor {
 
     const stackFrame = {location: node.$location, path: path}; // TODO improve for Root, ...
     const subEnv0 = mkSubEnv(env, node.$envValues || {}, {location: node.$location, path: path});
-    const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([k, v]) => `${_.has(v, '$params')}`);
+    const nodeTypes = _.groupBy(_.toPairs(node.$envValues), ([_k, v]) => `${_.has(v, '$params')}`);
     const nonTemplates = _.fromPairs(_.get(nodeTypes, 'false'));
     const templates = _.fromPairs(_.get(nodeTypes, 'true'));
     const processedEnvValues = _.merge({}, this.visitNode(nonTemplates, path, subEnv0), templates);
@@ -489,7 +490,7 @@ export class Visitor {
     return this.visitMapNode(node, path, subEnv);
   }
 
-  visitDate(node: Date, path: string, env: Env): Date | string {
+  visitDate(node: Date, path: string, _env: Env): Date | string {
     const currNode = path.split('.').pop();
     if (_.includes(['Version', 'AWSTemplateFormatVersion'], currNode)) {
       // common error in cfn / yaml
@@ -645,7 +646,7 @@ export class Visitor {
           template.$params,
           (v) => [v.Name,
           visitor.visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
-        ([k, v]) => !_.isUndefined(v)));
+        ([_k, v]) => !_.isUndefined(v)));
 
     const providedParams = visitor.visitNode(resource.Properties, appendPath(path, `${name}.Properties`), env);
     // TODO factor this out:
@@ -740,14 +741,14 @@ class HandlebarsVariablesTrackingVisitor extends handlebars.Visitor {
 export class VariablesTrackingVisitor extends Visitor {
   public variables: string[] = [];
 
-  visitHandlebarsString(node: string, path: string, env: Env): string {
+  visitHandlebarsString(node: string, _path: string, _env: Env): string {
     const ast = handlebars.parse(node);
     const v = new HandlebarsVariablesTrackingVisitor(this.variables);
     v.accept(ast);
     return node;
   }
 
-  visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
+  visit$include(node: yaml.$include, _path: string, _env: Env): AnyButUndefined {
     this.variables.push(node.data);
     return node.data;
   }
