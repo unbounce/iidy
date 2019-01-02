@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
-import {validateJsonObject} from 'cfn-lint';
+import * as laundry from 'laundry-cfn';
+
 import {Arguments} from 'yargs';
 
 import {logger} from '../logger';
@@ -8,19 +9,11 @@ import {SUCCESS, FAILURE} from '../statusCodes';
 import {loadStackArgs} from './loadStackArgs';
 import {loadCFNTemplate} from './loadCFNTemplate';
 
-export function lint(input: object): string[] {
-  const result = [];
-  const {errors} = validateJsonObject(input);
-
-  for(const error of _.concat(errors.crit, errors.warn, errors.info)) {
-    if(error.resource) {
-      result.push(`${error.resource}: ${error.message}`);
-    } else {
-      result.push(error.message);
-    }
-  }
-
-  return result;
+export function lint(input: string): string[] {
+  const errors = laundry.lint(input);
+  return _.map(errors, (error) => {
+    return `${error.path.join('.')}: ${error.message}`;
+  });
 }
 
 export async function lintMain(argv: Arguments): Promise<number> {
@@ -29,8 +22,7 @@ export async function lintMain(argv: Arguments): Promise<number> {
                                             argv.argsfile,
                                             argv.environment);
   if(cfnTemplate.TemplateBody) {
-    const body = yaml.loadString(cfnTemplate.TemplateBody, stackArgs.Template);
-    const lines = lint(body);
+    const lines = lint(cfnTemplate.TemplateBody);
     for(const line of lines) {
       logger.warn(line);
     }
