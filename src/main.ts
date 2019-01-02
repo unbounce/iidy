@@ -32,7 +32,7 @@ import {buildApprovalCommands} from './cfn/approval/cli'
 
 function lazyLoad(fnname: keyof Commands): Handler {
   return (args) => {
-    const {implementations} = require('./cli-commands-impl');
+    const {implementations} = require('./cli/command-implemntations');
     return implementations[fnname](args);
   }
 }
