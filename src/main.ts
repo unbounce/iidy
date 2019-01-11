@@ -357,6 +357,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
           description('lint a CloudFormation template'),
           (args) => args
             .demandCommand(0, 0)
+            .option('use-parameters', {
+              type: 'boolean', default: false,
+              description: description('use parameters to improve linting accuracy')
+            })
             .strict(),
           wrapMainHandler(commands.lintMain))
         .command(

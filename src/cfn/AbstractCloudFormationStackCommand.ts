@@ -153,7 +153,7 @@ export abstract class AbstractCloudFormationStackCommand {
       }
 
       if (this.shouldLintTemplate && createStackInput.TemplateBody) {
-        const errors = lintTemplate(createStackInput.TemplateBody)
+        const errors = lintTemplate(createStackInput.TemplateBody, createStackInput.Parameters)
         if(errors) {
           return this.exitWithLintErrors(errors);
         }
@@ -187,7 +187,7 @@ export abstract class AbstractCloudFormationStackCommand {
       }
 
       if (this.shouldLintTemplate && updateStackInput.TemplateBody) {
-        const errors = this.lintTemplate(updateStackInput.TemplateBody);
+        const errors = lintTemplate(updateStackInput.TemplateBody, updateStackInput.Parameters);
         if(errors) {
           return this.exitWithLintErrors(errors);
         }

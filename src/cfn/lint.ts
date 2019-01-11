@@ -9,20 +9,25 @@ import {SUCCESS, FAILURE} from '../statusCodes';
 import {loadStackArgs} from './loadStackArgs';
 import {loadCFNTemplate} from './loadCFNTemplate';
 
-export function lintTemplate(input: string): string[] {
-  const errors = laundry.lint(input);
+export function lintTemplate(input: string, parameters: object = {}): string[] {
+  const errors = laundry.lint(input, parameters);
   return _.map(errors, (error) => {
     return `${error.path.join('.')}: ${error.message}`;
   });
 }
 
 export async function lintMain(argv: Arguments): Promise<number> {
-  const stackArgs = await loadStackArgs(argv as any); // this calls configureAWS internally
+  const stackArgsKeys = ['Template'];
+  if (argv.useParameters) {
+    stackArgsKeys.push('Parameters');
+  }
+  const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
   const cfnTemplate = await loadCFNTemplate(stackArgs.Template,
                                             argv.argsfile,
                                             argv.environment);
   if(cfnTemplate.TemplateBody) {
-    const lines = lintTemplate(cfnTemplate.TemplateBody);
+    const params = argv.useParameters ? stackArgs.Parameters : {};
+    const lines = lintTemplate(cfnTemplate.TemplateBody, params);
     for(const line of lines) {
       logger.warn(line);
     }
