@@ -40,7 +40,7 @@ export async function request(argv: RequestArguments): Promise<number> {
         const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true});
         if (argv.lintTemplate && cfnTemplate.TemplateBody) {
           const errors = lintTemplate(cfnTemplate.TemplateBody, stackArgs.Parameters);
-          if (errors) {
+          if (!_.isEmpty(errors)) {
             for(const error of errors) {
               logger.error(error);
             }
