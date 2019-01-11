@@ -1,4 +1,4 @@
-import {description, Handler, wrapCommandHandler, Argv} from '../../cli/utils';
+import {description, Handler, wrapCommandHandler, Argv, lintTemplateOpt} from '../../cli/utils';
 
 export interface ApprovalCommands {
   request: Handler;
@@ -22,6 +22,11 @@ export function buildApprovalCommands(args: Argv, commands = lazy): Argv {
     description('request template approval'),
     (args) => args
       .demandCommand(0, 0)
+      .option('lint-template', lintTemplateOpt)
+      .option('use-parameters', {
+        type: 'boolean', default: false,
+        description: description('use parameters to improve linting accuracy')
+      })
       .usage('Usage: iidy template-approval request stack-args.yaml')
       .strict(),
     wrapCommandHandler(commands.request))

@@ -12,14 +12,19 @@ import {FAILURE, INTERRUPT, SUCCESS} from '../../statusCodes';
 import {approvedTemplateVersionLocation} from "../approvedTemplateVersionLocation";
 import {loadCFNTemplate} from "../loadCFNTemplate";
 import {loadStackArgs} from "../loadStackArgs";
-
+import {lintTemplate} from '../lint';
 
 export type RequestArguments = GlobalArguments & {
   argsfile: string;
+  useParameters: boolean;
+  lintTemplate: boolean;
 };
 
 export async function request(argv: RequestArguments): Promise<number> {
   const stackArgsKeys = ['ApprovedTemplateLocation', 'Template'];
+  if (argv.useParameters) {
+    stackArgsKeys.push('Parameters');
+  }
   const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
 
   if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
@@ -33,6 +38,15 @@ export async function request(argv: RequestArguments): Promise<number> {
       if (e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
         const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true});
+        if (argv.lintTemplate && cfnTemplate.TemplateBody) {
+          const errors = lintTemplate(cfnTemplate.TemplateBody, stackArgs.Parameters);
+          if (errors) {
+            for(const error of errors) {
+              logger.error(error);
+            }
+            return FAILURE;
+          }
+        }
         await s3.putObject({
           Body: cfnTemplate.TemplateBody,
           ...s3Args

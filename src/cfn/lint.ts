@@ -26,8 +26,7 @@ export async function lintMain(argv: Arguments): Promise<number> {
                                             argv.argsfile,
                                             argv.environment);
   if(cfnTemplate.TemplateBody) {
-    const params = argv.useParameters ? stackArgs.Parameters : {};
-    const lines = lintTemplate(cfnTemplate.TemplateBody, params);
+    const lines = lintTemplate(cfnTemplate.TemplateBody, stackArgs.Parameters);
     for(const line of lines) {
       logger.warn(line);
     }
