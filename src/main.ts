@@ -19,7 +19,7 @@ global.Promise = bluebird;
 
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
-import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt} from './cli/utils';
+import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt, lintTemplateOpt} from './cli/utils';
 import {Commands} from './cli/command-types';
 
 // TODO bring these two in line with the new lazy load scheme
@@ -83,7 +83,8 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
       (args) => args
         .demandCommand(0, 0)
         .usage('Usage: iidy create-stack <stack-args.yaml>')
-        .option('stack-name', stackNameOpt),
+        .option('stack-name', stackNameOpt)
+        .option('lint-template', lintTemplateOpt),
       wrapMainHandler(commands.createStackMain))
 
     .command(
@@ -93,6 +94,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy update-stack <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('lint-template', lintTemplateOpt)
         .option('changeset', {
           type: 'boolean', default: false,
           description: description('review & confirm changes via a changeset')
@@ -118,6 +120,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy create-or-update <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('lint-template', lintTemplateOpt)
         .option('changeset', {
           type: 'boolean', default: false,
           description: description('review & confirm changes via a changeset')

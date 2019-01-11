@@ -1,5 +1,5 @@
 import {Commands} from './command-types';
-import {implementations as cfnImplementations} from './command-implemntations';
+import {implementations as cfnImplementations} from '../cfn/cli-command-impl';
 import {demoMain} from '../demo';
 import {lintMain} from '../cfn/lint';
 import {initStackArgs} from '../initStackArgs';
