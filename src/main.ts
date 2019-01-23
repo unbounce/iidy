@@ -48,6 +48,7 @@ class LazyCommands implements Commands {
   @lazyGetter listStacksMain: Handler
   @lazyGetter watchStackMain: Handler
   @lazyGetter describeStackMain: Handler
+  @lazyGetter describeStackDriftMain: Handler
   @lazyGetter getStackTemplateMain: Handler
   @lazyGetter getStackInstancesMain: Handler
   @lazyGetter deleteStackMain: Handler
@@ -207,17 +208,17 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .usage('Usage: iidy watch-stack <stackname-or-argsfile>'),
       wrapMainHandler(commands.watchStackMain))
 
-    // .command(
-    //   'describe-stack-drift <stackname>',
-    //   description('describe stack drift'),
-    //   (args) => args
-    //     .demandCommand(0, 0)
-    //     .option('drift-cache', {
-    //       type: 'number', default: (60 * 5),
-    //       description: description('how long to cache previous drift detection results (seconds)')
-    //     })
-    //     .usage('Usage: iidy describe-stack-drift <stackname-or-argsfile>'),
-    //   wrapMainHandler(commands.describeStackDriftMain))
+    .command(
+      'describe-stack-drift <stackname>',
+      description('describe stack drift'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('drift-cache', {
+          type: 'number', default: (60 * 5),
+          description: description('how long to cache previous drift detection results (seconds)')
+        })
+        .usage('Usage: iidy describe-stack-drift <stackname-or-argsfile>'),
+      wrapMainHandler(commands.describeStackDriftMain))
 
     .command(
         'delete-stack        <stackname>',
