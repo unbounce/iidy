@@ -39,13 +39,13 @@ export async function updateStackDriftData(stack: aws.CloudFormation.Stack, cach
     const spinnerText = "Checking for stack drift.";
     const spinner = mkSpinner(cli.xterm(240)(spinnerText));
     const {StackDriftDetectionId} = await cfn.detectStackDrift({StackName: stack.StackName}).promise();
+    spinner.start();
     while (true) {
       const statusResponse = await cfn.describeStackDriftDetectionStatus({StackDriftDetectionId}).promise();
-      spinner.stop();
       if (statusResponse.DetectionStatus !== "DETECTION_IN_PROGRESS") {
+        spinner.stop();
         break;
       } else {
-        spinner.start();
         spinner.text = cli.xterm(240)(`${spinnerText} ${calcElapsedSeconds(spinnerStartTime)} seconds elapsed.`);
         await timeout(3 * 1000);
       }
