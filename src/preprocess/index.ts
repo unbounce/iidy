@@ -126,6 +126,12 @@ export type ImportData = {
   doc?: any
 }
 
+class ImportError<E extends Error> extends Error {
+  constructor(message: string, public location: string, public baseLocation: string, public wrappedError?: E) {
+    super(message);
+  }
+}
+
 // TODO timestamp
 export type ImportType =
   "file" | "env" | "git" | "random" | "filehash" | "filehash-base64" | "cfn" | "ssm" | "ssm-path" | "s3" | "http";
@@ -408,12 +414,12 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     let resolvedLocation: ImportLocation, format: string;
     [, resolvedLocation, format] = location.split(':')
     const ssm = new aws.SSM();
-    const param = await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise()
+    const param = await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise();
     if (param.Parameter && param.Parameter.Value) {
       const data = parseDataFromParamStore(param.Parameter.Value, format);
-      return {resolvedLocation, data, doc: data};
-    } else {
-      throw new Error(
+        return {resolvedLocation, data, doc: data};
+      } else {
+        throw new Error(
         `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
     }
   },
@@ -436,9 +442,16 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
 export async function readFromImportLocation(location: ImportLocation, baseLocation: ImportLocation)
   : Promise<ImportData> {
   // TODO handle relative paths and non-file types
-  const importType = parseImportType(location, baseLocation);
-  const importData: ImportData = await importLoaders[importType](location, baseLocation);
-  return _.merge({importType}, importData);
+    const importType = parseImportType(location, baseLocation);
+    try {
+      const importData: ImportData = await importLoaders[importType](location, baseLocation);
+      return _.merge({importType}, importData);
+    } catch (error) {
+      throw new ImportError(
+        error.message || `Invalid import ${location} import at ${baseLocation}`,
+        location, baseLocation, error
+      );
+    }
 }
 
 export async function loadImports(

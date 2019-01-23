@@ -60,7 +60,7 @@ export async function _loadStackArgs(
     argsdata = yaml.loadString(fs.readFileSync(argsfile), argsfile);
   }
   else {
-    throw new Error(`Invalid stack args file "${argsfile}" extension`);
+    throw new Error(`Invalid stack args file "${argsfile}" extension ${pathmod.extname(argsfile)}`);
   }
   if(!_.isEmpty(filterKeys)) {
     argsdata = filter(filterKeys, argsdata, argsfile);
