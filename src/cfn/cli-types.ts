@@ -7,7 +7,7 @@ export interface CfnStackCommands {
   listStacksMain: Handler;
   watchStackMain: Handler;
   describeStackMain: Handler;
-  //describeStackDriftMain: Handler;
+  describeStackDriftMain: Handler;
   getStackTemplateMain: Handler;
   getStackInstancesMain: Handler;
   deleteStackMain: Handler;

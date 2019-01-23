@@ -14,6 +14,7 @@ import {watchStackMain} from './watchStack';
 import {deleteStackMain} from './deleteStack';
 import {createChangesetMain} from './createChangeset';
 import {convertStackToIIDY} from './convertStackToIidy';
+import {describeStackDriftMain} from './drift';
 import {lintMain} from './lint';
 
 export const implementations: CfnStackCommands = {
@@ -24,6 +25,7 @@ export const implementations: CfnStackCommands = {
   listStacksMain,
   watchStackMain,
   describeStackMain,
+  describeStackDriftMain,
   getStackTemplateMain,
   getStackInstancesMain,
   deleteStackMain,
