@@ -27,11 +27,12 @@ export const wrapCommandHandler = (handler: Handler) =>
       .then(process.exit)
       .catch(error => {
         if (debug() || args.logFullError || process.env.LOG_IIDY_ERROR) {
-          logger.error(error);
+          logger.error(error.message ? error.message : "unhandled exception");
+          console.error(error);
         } else if (error.message) {
           logger.error(error.message);
         } else {
-          logger.error(error);
+          logger.error("unhandled exception", error);
         }
         process.exit(1);
       });

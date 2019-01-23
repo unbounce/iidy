@@ -6,9 +6,8 @@ import {_loadStackArgs} from "./cfn/loadStackArgs";
 import {GenericCLIArguments} from './cli/utils';
 import configureAWS from './configureAWS';
 import getCurrentAWSRegion from './getCurrentAWSRegion';
-import {logger} from './logger';
 import {ExtendedCfnDoc, transform} from './preprocess';
-import {FAILURE, SUCCESS} from './statusCodes';
+import {SUCCESS} from './statusCodes';
 import * as yaml from './yaml';
 
 export function isStackArgsFile(location: string, doc: any): boolean {
@@ -38,39 +37,35 @@ export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
   const file = isStdin ? 0 : templatePath;
   let output: string[] = [];
 
-  try {
-    if(fs.statSync(templatePath).isDirectory()) {
-      for(const filename of fs.readdirSync(templatePath)) {
-        if(filename.match(/\.(yml|yaml)$/)) {
-          const filepath = pathmod.resolve(templatePath, filename);
-          const content = fs.readFileSync(filepath);
-          const documents = yaml.loadStringAll(content, filepath);
-          output = output.concat(await render(filepath, documents, argv, true));
-        }
+  if (fs.statSync(templatePath).isDirectory()) {
+    for (const filename of fs.readdirSync(templatePath)) {
+      if (filename.match(/\.(yml|yaml)$/)) {
+        const filepath = pathmod.resolve(templatePath, filename);
+        const content = fs.readFileSync(filepath);
+        const documents = yaml.loadStringAll(content, filepath);
+        output = output.concat(await render(filepath, documents, argv, true));
       }
-    } else {
-      const content = fs.readFileSync(file);
-      const documents = yaml.loadStringAll(content, templatePath);
-      output = await render(templatePath, documents, argv);
     }
-
-    writeOutput(output, argv);
-  } catch(e) {
-    logger.error(e);
-    return FAILURE;
+  } else {
+    const content = fs.readFileSync(file);
+    const documents = yaml.loadStringAll(content, templatePath);
+    output = await render(templatePath, documents, argv);
   }
 
+  writeOutput(output, argv);
   return SUCCESS;
 }
 
-export async function render(rootDocLocation: string,
-                             documents: ExtendedCfnDoc[],
-                             argv: RenderArguments,
-                             multiDocument?: boolean) {
+export async function render(
+  rootDocLocation: string,
+  documents: ExtendedCfnDoc[],
+  argv: RenderArguments,
+  multiDocument?: boolean
+) {
   const yamlHeader = documents.length > 1 || multiDocument;
   const output = [];
 
-  for(const input of documents) {
+  for (const input of documents) {
     let outputDoc: any;
     if (isStackArgsFile(rootDocLocation, input)) {
       // TODO remove the cast to any below after tightening the args on _loadStackArgs
