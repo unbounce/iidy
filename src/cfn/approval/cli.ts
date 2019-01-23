@@ -23,7 +23,7 @@ export function buildApprovalCommands(args: Argv, commands = lazy): Argv {
     (args) => args
       .demandCommand(0, 0)
       .option('lint-template', lintTemplateOpt)
-      .option('use-parameters', {
+      .option('lint-using-parameters', {
         type: 'boolean', default: false,
         description: description('use parameters to improve linting accuracy')
       })

@@ -16,13 +16,13 @@ import {lintTemplate} from '../lint';
 
 export type RequestArguments = GlobalArguments & {
   argsfile: string;
-  useParameters: boolean;
+  lintUsingParameters: boolean;
   lintTemplate: boolean;
 };
 
 export async function request(argv: RequestArguments): Promise<number> {
   const stackArgsKeys = ['ApprovedTemplateLocation', 'Template'];
-  if (argv.useParameters) {
+  if (argv.lintUsingParameters) {
     stackArgsKeys.push('Parameters');
   }
   const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
