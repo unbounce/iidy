@@ -19,7 +19,7 @@ global.Promise = bluebird;
 
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
-import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt} from './cli/utils';
+import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt, lintTemplateOpt} from './cli/utils';
 import {Commands} from './cli/command-types';
 
 // TODO bring these two in line with the new lazy load scheme
@@ -32,7 +32,7 @@ import {buildApprovalCommands} from './cfn/approval/cli'
 
 function lazyLoad(fnname: keyof Commands): Handler {
   return (args) => {
-    const {implementations} = require('./cli-commands-impl');
+    const {implementations} = require('./cli/command-implemntations');
     return implementations[fnname](args);
   }
 }
@@ -83,7 +83,8 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
       (args) => args
         .demandCommand(0, 0)
         .usage('Usage: iidy create-stack <stack-args.yaml>')
-        .option('stack-name', stackNameOpt),
+        .option('stack-name', stackNameOpt)
+        .option('lint-template', lintTemplateOpt(false)),
       wrapMainHandler(commands.createStackMain))
 
     .command(
@@ -93,6 +94,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy update-stack <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('lint-template', lintTemplateOpt(false))
         .option('changeset', {
           type: 'boolean', default: false,
           description: description('review & confirm changes via a changeset')
@@ -118,6 +120,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy create-or-update <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('lint-template', lintTemplateOpt(false))
         .option('changeset', {
           type: 'boolean', default: false,
           description: description('review & confirm changes via a changeset')
@@ -354,6 +357,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
           description('lint a CloudFormation template'),
           (args) => args
             .demandCommand(0, 0)
+            .option('use-parameters', {
+              type: 'boolean', default: false,
+              description: description('use parameters to improve linting accuracy')
+            })
             .strict(),
           wrapMainHandler(commands.lintMain))
         .command(

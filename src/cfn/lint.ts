@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
-import {validateJsonObject} from 'cfn-lint';
+import * as laundry from 'laundry-cfn';
+
 import {Arguments} from 'yargs';
 
 import {logger} from '../logger';
@@ -8,29 +9,24 @@ import {SUCCESS, FAILURE} from '../statusCodes';
 import {loadStackArgs} from './loadStackArgs';
 import {loadCFNTemplate} from './loadCFNTemplate';
 
-export function lint(input: object): string[] {
-  const result = [];
-  const {errors} = validateJsonObject(input);
-
-  for(const error of _.concat(errors.crit, errors.warn, errors.info)) {
-    if(error.resource) {
-      result.push(`${error.resource}: ${error.message}`);
-    } else {
-      result.push(error.message);
-    }
-  }
-
-  return result;
+export function lintTemplate(input: string, parameters: object = {}): string[] {
+  const errors = laundry.lint(input, parameters);
+  return _.map(errors, (error) => {
+    return `${error.path.join('.')}: ${error.message}`;
+  });
 }
 
 export async function lintMain(argv: Arguments): Promise<number> {
-  const stackArgs = await loadStackArgs(argv as any); // this calls configureAWS internally
+  const stackArgsKeys = ['Template'];
+  if (argv.useParameters) {
+    stackArgsKeys.push('Parameters');
+  }
+  const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
   const cfnTemplate = await loadCFNTemplate(stackArgs.Template,
                                             argv.argsfile,
                                             argv.environment);
   if(cfnTemplate.TemplateBody) {
-    const body = yaml.loadString(cfnTemplate.TemplateBody, stackArgs.Template);
-    const lines = lint(body);
+    const lines = lintTemplate(cfnTemplate.TemplateBody, stackArgs.Parameters);
     for(const line of lines) {
       logger.warn(line);
     }

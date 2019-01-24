@@ -20,6 +20,7 @@ import {summarizeStackContents} from './summarizeStackContents';
 import {summarizeStackDefinition} from './summarizeStackDefinition';
 import {CfnOperation, StackArgs} from './types';
 import {watchStack} from './watchStack';
+import {lintTemplate} from './lint';
 
 export async function isHttpTemplateAccessible(location?: string) {
   if (location) {
@@ -41,6 +42,7 @@ export abstract class AbstractCloudFormationStackCommand {
   readonly stackName: string;
   readonly argsfile: string;
   readonly environment: string;
+  readonly shouldLintTemplate: boolean;
   protected cfnOperation: CfnOperation;
   protected startTime: Date;
   protected cfn: aws.CloudFormation;
@@ -62,6 +64,7 @@ export abstract class AbstractCloudFormationStackCommand {
     this.stackName = this.argv.stackName || this.stackArgs.StackName; // tslint:disable-line
     this.argsfile = argv.argsfile;
     this.environment = argv.environment;
+    this.shouldLintTemplate = argv.lintTemplate;
   }
 
   async _setup() {
@@ -138,10 +141,24 @@ export abstract class AbstractCloudFormationStackCommand {
     }
 
     try {
-      const createStackInput = await stackArgsToCreateStackInput(this.stackArgs, this.argsfile, this.environment, this.stackName);
+      const createStackInput = await stackArgsToCreateStackInput(
+        this.stackArgs,
+        this.argsfile,
+        this.environment,
+        this.stackName
+      );
+
       if (await this._requiresTemplateApproval(createStackInput.TemplateURL)) {
         return this._exitWithTemplateApprovalFailure();
       }
+
+      if (this.shouldLintTemplate && createStackInput.TemplateBody) {
+        const errors = lintTemplate(createStackInput.TemplateBody, createStackInput.Parameters)
+        if (!_.isEmpty(errors)) {
+          return this.exitWithLintErrors(errors);
+        }
+      }
+
       const createStackOutput = await this.cfn.createStack(createStackInput).promise();
       await this._updateStackTerminationPolicy();
       return this._watchAndSummarize(createStackOutput.StackId as string);
@@ -168,6 +185,14 @@ export abstract class AbstractCloudFormationStackCommand {
         } = await loadCFNStackPolicy(this.argv.stackPolicyDuringUpdate as string, pathmod.join(process.cwd(), 'dummyfile'));
         updateStackInput = _.merge({StackPolicyDuringUpdateBody, StackPolicyDuringUpdateURL}, updateStackInput);
       }
+
+      if (this.shouldLintTemplate && updateStackInput.TemplateBody) {
+        const errors = lintTemplate(updateStackInput.TemplateBody, updateStackInput.Parameters);
+        if (!_.isEmpty(errors)) {
+          return this.exitWithLintErrors(errors);
+        }
+      }
+
       await this._updateStackTerminationPolicy();
       // TODO consider conditionally calling setStackPolicy if the policy has changed
       const updateStackOutput = await this.cfn.updateStack(updateStackInput).promise();
@@ -204,4 +229,13 @@ export abstract class AbstractCloudFormationStackCommand {
     }
     return `iidy ${cliArgs} ${command}`;
   }
+
+  exitWithLintErrors(errors: string[]): number {
+    logger.error(`CFN template validation failed with ${errors.length} error${errors.length > 1 ? 's' : ''}:`)
+    for(const error of errors) {
+      logger.error(error);
+    }
+    return FAILURE;
+  }
+
 }

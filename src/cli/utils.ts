@@ -43,3 +43,11 @@ export const stackNameOpt: yargs.Options = {
   alias: 's',
   description: description('override the StackName from <argsfile>')
 };
+
+export const lintTemplateOpt = (defaultValue: boolean): yargs.Options => {
+  return {
+    type: 'boolean',
+    default: defaultValue,
+    description: description('lint template and exit on error')
+  }
+};
