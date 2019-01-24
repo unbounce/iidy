@@ -41,6 +41,7 @@ export async function request(argv: RequestArguments): Promise<number> {
         if (argv.lintTemplate && cfnTemplate.TemplateBody) {
           const errors = lintTemplate(cfnTemplate.TemplateBody, stackArgs.Parameters);
           if (!_.isEmpty(errors)) {
+            logger.error(`CFN template validation failed with ${errors.length} error${errors.length > 1 ? 's' : ''}:`)
             for(const error of errors) {
               logger.error(error);
             }

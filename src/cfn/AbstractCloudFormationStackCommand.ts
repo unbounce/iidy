@@ -231,6 +231,7 @@ export abstract class AbstractCloudFormationStackCommand {
   }
 
   exitWithLintErrors(errors: string[]): number {
+    logger.error(`CFN template validation failed with ${errors.length} error${errors.length > 1 ? 's' : ''}:`)
     for(const error of errors) {
       logger.error(error);
     }
