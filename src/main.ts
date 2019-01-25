@@ -56,6 +56,7 @@ class LazyCommands implements Commands {
   @lazyGetter executeChangesetMain: Handler
   @lazyGetter lintMain: Handler
   @lazyGetter renderMain: Handler
+  @lazyGetter getImportMain: Handler
   @lazyGetter estimateCost: Handler
   @lazyGetter demoMain: Handler
   @lazyGetter convertStackToIIDY: Handler
@@ -341,6 +342,24 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
             })
             .strict(),
           wrapMainHandler(commands.renderMain))
+
+        .command(
+          'get-import <import>',
+          description('retrieve and print an $import value directly'),
+          (args) => args
+            .demandCommand(0, 0)
+            .usage('Usage: iidy get-import <import>')
+            .option('format', {
+              type: 'string', default: 'yaml',
+              choices: ['yaml', 'json'],
+              description: description('output serialization syntax')
+            })
+            .option('query', {
+              type: 'string', default: null,
+              description: description('jmespath search query to select a subset of the output')
+            })
+            .strict(),
+          wrapMainHandler(commands.getImportMain))
 
         .command(
           'demo   <demoscript>',

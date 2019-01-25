@@ -4,6 +4,7 @@ import {CfnStackCommands} from '../cfn/cli-types';
 export interface MiscCommands {
   initStackArgs: Handler;
   renderMain: Handler;
+  getImportMain: Handler;
   demoMain: Handler;
 }
 
