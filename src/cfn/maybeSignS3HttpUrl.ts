@@ -25,7 +25,7 @@ function parseS3HttpUrl(input: string) {
     if (/^s3\.amazonaws\.com/.test(uri.hostname || '')) {
       region = 'us-east-1';
     } else {
-      const match = hostname.match(/^s3-(\w{2}-\w{4,9}-\d)?.amazonaws\.com/) || [];
+      const match = hostname.match(/^s3[\.-](\w{2}-\w{4,9}-\d)?.amazonaws\.com/) || [];
       if (match[1]) {
         region = match[1];
       } else {
