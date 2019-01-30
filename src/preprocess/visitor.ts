@@ -751,4 +751,14 @@ export class VariablesTrackingVisitor extends Visitor {
     return node.data;
   }
 
+  visitMapNode(node: any, path: string, env: Env): AnyButUndefined {
+    for (const key in node) {
+      if (_.includes(['$imports', '$defs'], key)) {
+        this.visitNode(node[key], appendPath(path, key), env);
+      }
+    }
+
+    return super.visitMapNode(node, path, env);
+  }
+
 }
