@@ -8,7 +8,7 @@ export function filter(keys: string[], input: any, filename: string) {
     $envValues: {},
     Stack: [{location: filename, path: 'Root'}]
   };
-  const output = _.pick(input, keys);
+  const output = _.pick(input, ['$imports', '$defs', ...keys]);
   visitor.visitNode(output, 'Root', env);
   if(input.$imports) {
     output.$imports = _.pick(input.$imports, visitor.variables);
