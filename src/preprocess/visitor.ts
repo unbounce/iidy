@@ -21,7 +21,7 @@ import {
 const HANDLEBARS_RE = /{{(.*?)}}/;
 const CFN_SUB_RE = /\${([^!].*?)}/g;
 
-const _flatten = <T>(arrs: T[][]): T[] => [].concat.apply([], arrs);
+const _flatten = <T>(arrs: T[][]): T[] => _.flatten(arrs)
 
 const _isPlainMap = (node: any): node is object =>
   _.isObject(node) &&
