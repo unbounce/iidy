@@ -42,7 +42,8 @@ function getCredentialsProviderChain(profile?: string) {
           cb(e);
         });
     };
-    return new aws.CredentialProviderChain([() => new aws.SharedIniFileCredentials({profile, tokenCodeFn, useCache: true})]);
+    return new aws.CredentialProviderChain(
+      [() => new aws.SharedIniFileCredentials({profile, tokenCodeFn, useCache: true})]);
   } else {
     return new aws.CredentialProviderChain();
   }
@@ -61,7 +62,8 @@ async function resolveCredentials(profile?: string, assumeRoleArn?: string) {
       //.timeout(10500) // consider doing this as ETIMEDOUT takes a long time
       .catch((e) => {
         if (e.code === 'ETIMEDOUT' || e.code === 'ECONNREFUSED') {
-          throw new Error("iidy can't find any local AWS credentials or connect to the AWS metadata service (169.254.169.254)");
+          throw new Error(
+            "Can't find any local AWS credentials or connect to the AWS metadata service (169.254.169.254)");
         } else {
           throw e;
         }
@@ -70,7 +72,6 @@ async function resolveCredentials(profile?: string, assumeRoleArn?: string) {
   }
 }
 
-// TODO change to this interface
 export interface AWSConfig {
   profile?: string;
   region?: AWSRegion;
