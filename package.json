@@ -22,7 +22,7 @@
     "npm": ">=5.0"
   },
   "dependencies": {
-    "aws-sdk": "unbounce/aws-sdk-js#ec823721322196e30af242a35af9a6f4401198d8",
+    "aws-sdk": "unbounce/aws-sdk-js#1af3262b884eb99b115ab3316814948e8d77c19a",
     "bluebird": "^3.5.3",
     "cli-color": "^1.4.0",
     "dateformat": "^3.0.3",
