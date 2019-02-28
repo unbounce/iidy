@@ -1,12 +1,13 @@
 workflow "sonar-scanner" {
   on = "push"
-  resolves = ["run-scan"]
+  resolves = ["run-sonar-scanner"]
 }
 
-action "run-scan" {
-  uses = "./sonar-scanner/"
+action "run-sonar-scanner" {
+  uses = "./run-sonar-scanner/"
   env = {
     SONAR_ORG = "unbounce"
     SONAR_PROJECT = "iidy"
   }
+  secrets = ["SONAR_LOGIN"]
 }
