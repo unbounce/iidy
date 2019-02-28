@@ -4,7 +4,7 @@ workflow "sonar-scanner" {
 }
 
 action "run-sonar-scanner" {
-  uses = "./actions/run-sonar-scanner/"
+  uses = "actions/run-sonar-scanner"
   env = {
     SONAR_ORG = "unbounce"
     SONAR_PROJECT = "iidy"
