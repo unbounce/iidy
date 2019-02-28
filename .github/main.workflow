@@ -1,9 +1,9 @@
-workflow "sonar-scanner" {
+workflow "Build and Publish" {
   on = "push"
-  resolves = ["run-sonar-scanner"]
+  resolves = ["Run SonarCloud Scanner"]
 }
 
-action "run-sonar-scanner" {
+action "Run SonarCloud Scanner" {
   uses = "docker://unbounce/sonarcloud-github-typescript"
   env = {
     SONAR_ORG = "unbounce"
