@@ -21,7 +21,7 @@ async function getAllKMSAliases(): Promise<aws.KMS.AliasList> {
   // return paginateAwsCall(() => kms.listAliases(), null, 'Aliases');
 
   let res = await kms.listAliases().promise();
-  let aliases = def([], res.Aliases);
+  const aliases = def([], res.Aliases);
   while (!_.isUndefined(res.NextMarker)) {
     res = await kms.listAliases({Marker: res.NextMarker}).promise();
     aliases.concat(def([], res.Aliases));
@@ -29,9 +29,11 @@ async function getAllKMSAliases(): Promise<aws.KMS.AliasList> {
   return aliases;
 }
 
-export async function getKMSAliasForParameter(paramPath: aws.SSM.ParameterName): Promise<undefined | aws.KMS.AliasNameType> {
+export async function getKMSAliasForParameter(paramPath: aws.SSM.ParameterName)
+  : Promise<undefined | aws.KMS.AliasNameType> {
+
   const aliases = _.fromPairs(_.map(await getAllKMSAliases(), (al) => [al.AliasName, al.AliasName]));
-  let pathParts = ['alias', 'ssm'].concat(_.filter(paramPath.split('/')));
+  const pathParts = ['alias', 'ssm'].concat(_.filter(paramPath.split('/')));
   while (pathParts.length) {
     const alias = aliases[pathParts.join('/') + '/'] || aliases[pathParts.join('/')];
     if (alias) {
@@ -185,14 +187,19 @@ const paramsToSortedMap = (params: aws.SSM.ParameterList) =>
     .fromPairs()
     .value();
 
+const _getParametersByPath = async (ssm: aws.SSM, args: aws.SSM.GetParametersByPathRequest)
+  : Promise<aws.SSM.ParameterList> => {
+  return await paginateAwsCall(
+    args0 => ssm.getParametersByPath(args0),
+    args, 'Parameters');
+}
+
 export async function _getParamsByPath(Path: string): Promise<aws.SSM.ParameterList> {
   const ssm = new aws.SSM();
-  const args = {
+  return _getParametersByPath(ssm, {
     Path,
     WithDecryption: true
-  };
-  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath.bind(ssm), args, 'Parameters');
-  return parameters;
+  });
 }
 
 export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number> {
@@ -203,7 +210,7 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
     Recursive: argv.recursive,
     WithDecryption: argv.decrypt
   };
-  const parameters: aws.SSM.ParameterList = await paginateAwsCall(ssm.getParametersByPath.bind(ssm), args, 'Parameters');
+  const parameters = await _getParametersByPath(ssm, args);
 
   if (!parameters) {
     console.log('No parameters found');
@@ -227,7 +234,7 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
 async function _getParameterHistory(Name: aws.SSM.ParameterName,
   WithDecryption: boolean): Promise<aws.SSM.ParameterHistoryList> {
   const ssm = new aws.SSM();
-  return paginateAwsCall(ssm.getParameterHistory.bind(ssm), {Name, WithDecryption}, 'Parameters');
+  return paginateAwsCall(args0 => ssm.getParameterHistory(args0), {Name, WithDecryption}, 'Parameters');
 }
 
 export async function getParamHistory(argv: GetParamArgs): Promise<number> {

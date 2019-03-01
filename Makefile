@@ -83,7 +83,7 @@ $(DEPS_STATEFILE) : Makefile $(PREREQS_STATEFILE) package.json
 
 $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 	npm run build
-	./node_modules/.bin/mocha -- lib/tests/
+	npm test
 	bin/iidy help | grep argsfile > /dev/null
 	npm run pkg-binaries
 
