@@ -22,3 +22,6 @@ yarn-error.log*
 coverage
 
 !*/.keep
+
+# Ignore any SonarCloud-derived directories
+.scannerwork
