@@ -84,4 +84,22 @@ describe('filter', () => {
     expect(_.keys(filtered)).to.members(['one', '$imports']);
     expect(_.keys(filtered.$imports)).to.members(['vars']);
   });
+
+  it('filters transitive dependencies', function() {
+    const input = {
+      $imports: {
+        vars: 'vars.yaml',
+        removeMe: 'foo.yaml'
+      },
+      $defs: {
+        name: new yaml.$include('vars.name'),
+        removeMe: ''
+      },
+      name: new yaml.$include('name')
+    };
+    const filtered = filter(['name'], input, 'test');
+    expect(_.keys(filtered)).to.members(['name', '$defs', '$imports']);
+    expect(_.keys(filtered.$imports)).to.members(['vars']);
+    expect(_.keys(filtered.$defs)).to.members(['name']);
+  });
 });
