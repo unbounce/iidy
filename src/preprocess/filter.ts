@@ -11,7 +11,8 @@ export function filter(keys: string[], input: any, filename: string) {
   const output = _.pick(input, ['$imports', '$defs', ...keys]);
   visitor.visitNode(output, 'Root', env);
   if(input.$imports) {
-    // Imports are not tested and nested lookups depend on the object that is imported, for example:
+    // Imports are always specified as a shallow object – nested values come from the 
+    // object that gets imported. For example:
     //
     //   $imports:
     //     vars: vars.yaml
@@ -19,7 +20,8 @@ export function filter(keys: string[], input: any, filename: string) {
     //   foo: vars.foo
     //   var: outputs.bar
     //
-    // should preserve `vars` and `outputs`
+    // should preserve `vars` and `outputs`. To handle this, we only compare the 
+    // first segment of a nested lookup. 
     output.$imports = _.pick(input.$imports, _.map(visitor.variables, (v: string) => v.split('.')[0]));
   }
   if(input.$defs) {
