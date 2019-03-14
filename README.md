@@ -97,7 +97,7 @@ Commands:
 
   iidy create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
   iidy exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
-  
+
   iidy describe-stack      <stackname>                        describe a stack
   iidy watch-stack         <stackname>                        watch a stack that is already being created or updated
   iidy delete-stack        <stackname>                        delete a stack (after confirmation)
@@ -117,16 +117,16 @@ Commands:
   iidy completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
 AWS Options:
-  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries. 
+  --client-request-token  a unique, case-sensitive string of up to 64 ASCII characters used to ensure idempotent retries.
   --region                AWS region. Can also be set via --environment & stack-args.yaml:Region.
-  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile. Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env vars. 
-  --assume-role-arn       AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile. Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars. 
+  --profile               AWS profile. Can also be set via --environment & stack-args.yaml:Profile. Use --profile=no-profile to override values in stack-args.yaml and use AWS_* env vars.
+  --assume-role-arn       AWS role. Can also be set via --environment & stack-args.yaml:AssumeRoleArn. This is mutually exclusive with --profile. Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars.
 
 Options:
   --environment, -e  used to load environment based settings: AWS Profile, Region, etc.
   --debug            log debug information to stderr.
-  -v, --version      show version information 
-  -h, --help         show help 
+  -v, --version      show version information
+  -h, --help         show help
 
 Status Codes:
   Success (0)       Command successfully completed
@@ -656,86 +656,13 @@ Please format all files with `tsfmt` and remove extra whitespace
 before submitting a PR.
 
 ## License
+
 MIT.
-
-## Changelog
-* [v1.6.6-rc1](https://github.com/unbounce/iidy/releases/tag/v1.6.6-rc1)
-
-* [v1.6.5](https://github.com/unbounce/iidy/releases/tag/v1.6.5)
-
-* [v1.6.4](https://github.com/unbounce/iidy/releases/tag/v1.6.4)
-
-* [v1.6.3](https://github.com/unbounce/iidy/releases/tag/v1.6.3)
-
-* [v1.6.2](https://github.com/unbounce/iidy/releases/tag/v1.6.2)
-
-* [v1.6.1](https://github.com/unbounce/iidy/releases/tag/v1.6.1)
-
-* [v1.6.0-rc7](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc7)
-  - add `iidy template-approval` commands (#43)
-  - sign S3-hosted, http template URLs (#39)
-  - fix bug with `render:` template detection (#39)
-  - fix bug with `cfn:export` imports containing colon (#33)
-
-* [v1.6.0-rc6](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc6)
-  - a variety of new preprocessor features and `iidy init-stack-args` -- December 10, 2017
-
-* [v1.6.0-rc5](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc5)
-  - work around bug in aws-sdk re presence of ~/.aws & add support for reusing
-    aws cli sts role cache -- November 22, 2017
-
-* [v1.6.0-rc4](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc4)
-  - Minor bug fix & new `cfn:export:name` import type -- November 20, 2017
-
-* [v1.6.0-rc3](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc3)
-  - New features & a bug fix -- November 7, 2017
-
-* [v1.6.0-rc2](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc2)
-  - A few tweaks / enhancements on rc1 -- November 6, 2017
-
-* [v1.6.0-rc1](https://github.com/unbounce/iidy/releases/tag/v1.6.0-rc1)
-  - Getting ready for the biggest release yet -- November 5, 2017
-
-* [v1.5.0](https://github.com/unbounce/iidy/releases/tag/v1.5.0) A bit
-  - of polish plus dependency updates -- September 1, 2017
-
-* [v1.4.0](https://github.com/unbounce/iidy/releases/tag/v1.4.0)
-  - get-stack-instances command, improved error reporting -- August 24, 2017
-
-* [v1.3.3](https://github.com/unbounce/iidy/releases/tag/v1.3.3) Bug
-  - fixes and input validation -- August 22, 2017
-
-* [v1.3.2](https://github.com/unbounce/iidy/releases/tag/v1.3.2)
-  Internal refactoring -- August 15, 2017
-
-* [v1.3.1](https://github.com/unbounce/iidy/releases/tag/v1.3.1) Added
-  - time since last event to the event polling output. -- August 11, 2017
-
-* [v1.3.0](https://github.com/unbounce/iidy/releases/tag/v1.3.0) More
-  - robust time handling / event filtering to protect against local clock drift.
-    Also there's now a Dockerfile for creating a small Alpine based container
-    image. -- August 10, 2017
-
-* [v1.2.0](https://github.com/unbounce/iidy/releases/tag/v1.2.0) CLI
-  - output is prettier, new `demo` command, `--role-arn` option for
-    `delete-stack`, add missing `prepublish` entry to `package.json`, improved
-    handling of aws region in cli output. -- August 8, 2017
-
-* [v1.1.0](https://github.com/unbounce/iidy/releases/tag/v1.1.0) Docs,
-  - examples, and improvements -- August 3, 2017
-
-* [v1.0.0](https://github.com/unbounce/iidy/releases/tag/v1.0.0)
-  - Initial Release -- August 1, 2017
-
 
 ## Preparing a Release
 
-- Update `version` in `package.json`
-- Run `npm install`
-- Run `git add package.json package-lock.json`
-- Run `git commit -m 'v1.0.0'` with correct version number
-- Run `git tag -a v1.0.0 -m 'v1.0.0'` with correct version number
-- Run `git push origin v1.0.0` with correct version number
+- Run `npm version minor|patch`
+- Run `git push --tags`
 - Run `make release-prepare`
 - Create [GitHub release](https://github.com/unbounce/iidy/releases)
 - Update [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb)
