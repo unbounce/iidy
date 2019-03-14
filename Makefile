@@ -32,9 +32,9 @@ build : $(BUILD_ARTIFACTS)        ## Build static binaries
 
 docker_build : $(DOCKER_STATEFILE) ## Build and test docker images
 
-test : $(TESTS_STATEFILE)	  ## Run functional tests
+test : $(TESTS_STATEFILE)		## Run functional tests
 
-clean :			          ## Clean the dist/ directory (binaries, etc.)
+clean :								## Clean the dist/ directory (binaries, etc.)
 	rm -rf dist/* lib/*
 
 fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
@@ -46,14 +46,6 @@ package: $(RELEASE_PACKAGES)
 	@echo
 	@ls -alh dist/*zip
 	@shasum -p -a 256 dist/* || true
-	@echo
-	@echo Changelog:
-	@ { \
-	  IFS=":" read -r first second; \
-	  echo git log $${first}...$${second}; echo ; \
-	  git log $${first}...$${second} \
-	  --pretty=format:'<li> <a href="http://github.com/unbounce/iidy/commit/%H">view commit</a> %s</li> '; \
-	  } < <(git tag | tail -n2 | paste -sd':' -)
 	@echo
 	@echo open dist/
 
@@ -90,9 +82,9 @@ $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 $(RELEASE_PACKAGES) : $(BUILD_ARTIFACTS)
 	cd dist && \
 	for OS in linux macos; do \
-	  cp iidy-$$OS iidy; \
-	  zip iidy-$${OS}-amd64.zip iidy;\
-	  shasum -p -a 256 iidy-$${OS}-amd64.zip; \
+		cp iidy-$$OS iidy; \
+		zip iidy-$${OS}-amd64.zip iidy;\
+		shasum -p -a 256 iidy-$${OS}-amd64.zip; \
 	done
 	rm -f dist/iidy
 
