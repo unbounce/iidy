@@ -663,7 +663,7 @@ MIT.
 
 - Run `npm version minor|patch`
 - Run `git push --tags`
-- Run `make release-prepare`
+- Run `make prepare_release`
 - Create [GitHub release](https://github.com/unbounce/iidy/releases)
 - Update [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb)
 
