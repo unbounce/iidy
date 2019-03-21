@@ -211,6 +211,8 @@ export IIDY_ENVIRONMENT=production
 
 ### Importing Data
 
+Data can be imported into the stack args file using the `$imports` block.
+
 | Import Type | Description | Example |
 |-------------|-------------|---------|
 | `file` | Load a local file, JSON and YAML files will be parsed into a data structure | `vars.yaml` |
@@ -234,6 +236,45 @@ export IIDY_ENVIRONMENT=production
 | `ssm` | Fetch a SSM Parameter Store value | `ssm:/path/to/param` |
 | `ssm-path` | Fetch all SSM Parameter Store values at a given path | `ssm:/path/to/params` |
 
+iidy imports can be accessed using the `!$` YAML tag or using Handlebars
+templating. `!$` will insert the data assigned to that variable. Handlebars
+templated strings can be used to interpolate values into a string.
+
+```yaml
+$imports:
+  params: ssm-path:/my-services/config
+
+Parameters:
+  Timeout: $! params.Timeout
+
+Tags:
+  StackName: 'my-service'
+```
+
+### Implicit Variables
+
+Some data is automatically set by iidy.
+
+| Variable | Description |
+|----------|-------------|
+| `iidy.region` | Current AWS region in use |
+| `iidy.environment` | Value of `--environment` flag |
+
+```yaml
+StackName: 'my-service-{{ iidy.environment }}'
+```
+
+### Defining Variables
+
+Local variables with file can be specified using the `$defs` block.
+
+```
+$defs:
+  serviceName: my-service
+
+StackName: '{{ serviceName }}-{{ iidy.environment }}'
+```
+
 ### AWS IAM Settings
 
 `iidy` supports loading AWS IAM credentials/profiles from a) the cli
@@ -250,6 +291,7 @@ These credentials are used to interact with the CloudFormation API and to
 perform and AWS-related imports.
 
 If your profile requires an MFA token, iidy will prompt for it.
+
 ```
 ? MFA token for arn:aws:iam::002682819933:mfa/example.user: ____
 ```
