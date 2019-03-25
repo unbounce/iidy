@@ -86,6 +86,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy create-stack <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('track', {
+          type: 'boolean', default: false,
+          description: description('write arguments to state file')
+        })
         .option('lint-template', lintTemplateOpt(false)),
       wrapMainHandler(commands.createStackMain))
 
@@ -96,6 +100,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy update-stack <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('track', {
+          type: 'boolean', default: false,
+          description: description('write arguments to state file')
+        })
         .option('lint-template', lintTemplateOpt(false))
         .option('changeset', {
           type: 'boolean', default: false,
