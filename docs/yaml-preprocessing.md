@@ -29,8 +29,6 @@ Parameters:
   Foo: bar
 ```
 
-
-
 The pre-processor can also be invoked directly on any YAML file via the
 `iidy render` cli command.
 
@@ -258,46 +256,46 @@ things: !$fromPairs
 ```yaml
 # !$map { template: {}, items: [], var: 'item', filter: ~ }
 
-things: !$map
+people: !$map
   items:
-    - first: Rick
-      last: Perreault
-    - first: Carl
-      last: Schmidt
+    - first: Linus
+      last: Torvalds
+    - first: Grace
+      last: Hopper
   template:
     name: '{{ item.first }} {{ item.last }}'
 
-# things:
-#   - name: Rick Perreault
-#   - name: Carl Schmidt
+# people:
+#   - name: Linus Torvalds
+#   - name: Grace Hopper
 
-things: !$map
+people: !$map
   var: person
   items:
-    - first: Rick
-      last: Perreault
-    - first: Carl
-      last: Schmidt
+    - first: Linus
+      last: Torvalds
+    - first: Grace
+      last: Hopper
   template:
     name: '{{ person.first }} {{ person.last }}'
 
-# things:
-#   - name: Rick Perreault
-#   - name: Carl Schmidt
+# people:
+#   - name: Linus Torvalds
+#   - name: Grace Hopper
 
-things: !$map
-  filter: !$eq ['Rick', !$ person.first]
+people: !$map
+  filter: !$eq ['Linus', !$ person.first]
   var: person
   items:
-    - first: Rick
-      last: Perreault
-    - first: Carl
-      last: Schmidt
+    - first: Linus
+      last: Torvalds
+    - first: Grace
+      last: Hopper
   template:
     name: '{{ person.first }} {{ person.last }}'
 
-# things:
-#   - name: Rick Perreault
+# people:
+#   - name: Linus Torvalds
 ```
 
 * `!$concatMap` same as `!$map` followed by `!$concat` on the output
@@ -334,18 +332,18 @@ things: !$concatMap
 ```yaml
 # !$mergeMap { template: {}, items: [], var: 'item', filter: ~ }
 
-things: !$mergeMap
+people: !$mergeMap
   items:
-    - first: Rick
-      last: Perreault
-    - first: Carl
-      last: Schmidt
+    - first: Linus
+      last: Torvalds
+    - first: Grace
+      last: Hopper
   template:
     '{{ item.first }}': '{{ item.last }}'
 
-# things:
-#   Rick: Perreault
-#   Carl: Schmidt
+# people:
+#   Linus: Torvalds
+#   Grace: Hopper
 ```
 
 ```yaml
@@ -387,22 +385,23 @@ things: !$mapValues
 ```yaml
 # !$groupBy { template: {}, items: [], var: 'item', filter: ~ }
 
-things: !$groupBy
-  key: team
+people: !$groupBy
+  key: !$ item.company
   items:
-    - name: Rick Perreault
-      team: Founder
-    - name: Carl Schmidt
-      team: Founder
-    - name: Emily Mears
-      team: DevX
-    - name: James Brennan
-      team: DevX
+    - name: Ken Tompson
+      company: Bell
+    - name: Margaret Hamilton
+      company: NASA
+    - name: Dennis Ritchie
+      company: Bell
   template: !$ item.name
 
-# things:
-#  Founder: [Rick Perreault, Carl Schmidt]
-#  DevX: [Emily Mears, James Brennan]
+# people:
+#   Bell:
+#     - Ken Tompson
+#     - Dennis Ritchie
+#   NASA:
+#     - Margaret Hamilton
 ```
 
 * `!$split` split a string into a list
@@ -412,11 +411,11 @@ things: !$groupBy
 
 things: !$split
   - ', '
-  - Rick Perreault, Carl Schmidt
+  - a, b
 
 # things:
-#   - Rick Perreault
-#   - Carl Schmidt
+#   - a
+#   - b
 ```
 
 
@@ -474,12 +473,12 @@ things: !$parseYaml "a: b\n"
 ```yaml
 # !$let { in: {}, ...bindings }
 
-things: !$let
-  first: Rick
-  last: Perreault
+people: !$let
+  first: Linus
+  last: Torvalds
   in:
     fullName: '{{ first }} {{ last }}'
 
-# things:
-#   fullName: Rick Perreault
+# people:
+#   fullName: Linus Torvalds
 ```
