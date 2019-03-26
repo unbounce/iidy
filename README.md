@@ -238,7 +238,7 @@ Data can be imported into the stack args file using the `$imports` block.
 | `random:name` | Generate a random dashed name, for example: `'uptightguitar'` | `random:name` |
 | `random:int` | Generate a random integer, between 1 and 1000 | `random:int` |
 | `ssm` | Fetch a SSM Parameter Store value | `ssm:/path/to/param` |
-| `ssm-path` | Fetch all SSM Parameter Store values at a given path | `ssm:/path/to/params` |
+| `ssm-path` | Fetch all SSM Parameter Store values at a given path | `ssm-path:/path/to/params` |
 
 iidy imports can be accessed using the `!$` YAML tag or using Handlebars
 templating. `!$` will insert the data assigned to that variable. Handlebars
