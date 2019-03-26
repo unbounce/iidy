@@ -7,9 +7,11 @@ stored. For example:
 
 ```shell
 iidy convert-stack-to-iidy my-cloudformation-stack-1 .
-
-# this will generate:
-# * _original-template.json
-# * stack-args.yaml
-# * cfn-template.yaml
 ```
+
+this will generate:
+
+- `_original-template.json` or `_original-template.json`
+- `stack-args.yaml`
+- `cfn-template.yaml`
+- `stack-policy.json` (if used)
