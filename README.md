@@ -1,6 +1,6 @@
 # iidy (Is it done yet?) -- a CloudFormation CLI tool
 
-`iidy` improves the developer experience with CloudFormation and
+iidy improves the developer experience with CloudFormation and
 CloudFormation templates.
 
 * It provides immediate, readable feedback about what CloudFormation is doing
@@ -244,7 +244,7 @@ iidy imports can be accessed using the `!$` YAML tag or using Handlebars
 templating. `!$` will insert the data assigned to that variable. Handlebars
 templated strings can be used to interpolate values into a string.
 
-`iidy` parses `.yaml` or `.json` imports and makes them available as a map. It
+iidy parses `.yaml` or `.json` imports and makes them available as a map. It
 uses either the file extension or the mime-type of remote files to detect these
 file types.
 
@@ -285,11 +285,11 @@ StackName: '{{ serviceName }}-{{ iidy.environment }}'
 
 ### AWS IAM Settings
 
-`iidy` supports loading AWS IAM credentials/profiles from a) the cli
+iidy supports loading AWS IAM credentials/profiles from a) the cli
 options shown above, b) `Region` and `Profile` or `AssumeRoleArn`
 settings in `stack-args.yaml`, or c) the standard AWS environment
 variables. You will also need the correct level of IAM permissions for
-`iidy` to perform CloudFormation API calls.
+iidy to perform CloudFormation API calls.
 
 - CLI options (see above)
 - `Region` and `Profile` or `AssumeRoleArn` in args file
@@ -304,7 +304,7 @@ If your profile requires an MFA token, iidy will prompt for it.
 ? MFA token for arn:aws:iam::002682819933:mfa/example.user: ____
 ```
 
-If you've assumed a profile prior to running `iidy` and want to it to ignore
+If you've assumed a profile prior to running iidy and want to it to ignore
 what's specified as `Profile` in `stack-args.yaml` and instead use `AWS_*`
 environment variables, set the CLI option `--profile no-profile`.
 

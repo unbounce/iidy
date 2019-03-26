@@ -1,6 +1,6 @@
-# Converting Existing CloudFormation Stacks to `iidy`
+# Converting Existing CloudFormation Stacks to iidy
 
-Converting current stacks to `iidy` can be done through the `iidy
+Converting current stacks to iidy can be done through the iidy
 convert-stack-to-iidy` command, which accepts two parameters: the stack name of
 the project that you'd want to convert and a path where the output will be
 stored. For example:

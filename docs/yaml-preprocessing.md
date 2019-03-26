@@ -1,6 +1,6 @@
 # YAML Pre-Processing
 
-In additional to wrapping the Cloudformation API / workflow, `iidy`
+In additional to wrapping the Cloudformation API / workflow, iidy
 provides an optional YAML pre-processor, which
 
 * allows CloudFormation templates to be abstracted and simplified in

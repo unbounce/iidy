@@ -1,6 +1,6 @@
 # Custom Resource Templates
 
-`iidy` autodetects whether a YAML document is a CloudFormation template or not.
+iidy autodetects whether a YAML document is a CloudFormation template or not.
 If it is, the [`custom resource templates`](#custom-resource-templates)
 (described below) and some validation/normalization features are enabled.
 
