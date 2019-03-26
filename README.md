@@ -142,7 +142,7 @@ Status Codes:
 ### Environment Variables
 
 Any parameter used by iidy can be set using `IIDY_{{argname}}`. An example of
-this would be chaning the default environment from development to production.
+this would be changing the default environment from development to production.
 
 ```shell
 export IIDY_ENVIRONMENT=production
