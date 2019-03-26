@@ -300,6 +300,15 @@ If you've assumed a profile prior to running `iidy` and want to it to ignore
 what's specified as `Profile` in `stack-args.yaml` and instead use `AWS_*`
 environment variables, set the CLI option `--profile no-profile`.
 
+## Additional Documentation
+
+- [Converting Existing CloudFormation Stacks to iidy](docs/converting-existing-cloudformation-stacks-to-iidy.md)
+- [Custom Resource Templates](docs/custom-resource-templates.md)
+- [Using Parameter Store](docs/using-parameter-store.md)
+- [Working with Non-CloudFormation YAML](docs/working-with-non-cloudformation-yaml.md)
+- [Working with StackSets](docs/working-with-stacksets.md)
+- [YAML Processing](docs/yaml-preprocessing.md)
+
 ## Examples
 
 See the examples/ directory.
