@@ -22,7 +22,7 @@ and any other YAML file. The pre-processor is applied automatically to
 prefixing the Template value in `stack-args.yaml` with `render:` as
 shown below.
 
-```YAML
+```yaml
 StackName: iidy-demo
 Template: "render:./cfn-template.yaml"
 Parameters:
@@ -55,7 +55,7 @@ These values can be accessed and stitched into the output using either
 the `!$` (pronounced "include") custom tag or with handlebarsjs syntax
 inside a string entry.
 
-```YAML
+```yaml
 # input document
 $defs:
   hello: "world"
@@ -79,7 +79,7 @@ If the value being included is a map or list rather than a simple
 scalar value, it is spliced into the output rather than being
 collapsed in any way.
 
-```YAML
+```yaml
 # input document
 $defs:
   a-list:
@@ -119,14 +119,14 @@ source may contain handlebars syntax which refers to either values
 that have come from `$defs` or from previous `$imports`.
 
 For example, `values` in this set of imports depends on `other`:
-```YAML
+```yaml
 $imports:
   other: "env:other:default"
   values: "{{other}}.yaml"
 ```
 
 This example is simillar to the previous but `other` is defined as a fixed value.
-```YAML
+```yaml
 $defs:
   other: blah
 $imports:
@@ -140,14 +140,14 @@ document-level key `$imports`. Its value is map from import names to
 import sources.
 
 For example, if we had the following file:
-```YAML
+```yaml
 # names.yaml
 mundi: world
 #...
 ```
 
 We could import it into another file and use the values it contains:
-```YAML
+```yaml
 # input document
 $imports:
   # <an arbitrary import name>: <importSource>
@@ -201,23 +201,293 @@ files to detect these file types.
 Relative imports are supported for local files, http, and s3.
 
 ### Boolean / Logical Branching Tags
-TODO: see the test suite for now
-* `!$if`
-* `!$eq`
-* `!$not`
 
+```yaml
+# !$if { test: bool, then: ~ , else: ~ }
+
+thing: !$if
+  test: true
+  then: Do the thing
+  else: Don't do the thing
+
+# thing: Do the thing
+```
+
+```yaml
+# !$eq [a, b]
+
+thing: !$if
+  test: !$eq ['thing', 'thing']
+  then: They're the same
+  else: They're not the same
+
+# thing: They're the same
+```
+
+```yaml
+# !$not bool
+
+thing: !$if
+  test: !$not true
+  then: Don't do the thing
+  else: Do the thing
+
+# thing: Do the thing
+```
 
 ### Looping and Data Restructuring Tags
-TODO: see the test suite for now
+
 * `!$concat` concatenate lists of lists
-* `!$map` map a YAML template over a list of input arguments
-* `!$concatMap` same as `!$map` followed by `!$concat` on the output
+
+```yaml
+# !$concat [a, b, ...]
+
+things: !$concat
+  - [a, b]
+  - [c, d]
+  - [e, f]
+
+# things:
+#   - a
+#   - b
+#   - c
+#   - d
+#   - e
+#   - f
+```
+
 * `!$merge` merge a list of maps together, similar to lodash [`_.merge`](https://lodash.com/docs/4.17.4#merge)
-* `!$mergeMap` same as `!$map` followed by `!$merge` on the output
+
+```yaml
+# !$merge [{}, {}, ...]
+
+things: !$merge
+  - { a: 1 }
+  - { b: 2 }
+  - { c: 3 }
+
+# things:
+#   a: 1
+#   b: 2
+#   c: 3
+```
+
 * `!$fromPairs` convert a list of pairs into a map
+
+```yaml
+# !$fromPairs [{ key: a, value: 1}, { key: b, value: 2}]
+
+things: !$fromPairs
+  - { key: a, value: 1 }
+  - { key: b, value: 2 }
+  - { key: c, value: 3 }
+
+# things:
+#   a: 1
+#   b: 2
+#   c: 3
+```
+
+* `!$map` map a YAML template over a list of input arguments
+
+```yaml
+# !$map { template: {}, items: [], var: 'item', filter: ~ }
+
+things: !$map
+  items:
+    - first: Rick
+      last: Perreault
+    - first: Carl
+      last: Schmidt
+  template:
+    name: '{{ item.first }} {{ item.last }}'
+
+# things:
+#   - name: Rick Perreault
+#   - name: Carl Schmidt
+
+things: !$map
+  var: person
+  items:
+    - first: Rick
+      last: Perreault
+    - first: Carl
+      last: Schmidt
+  template:
+    name: '{{ person.first }} {{ person.last }}'
+
+# things:
+#   - name: Rick Perreault
+#   - name: Carl Schmidt
+
+things: !$map
+  filter: !$eq ['Rick', !$ person.first]
+  var: person
+  items:
+    - first: Rick
+      last: Perreault
+    - first: Carl
+      last: Schmidt
+  template:
+    name: '{{ person.first }} {{ person.last }}'
+
+# things:
+#   - name: Rick Perreault
+```
+
+* `!$concatMap` same as `!$map` followed by `!$concat` on the output
+
+```yaml
+# !$concatMap { template: {}, items: [], var: 'item', filter: ~ }
+
+$defs:
+  letters: [A, B, C]
+  numbers: [1, 2, 3]
+
+things: !$concatMap
+  items: !$ letters
+  var: letter
+  template: !$map
+    items: !$ numbers
+    var: number
+    template: '{{ letter }}{{ number }}'
+
+# things:
+#   - A1
+#   - A2
+#   - A3
+#   - B1
+#   - B2
+#   - B3
+#   - C1
+#   - C2
+#   - C3
+```
+
+* `!$mergeMap` same as `!$map` followed by `!$merge` on the output
+
+```yaml
+# !$mergeMap { template: {}, items: [], var: 'item', filter: ~ }
+
+things: !$mergeMap
+  items:
+    - first: Rick
+      last: Perreault
+    - first: Carl
+      last: Schmidt
+  template:
+    '{{ item.first }}': '{{ item.last }}'
+
+# things:
+#   Rick: Perreault
+#   Carl: Schmidt
+```
+
+```yaml
+# !$mapListToHash { template: {}, items: [], var: 'item', filter: ~ }
+```
+
+```yaml
+# !$mapValues { template: {}, items: [], var: 'item', filter: ~ }
+```
+
 * `!$groupBy` similar to lodash [`_.merge`](https://lodash.com/docs/4.17.4#groupBy)
+
+```yaml
+# !$groupBy { template: {}, items: [], var: 'item', filter: ~ }
+
+things: !$groupBy
+  key: team
+  items:
+    - name: Rick Perreault
+      team: Founder
+    - name: Carl Schmidt
+      team: Founder
+    - name: Emily Mears
+      team: DevX
+    - name: James Brennan
+      team: DevX
+  template: !$ item.name
+
+# things:
+#  Founder: [Rick Perreault, Carl Schmidt]
+#  DevX: [Emily Mears, James Brennan]
+```
+
 * `!$split` split a string into a list
 
+```yaml
+# !$ split [delimiter, string]
+
+things:
+  - ', '
+  - Rick Perreault, Carl Schmidt
+
+# things:
+#   - Rick Perreault
+#   - Carl Schmidt
+```
+
+
 ### String manipulation Tags
-TODO: see the test suite for now
+
 * `!$parseYaml` parse a string
+
+```
+# !$parseYaml string
+
+things: !$parseYaml "[a,b,c]"
+
+# things:
+#  - a
+#  - b
+#  - c
+```
+
+* `!$escape` 🤷‍️
+
+```
+# !$escape {}
+
+things: !$escape { a: b }
+
+# things:
+#   a: b
+```
+
+* `!$string` convert to a YAML string
+
+```
+# !$string {}
+
+things: !$string
+  a: b
+
+# things: "a: b\n"
+```
+
+* `!$parseYaml` parse YAML string, opposite of `!$string`
+
+```
+# !$parseYaml {}
+
+things: !$parseYaml "a: b\n"
+
+# things:
+#   a: b
+```
+
+* `!$let` local variable binding
+
+```
+# !$let { in: {}, ...bindings }
+
+things: !$let
+  first: Rick
+  last: Perreault
+  in:
+    fullName: '{{ first }} {{ last }}'
+
+# things:
+#   fullName: Rick Perreault
+```
