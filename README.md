@@ -289,11 +289,13 @@ iidy supports loading AWS IAM credentials/profiles from a) the cli
 options shown above, b) `Region` and `Profile` or `AssumeRoleArn`
 settings in `stack-args.yaml`, or c) the standard AWS environment
 variables. You will also need the correct level of IAM permissions for
-iidy to perform CloudFormation API calls.
+iidy to perform CloudFormation API calls. This information can be provided in a
+number of different ways (ordered from highest to lowest precedence):
 
 - CLI options (see above)
-- `Region` and `Profile` or `AssumeRoleArn` in args file
+- `AWS_REGION` and `AWS_PROFILE` environment variables
 - standard [AWS environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+- `Region` and `Profile` or `AssumeRoleArn` in args file
 
 These credentials are used to interact with the CloudFormation API and to
 perform and AWS-related imports.
