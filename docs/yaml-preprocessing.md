@@ -1,4 +1,4 @@
-## YAML Pre-Processing
+# YAML Pre-Processing
 
 In additional to wrapping the Cloudformation API / workflow, `iidy`
 provides an optional YAML pre-processor, which
@@ -34,7 +34,7 @@ Parameters:
 The pre-processor can also be invoked directly on any YAML file via the
 `iidy render` cli command.
 
-### Basic Syntax
+## Basic Syntax
 
 The pre-processor language is valid YAML with some [custom
 tags](http://yaml.org/spec/1.0/#id2490971). These tags all start with
@@ -45,7 +45,7 @@ This documentation assumes you already know YAML syntax well. See
 https://en.wikipedia.org/wiki/YAML#Syntax or
 http://www.yaml.org/spec/1.2/spec.html for help.
 
-### `$imports`, `$defs`, and Includes
+## `$imports`, `$defs`, and Includes
 
 Each YAML document is treated as a module with a distinct namespace.
 Values in a namespace are defined via the `$defs:` entry at the root
@@ -140,6 +140,7 @@ document-level key `$imports`. Its value is map from import names to
 import sources.
 
 For example, if we had the following file:
+
 ```yaml
 # names.yaml
 mundi: world
@@ -147,6 +148,7 @@ mundi: world
 ```
 
 We could import it into another file and use the values it contains:
+
 ```yaml
 # input document
 $imports:
@@ -159,46 +161,9 @@ output:
 # output document
 outputs:
   hello: world
-
 ```
 
-`iidy` supports a wide range of import sources:
-
-* local file paths (relative or absolute): e.g. `./some-file.yaml`
-* filehash: e.g. `filehash:./some-file.yaml`
-* https or http: e.g. `https://example.com/some-file.yaml`
-* environment variables: e.g. `env:FOO` or with an optional default value `env:FOO:bar`
-* s3 (tied to an AWS account / region): e.g.
-  `s3://somebucket/some-file.yaml`. Requires `s3:GetObject` IAM
-  permissions.
-* CloudFormation stacks (tied to an AWS account / region). These
-  require requires IAM `cloudformation:ListExports` and
-  `cloudformation:DescribeStack` permissions.
-  * `cfn:export:someExportName`
-  * `cfn:output:stackName:anOutputName` or `cfn:output:stackName` imports all outputs
-  * `cfn:resource:stackName:resourceName` or `cfn:resource:stackName` imports all resources
-  * `cfn:parameter:stackName:parameterName` or `cfn:parameter:stackName` imports all parameters
-  * `cfn:tag:stackName:tagName` or `cfn:tag:stackName` imports all tags
-  * `cfn:stack:stackName` imports all stack details from the CloudFormation API
-* AWS SSM ParameterStore (tied to an AWS account / region). These
-  require IAM `ssm:GetParameters`, `ssm:GetParameter`, and
-  `ssm:DescribeParameter` permissions.
-  * `ssm:/some-path-prefix/foo`: a single entry
-  * `ssm-path:/some-path-prefix/`: all entries under a path prefix
-* random
-  * `random:int`
-  * `random:dashed-name`
-  * `random:name`
-* git
-  * `git:branch`
-  * `git:describe`
-  * `git:sha`
-
-`iidy` parses `.yaml` or `.json` imports and makes them available as a
-map. It uses either the file extension or the mime-type of remote
-files to detect these file types.
-
-Relative imports are supported for local files, http, and s3.
+See [Importing Data](../README.md#importing-data) for a complete list of import sources.
 
 ### Boolean / Logical Branching Tags
 
@@ -384,11 +349,37 @@ things: !$mergeMap
 ```
 
 ```yaml
-# !$mapListToHash { template: {}, items: [], var: 'item', filter: ~ }
+# !$mapListToHash { template: { key: ~, value: ~ }, items: [], var: 'item', filter: ~ }
+
+things: !$mapListToHash
+  items:
+    - [a, 1]
+    - [b, 2]
+  template:
+    key: !$ item.0
+    value: !$ item.1
+
+# things:
+#   a: 1
+#   b: 2
 ```
 
 ```yaml
 # !$mapValues { template: {}, items: [], var: 'item', filter: ~ }
+
+things: !$mapValues
+  items:
+    a: 1
+    b: 2
+  template: !$ item
+
+# things:
+#   a:
+#     value: 1
+#     key: a
+#   b:
+#     value: 2
+#     key: b
 ```
 
 * `!$groupBy` similar to lodash [`_.merge`](https://lodash.com/docs/4.17.4#groupBy)
@@ -417,9 +408,9 @@ things: !$groupBy
 * `!$split` split a string into a list
 
 ```yaml
-# !$ split [delimiter, string]
+# !$split [delimiter, string]
 
-things:
+things: !$split
   - ', '
   - Rick Perreault, Carl Schmidt
 
@@ -433,7 +424,7 @@ things:
 
 * `!$parseYaml` parse a string
 
-```
+```yaml
 # !$parseYaml string
 
 things: !$parseYaml "[a,b,c]"
@@ -446,7 +437,7 @@ things: !$parseYaml "[a,b,c]"
 
 * `!$escape` 🤷‍️
 
-```
+```yaml
 # !$escape {}
 
 things: !$escape { a: b }
@@ -455,20 +446,21 @@ things: !$escape { a: b }
 #   a: b
 ```
 
-* `!$string` convert to a YAML string
+* `!$string` convert data to a YAML string
 
-```
+```yaml
 # !$string {}
 
 things: !$string
   a: b
 
-# things: "a: b\n"
+# things: |
+#   a: b
 ```
 
 * `!$parseYaml` parse YAML string, opposite of `!$string`
 
-```
+```yaml
 # !$parseYaml {}
 
 things: !$parseYaml "a: b\n"
@@ -479,7 +471,7 @@ things: !$parseYaml "a: b\n"
 
 * `!$let` local variable binding
 
-```
+```yaml
 # !$let { in: {}, ...bindings }
 
 things: !$let

@@ -1,8 +1,8 @@
-### Listing and Describing Live Stacks
+# Listing and Describing Live Stacks
 
 [![asciicast](https://asciinema.org/a/l4vDhmKiTLr10oKypXRG7y1eW.png)](https://asciinema.org/a/l4vDhmKiTLr10oKypXRG7y1eW)
 
-### Creating or Updating CloudFormation Stacks
+# Creating or Updating CloudFormation Stacks
 
 [![asciicast](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E.png)](https://asciinema.org/a/8rzW1WyoDxMdVJpvpYf2mHm8E)
 
@@ -47,6 +47,6 @@ $ iidy delete-stack iidy-demo
 
 ```
 
-### Creating or Executing CloudFormation Changesets
+# Creating or Executing CloudFormation Changesets
 
 [![asciicast](https://asciinema.org/a/fl9ss0EYyPbDtFmSCaERC2YBU.png)](https://asciinema.org/a/fl9ss0EYyPbDtFmSCaERC2YBU)

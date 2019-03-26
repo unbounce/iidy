@@ -14,10 +14,11 @@ Parameters:
   DbPasswd: !$ dbPasswd
   ...
 ```
+
 See below for more on `$imports` and `includes` (i.e. the `!$` YAML tag).
 
-
 You can also import the full set of parameters under a path prefix:
+
 ```YAML
 # example stack-args.yaml
 $imports:

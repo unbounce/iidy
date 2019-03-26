@@ -25,8 +25,8 @@ CloudFormation templates.
 
 ## Pronunciation
 
-iidy is pronounced "eye-dee", like the audience's response to Cab Calloway in Minnie the
-Moocher: https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
+iidy is pronounced "eye-dee", like the audience's response to Cab Calloway in
+[Minnie the Moocher](https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s).
 
 ## Demo
 
@@ -34,9 +34,11 @@ Moocher: https://www.youtube.com/watch?v=8mq4UT4VnbE&feature=youtu.be&t=50s
 
 ## Installation
 
-### MacOS: Binary Install via Homebrew
+iidy is distributed as a self-contained executable (via [pkg](https://github.com/zeit/pkg)).
 
-Use Unbounce's custom Homebrew Tap to install iidy.  This is the preferred method for macOS.
+### Binary Install for macOS via Homebrew
+
+Use Unbounce's custom Homebrew Tap to install iidy. This is the preferred method for macOS.
 
 ```shell
 brew tap unbounce/homebrew-taps
@@ -48,11 +50,11 @@ brew install iidy
 
 ```shell
 # Grab the appropriate binary from the releases page.
-wget https://github.com/unbounce/iidy/releases/download/v1.6.6-rc1/iidy-linux-amd64.zip
-# or wget https://github.com/unbounce/iidy/releases/download/v1.6.6-rc1/iidy-macos-amd64.zip
+wget https://github.com/unbounce/iidy/releases/download/v1.6.7/iidy-linux-amd64.zip
+# or wget https://github.com/unbounce/iidy/releases/download/v1.6.7/iidy-macos-amd64.zip
 unzip iidy*.zip
 chmod +x iidy
-mv iidy /usr/local/bin/   # or somewhere more appropriate
+mv iidy /usr/local/bin/ # or somewhere more appropriate
 ```
 
 ### Installation from Source
@@ -63,7 +65,7 @@ install. You need Node 7+ and npm 4+ installed.
 ```shell
 git clone git@github.com:unbounce/iidy.git
 cd iidy
-npm install . && npm run build # to compile our source first
+npm install && npm run build # to compile our source first
 ln -s $(pwd)/bin/iidy /usr/local/bin/
 # or npm install -g .
 ```
@@ -75,14 +77,14 @@ Hub](https://hub.docker.com/r/unbounce/iidy). The `latest` tag is updated on
 merges to the `master` branch. Releases are tagged with their version number.
 
 ```shell
-docker run unbounce/iidy:v1.6.5
+docker run unbounce/iidy:v1.6.7
 ```
 
 ## Usage
 
 ### Help
 
-```
+```shell
 $ iidy help
 iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
@@ -137,18 +139,30 @@ Status Codes:
   Cancelled (130)   User responded 'No' to iidy prompt or interrupt (CTRL-C) was received
 ```
 
+### Environment Variables
+
+Any parameter used by iidy can be set using `IIDY_{{argname}}`. An example of
+this would be chaning the default environment from development to production.
+
+```shell
+export IIDY_ENVIRONMENT=production
+```
+
 ### The Args File
 
-Also known as `stack-args.yaml`.
+Metadata for a CloudFormation stack is kept in a file called the "argsfile"
+(typically called `stack-args.yaml`). This file is a parameter for commands like
+`iidy create-or-update` or `iidy create-changeset` and is the main source of
+data for creating or updating a CloudFormation stack.
 
-## Required Properties
+#### Required Properties
 
 | Property | Description | Example |
 |----------|-------------|---------|
 | StackName | CloudFormation stack name | `my-stack` |
 | Template | Local, `https` or `s3` location of CloudFormation template | `cfn-template.yaml` |
 
-## Optional Properties
+#### Optional Properties
 
 | Property | Description | Example |
 |----------|-------------|---------|
@@ -166,7 +180,7 @@ Also known as `stack-args.yaml`.
 | ResourceTypes | List of [allowed resource types to create in CloudFormation stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html) | `['AWS::EC2::*']` |
 | CommandsBefore | List of commands to run before `create-` and `update-stack` commands | `['make build']` |
 
-## Example
+#### Example
 
 ```yaml
 StackName: my-stack
@@ -197,19 +211,9 @@ CommandsBefore:
 
   # E.g.
   - make build
-
 ```
 
-### Environment Variables
-
-Any parameter used by iidy can be set using `IIDY_{{argname}}`. An example of
-this would be chaning the default environment from development to production.
-
-```
-export IIDY_ENVIRONMENT=production
-```
-
-### Importing Data
+#### Importing Data
 
 Data can be imported into the stack args file using the `$imports` block.
 
@@ -240,6 +244,10 @@ iidy imports can be accessed using the `!$` YAML tag or using Handlebars
 templating. `!$` will insert the data assigned to that variable. Handlebars
 templated strings can be used to interpolate values into a string.
 
+`iidy` parses `.yaml` or `.json` imports and makes them available as a map. It
+uses either the file extension or the mime-type of remote files to detect these
+file types.
+
 ```yaml
 $imports:
   params: ssm-path:/my-services/config
@@ -251,24 +259,24 @@ Tags:
   StackName: 'my-service'
 ```
 
-### Implicit Variables
+#### Implicit Variables
 
 Some data is automatically set by iidy.
 
 | Variable | Description |
 |----------|-------------|
-| `iidy.region` | Current AWS region in use |
-| `iidy.environment` | Value of `--environment` flag |
+| `iidy.region` | The current AWS region in use |
+| `iidy.environment` | Value of the `--environment` flag |
 
 ```yaml
 StackName: 'my-service-{{ iidy.environment }}'
 ```
 
-### Defining Variables
+#### Defining Variables
 
 Local variables with file can be specified using the `$defs` block.
 
-```
+```yaml
 $defs:
   serviceName: my-service
 
@@ -311,7 +319,7 @@ environment variables, set the CLI option `--profile no-profile`.
 
 ## Examples
 
-See the examples/ directory.
+See the [`examples/`](examples/) directory.
 
 ## Development
 
@@ -326,13 +334,13 @@ submitting a PR.
 
 MIT.
 
-## Preparing a Release
+## Releasing
 
 - Run `npm version minor|patch`
 - Run `git push --tags`
 - Run `make prepare_release`
-- Create [GitHub release](https://github.com/unbounce/iidy/releases)
-- Update [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb)
+- Create a [GitHub release](https://github.com/unbounce/iidy/releases)
+- Update the [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb)
 
 ## Roadmap
 
