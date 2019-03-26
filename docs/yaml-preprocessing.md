@@ -7,7 +7,7 @@ provides an optional YAML pre-processor, which
   ways not possible with vanilla CloudFormation templates
 * allows values to be imported from a range of sources, including
   local files, s3, https, ParameterStore, and environment variables.
-  It parses json or YAML imports. The imported data can be stitched
+  It parses JSON or YAML imports. The imported data can be stitched
   into the target template as YAML subtrees, as literal strings, or as
   single values.
 * can be used to define custom resource templates that expand out
