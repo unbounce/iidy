@@ -5,15 +5,15 @@ CloudFormation templates.
 
 * It provides immediate, readable feedback about what CloudFormation is doing
   and any errors it encounters.
-* It is simple to learn, understand, and use.
-  parts, that map directly to CloudFormation's
+* It is simple to learn, understand, and use. There are fewer moving parts and
+  its commands map directly to CloudFormation's.
 * It has simple, reliable support for AWS profiles.
 * It supports the full range of CloudFormation operations, including
   _changesets_ without requiring any code beyond what is required to create a
   stack.
 * It does some template validation, guards against common issues, and will be
   extended over time to validate our best practices and security policies.
-* It provides seemless integration with AWS Parameter Store
+* It provides seemless integration with AWS Parameter Store.
 * It includes an optional YAML pre-processor which allows CloudFormation
   templates to be abstracted and simplified in ways not possible with vanilla
   CloudFormation templates. The pre-processor language supports importing data
@@ -84,7 +84,7 @@ docker run unbounce/iidy:v1.6.7
 
 ### Help
 
-```shell
+```
 $ iidy help
 iidy - CloudFormation with Confidence                    An acronym for "Is it done yet?"
 
@@ -93,10 +93,10 @@ Commands:
   iidy update-stack     <argsfile>                            update a cfn stack based on stack-args.yaml
   iidy create-or-update <argsfile>                            create or update a cfn stack based on stack-args.yaml
   iidy estimate-cost    <argsfile>                            estimate aws costs based on stack-args.yaml
-       ...
+
   iidy create-changeset           <argsfile> [changesetName]  create a cfn changeset based on stack-args.yaml
   iidy exec-changeset             <argsfile> <changesetName>  execute a cfn changeset based on stack-args.yaml
-       ...
+
   iidy describe-stack      <stackname>                        describe a stack
   iidy watch-stack         <stackname>                        watch a stack that is already being created or updated
   iidy describe-stack-drift <stackname>                       describe stack drift
@@ -104,18 +104,18 @@ Commands:
   iidy get-stack-template  <stackname>                        download the template of a live stack
   iidy get-stack-instances <stackname>                        list the ec2 instances of a live stack
   iidy list-stacks                                            list all stacks within a region
-       ...
+
   iidy param                                                  sub commands for working with AWS SSM Parameter Store
-       ...
+
   iidy template-approval                                      sub commands for template approval
-       ...
+
   iidy render <template>                                      pre-process and render yaml template
   iidy get-import <import>                                    retrieve and print an $import value directly
   iidy demo   <demoscript>                                    run a demo script
   iidy lint-template   <argsfile>                             lint a CloudFormation template
   iidy convert-stack-to-iidy <stackname> <outputDir>          create an iidy project directory from an existing CFN stack
   iidy init-stack-args                                        initialize stack-args.yaml and cfn-template.yaml
-       ...
+
   iidy completion                                             generate bash completion script. To use: "source <(iidy completion)"
 
 AWS Options:
@@ -137,15 +137,6 @@ Status Codes:
   Success (0)       Command successfully completed
   Error (1)         An error was encountered while executing command
   Cancelled (130)   User responded 'No' to iidy prompt or interrupt (CTRL-C) was received
-```
-
-### Environment Variables
-
-Any parameter used by iidy can be set using `IIDY_{{argname}}`. An example of
-this would be changing the default environment from development to production.
-
-```shell
-export IIDY_ENVIRONMENT=production
 ```
 
 ### The Args File
@@ -215,7 +206,7 @@ CommandsBefore:
 
 #### Importing Data
 
-Data can be imported into the stack args file using the `$imports` block.
+Data can be imported into the stack args file using the `$imports:` block.
 
 | Import Type | Description | Example |
 |-------------|-------------|---------|
@@ -309,6 +300,15 @@ If your profile requires an MFA token, iidy will prompt for it.
 If you've assumed a profile prior to running iidy and want to it to ignore
 what's specified as `Profile` in `stack-args.yaml` and instead use `AWS_*`
 environment variables, set the CLI option `--profile no-profile`.
+
+### Environment Variables
+
+Any parameter used by iidy can be set using `IIDY_{{argname}}`. An example of
+this would be changing the default environment from development to production.
+
+```shell
+export IIDY_ENVIRONMENT=production
+```
 
 ## Additional Documentation
 

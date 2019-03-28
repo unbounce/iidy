@@ -434,7 +434,7 @@ things: !$parseYaml "[a,b,c]"
 #  - c
 ```
 
-* `!$escape` 🤷‍️
+* `!$escape` prevent iidy from doing any pre-processing on the child tree
 
 ```yaml
 # !$escape {}
@@ -443,6 +443,16 @@ things: !$escape { a: b }
 
 # things:
 #   a: b
+
+things: !$escape '{{ a }}'
+
+# things: '{{ a }}'
+
+things: !$escape
+  - !$ a
+
+# things:
+#  - !$ a
 ```
 
 * `!$string` convert data to a YAML string
