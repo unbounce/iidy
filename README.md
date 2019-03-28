@@ -318,6 +318,8 @@ export IIDY_ENVIRONMENT=production
 - [Working with Non-CloudFormation YAML](docs/working-with-non-cloudformation-yaml.md)
 - [Working with StackSets](docs/working-with-stacksets.md)
 - [YAML Processing](docs/yaml-preprocessing.md)
+- [Extracting Data From Templates](docs/extracting-data-from-templates.md)
+
 
 ## Examples
 
