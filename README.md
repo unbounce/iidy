@@ -23,6 +23,38 @@ CloudFormation templates.
   below](#yaml-pre-processing) for more details.
 * It has bash command completion support.
 
+## Table of Contents
+
+- [Pronunciation](#pronunciation)
+- [Demo](#demo)
+- [Installation](#installation)
+    - [Binary Install for macOS via Homebrew](#binary-install-for-macos-via-homebrew)
+    - [Binary Installation on Other Platforms](#binary-installation-on-other-platforms)
+    - [Installation from Source](#installation-from-source)
+    - [Docker Image](#docker-image)
+- [Usage](#usage)
+    - [Help](#help)
+    - [The Args File](#the-args-file)
+        - [Required Properties](#required-properties)
+        - [Optional Properties](#optional-properties)
+        - [Example](#example)
+        - [Importing Data](#importing-data)
+        - [Implicit Variables](#implicit-variables)
+        - [Defining Variables](#defining-variables)
+    - [AWS IAM Settings](#aws-iam-settings)
+    - [Environment Variables](#environment-variables)
+- [Examples](#examples)
+- [Development](#development)
+- [License](#license)
+- [Releasing](#releasing)
+- [Converting Existing CloudFormation Stacks to iidy](docs/converting-existing-cloudformation-stacks-to-iidy.md)
+- [Custom Resource Templates](docs/custom-resource-templates.md)
+- [Using Parameter Store](docs/using-parameter-store.md)
+- [Working with Non-CloudFormation YAML](docs/working-with-non-cloudformation-yaml.md)
+- [Working with StackSets](docs/working-with-stacksets.md)
+- [YAML Processing](docs/yaml-preprocessing.md)
+- [Extracting Data From Templates](docs/extracting-data-from-templates.md)
+
 ## Pronunciation
 
 iidy is pronounced "eye-dee", like the audience's response to Cab Calloway in
@@ -309,17 +341,6 @@ this would be changing the default environment from development to production.
 ```shell
 export IIDY_ENVIRONMENT=production
 ```
-
-## Additional Documentation
-
-- [Converting Existing CloudFormation Stacks to iidy](docs/converting-existing-cloudformation-stacks-to-iidy.md)
-- [Custom Resource Templates](docs/custom-resource-templates.md)
-- [Using Parameter Store](docs/using-parameter-store.md)
-- [Working with Non-CloudFormation YAML](docs/working-with-non-cloudformation-yaml.md)
-- [Working with StackSets](docs/working-with-stacksets.md)
-- [YAML Processing](docs/yaml-preprocessing.md)
-- [Extracting Data From Templates](docs/extracting-data-from-templates.md)
-
 
 ## Examples
 
