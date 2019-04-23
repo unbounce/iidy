@@ -26,6 +26,6 @@ export default function (text: string=''): Spinner {
   return ora({
     spinner: 'dots12',
     text,
-    enabled: spinnerSupported()
+    isEnabled: spinnerSupported()
   });
 }

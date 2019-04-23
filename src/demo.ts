@@ -44,7 +44,7 @@ class DemoRunner {
   readonly demoscript: string;
   readonly timescaling: number;
 
-  tmpdir: tmp.SynchrounousResult;
+  tmpdir: tmp.DirResult;
   bashEnv: typeof process.env;
 
   constructor(demoscript: string, timescaling = 1) {
