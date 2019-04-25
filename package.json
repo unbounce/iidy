@@ -34,7 +34,7 @@
     "inquirer": "^6.3.1",
     "jmespath": "0.15.0",
     "js-yaml": "^3.13.1",
-    "laundry-cfn": "1.0.0-rc1",
+    "laundry-cfn": "1.1.0",
     "lodash": "^4.17.11",
     "ntp-client": "^0.5.3",
     "ora": "^3.4.0",

@@ -12,7 +12,7 @@ import {loadCFNTemplate} from './loadCFNTemplate';
 export function lintTemplate(input: string, parameters: object = {}): string[] {
   const errors = laundry.lint(input, parameters);
   return _.map(errors, (error) => {
-    return `${error.path.join('.')}: ${error.message}`;
+    return `${error.path.join('.')}: ${error.message} [${error.source}]`;
   });
 }
 
