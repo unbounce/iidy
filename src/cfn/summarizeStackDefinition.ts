@@ -8,13 +8,17 @@ import {
   formatSectionHeading,
   prettyFormatTags,
   printSectionEntry,
-  renderTimestamp
+  renderTimestamp,
+  prettyFormatParameters
 } from './formatting';
 import {getStackDescription} from './getStackDescription';
 
 export async function summarizeStackDefinition(
-  StackName: string, region: string, showTimes = false, stackPromise?: Promise<aws.CloudFormation.Stack>)
-: Promise<aws.CloudFormation.Stack> {
+  StackName: string,
+  region: string,
+  showTimes = false,
+  stackPromise?: Promise<aws.CloudFormation.Stack>)
+  : Promise<aws.CloudFormation.Stack> {
   console.log(formatSectionHeading('Stack Details:'));
   // TODO replace the stackPromise arg with just a stack as we're not leveraging the deferred awaits
   stackPromise = (stackPromise ? stackPromise : getStackDescription(StackName));
@@ -37,8 +41,10 @@ export async function summarizeStackDefinition(
   printSectionEntry('Capabilities:', cli.blackBright(_.isEmpty(stack.Capabilities) ? 'None' : stack.Capabilities));
   printSectionEntry('Service Role:', cli.blackBright(def('None', stack.RoleARN)));
   printSectionEntry('Tags:', cli.blackBright(prettyFormatTags(stack.Tags)));
+  printSectionEntry('Parameters:', cli.blackBright(prettyFormatParameters(stack.Parameters)));
   printSectionEntry('DisableRollback:', cli.blackBright(stack.DisableRollback));
-  printSectionEntry('TerminationProtection:', cli.blackBright(stack.EnableTerminationProtection));
+    printSectionEntry('TerminationProtection:', cli.blackBright(stack.EnableTerminationProtection) +
+                      (stack.EnableTerminationProtection ? '🔒 ' : ''));
   //console.log('Stack OnFailure Mode:', cli.blackBright(OnFailure));
   if (showTimes) {
     printSectionEntry('Creation Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));

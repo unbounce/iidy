@@ -97,6 +97,12 @@ export const prettyFormatTags = (tags?: aws.CloudFormation.Tags): string => {
   return prettyFormatSmallMap(_.fromPairs(_.map(tags, (tag) => [tag.Key, tag.Value])));
 }
 
+export const prettyFormatParameters = (params?: aws.CloudFormation.Parameters): string => {
+  if (_.isUndefined(params) || params.length === 0) {
+    return '';
+  }
+  return prettyFormatSmallMap(_.fromPairs(_.map(params, p => [p.ParameterKey, p.ParameterValue])));
+}
 
 export function showFinalComandSummary(wasSuccessful: boolean): number {
   if (wasSuccessful) {
