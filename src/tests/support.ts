@@ -1,4 +1,4 @@
-require('./_init'); // for side-effect
+import './_init'; // tslint:disable-line no-import-side-effect
 import * as _ from 'lodash';
 
 import * as pre from '../preprocess';
