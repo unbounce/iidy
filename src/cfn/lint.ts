@@ -4,7 +4,6 @@ import * as laundry from 'laundry-cfn';
 import {Arguments} from 'yargs';
 
 import {logger} from '../logger';
-import * as yaml from '../yaml';
 import {SUCCESS, FAILURE} from '../statusCodes';
 import {loadStackArgs} from './loadStackArgs';
 import {loadCFNTemplate} from './loadCFNTemplate';

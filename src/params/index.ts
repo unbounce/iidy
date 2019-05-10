@@ -21,10 +21,10 @@ async function getAllKMSAliases(): Promise<aws.KMS.AliasList> {
   // return paginateAwsCall(() => kms.listAliases(), null, 'Aliases');
 
   let res = await kms.listAliases().promise();
-  const aliases = def([], res.Aliases);
+  let aliases = def([], res.Aliases);
   while (!_.isUndefined(res.NextMarker)) {
     res = await kms.listAliases({Marker: res.NextMarker}).promise();
-    aliases.concat(def([], res.Aliases));
+    aliases = aliases.concat(def([], res.Aliases));
   }
   return aliases;
 }
