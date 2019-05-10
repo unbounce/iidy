@@ -30,6 +30,42 @@ const _isPlainMap = (node: any): node is object =>
   !_.isRegExp(node) &&
   !_.isFunction(node);
 
+/**
+* Splits an import `!$ string` into dot-delimited chunks.
+* Dynamic key segments within brackets are included in the preceeding chunk.
+*
+* See examples in ../tests/test-visitor.ts under this fn's name.
+*/
+export const _parse$includeKeyChunks = (key: string, path: string): string[] => {
+  const keyChunks = [];
+  let remaining = key;
+  let i = 0;
+  let bracketDepth = 0;
+  while (i < remaining.length) {
+    if (remaining[i] === '.' && bracketDepth === 0) {
+      keyChunks.push(remaining.slice(0, i));
+      remaining = remaining.slice(i + 1);
+      i = 0
+    } else if (remaining[i] === '[') {
+      bracketDepth++
+      i++
+    } else if (remaining[i] === ']') {
+      bracketDepth--
+      i++
+    } else {
+      i++
+    }
+    if (i === remaining.length) {
+      keyChunks.push(remaining);
+      if (bracketDepth > 0) {
+        throw new Error(`Unclosed brackets path=${path} pos=${i} bracketDepth=${bracketDepth} remaining=${remaining}`);
+      }
+      break;
+    }
+  }
+  return keyChunks;
+}
+
 export const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFrame): Env => {
   const stackFrame = {
     location: frame.location || env.Stack[env.Stack.length - 1].location, // tslint:disable-line
@@ -91,23 +127,10 @@ function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
     // strings.
     throw new Error(`Invalid lookup key ${JSON.stringify(key)} at ${path}`)
   }
-
-  const subKeyMatch = key.match(/\[(.*)\] *$/);
-  let res: AnyButUndefined;
-  if (subKeyMatch) {
-    // this is something like !$ firstKey[subKey]
-    const subKey: string = lookupInEnv(subKeyMatch[1], path, env) as string;
-    const firstKey = key.slice(0, subKeyMatch.index);
-    const firstRes: any = lookupInEnv(firstKey, path, env);
-    res = firstRes[subKey];
-    // TODO test cases for this case
-    // TODO support `!$ firstKey[subKey].more` and `!$ firstKey[subKey][more]`
-  } else {
-    res = env.$envValues[key];
-  }
+  const res = env.$envValues[key];
   if (_.isUndefined(res)) {
-    logger.debug(`Could not find "${key}" at ${path}}`, env = env)
-    throw new Error(`Could not find "${key}" at ${path}}`);
+    logger.debug(`Could not find "${key}" at ${path}}`, {env})
+    throw new Error(`Could not find "${key}" at ${path}`);
   } else {
     return res;
   }
@@ -200,22 +223,55 @@ export class Visitor {
   }
 
   visit$include(node: yaml.$include, path: string, env: Env): AnyButUndefined {
-    if (node.data.indexOf('.') > -1) {
-      const reduce: any = _.reduce; // HACK work around broken lodash typedefs
-      const lookupRes: any = reduce(node.data.split('.'), (result0: any, subKey: string) => {
+    const searchChunks = _parse$includeKeyChunks(node.data, path)
+    const lookupRes: any = searchChunks.reduce( // tslint:disable-line:no-any
+      (result0: any, subKey: string, i) => {                  // tslint:disable-line:no-any
         const result = this.visitNode(result0, path, env); // calling this.visitNode here fixes issue #75
+        if (_.isUndefined(result) && i > 0) {
+          throw new Error(`Could not find ${subKey} in ${node.data} at ${path}`);
+        }
         // the result0 might contain pre-processor constructs that need evaluation before continuing
-        const subEnv = _.isUndefined(result) ? env : mkSubEnv(env, _.merge({}, env.$envValues, result), {path});
-        return lookupInEnv(subKey.trim(), path, subEnv);
-      }, undefined);
-      if (_.isUndefined(lookupRes)) {
-        throw new Error(`Could not find ${node.data} at ${path}`);
-      } else {
-        return this.visitNode(lookupRes, path, env);
-      }
+        const bracketsMatch = subKey.match(/\[(.*)\] *$/); // dynamic key chunk
+        if (bracketsMatch) {
+          // e.g. !$ foo[bar], foo[bar[baz]], etc.
+          const basekey = subKey.slice(0, bracketsMatch.index);
+          const dynamicKey = bracketsMatch[1].trim();
+          return this._visit$includeDynamicKey(dynamicKey, basekey, `${dynamicKey} in ${path}`, env, result);
+        } else {
+          const subEnv = i === 0 ? env : mkSubEnv(env, _.merge({}, result), {path});
+          return lookupInEnv(subKey.trim(), `${subKey} in ${path}`, subEnv);
+        }
+      },
+      undefined);
+
+    if (_.isUndefined(lookupRes)) {
+      throw new Error(`Could not find ${node.data} at ${path}`);
     } else {
-      return this.visitNode(lookupInEnv(node.data, path, env), path, env);
+      return this.visitNode(lookupRes, path, env);
     }
+  }
+
+  _visit$includeDynamicKey(dynamicKey: string, basekey: string, path: string, env: Env, lastResult: any) {
+    const newKeyParts: string[] = [];
+    for (const part of dynamicKey.trim().split('][')) {
+      // this loop enables handling of successive, unnested dynamic keys
+      // e.g. 'obj[key1][key2]'. See the tests in src/test/test-visitor.ts
+      if (Number.isSafeInteger(parseInt(part, 10))) {
+        newKeyParts.push(part)
+      } else {
+        const bracketVal = this.visit$include(new yaml.$include(part), `${path} / ${dynamicKey}` , env);
+        if (typeof bracketVal === 'number') {
+          newKeyParts.push(String(bracketVal))
+        } else if (typeof bracketVal === 'string') {
+          newKeyParts.push(bracketVal)
+        } else {
+          throw new Error(`Invalid dynamic key value ${bracketVal} for ${dynamicKey} at ${path}`);
+        }
+      }
+    }
+    const newKey = basekey + '.' + newKeyParts.join('.');
+    const subEnv = _.isUndefined(lastResult) ? env : mkSubEnv(env, _.merge({}, lastResult), {path});
+    return this.visit$include(new yaml.$include(newKey), `${newKey} from ${basekey} in ${path}`, subEnv);
   }
 
   visit$if(node: yaml.$if, path: string, env: Env): AnyButUndefined {
@@ -376,7 +432,7 @@ export class Visitor {
   }
 
   shouldRewriteRef(ref: string, env: Env) {
-    const globalRefs = env.$envValues['$globalRefs'] || {};
+    const globalRefs = env.$envValues.$globalRefs || {};
     const isGlobal = _.has(globalRefs, ref);
     return env.$envValues.Prefix && !(isGlobal || ref.startsWith('AWS:'));
   }
@@ -693,30 +749,30 @@ class HandlebarsVariablesTrackingVisitor extends handlebars.Visitor {
   };
 
   BlockStatement(block: hbs.AST.BlockStatement): void {
-    if(_.isEmpty(block.params)) {
-      if('original' in block.path) {
+    if (_.isEmpty(block.params)) {
+      if ('original' in block.path) {
         this.variables.push(block.path.original);
       }
     } else {
-      for(let expression of block.params) {
+      for (const expression of block.params) {
         this.Expression(expression);
       }
     }
   }
 
   PartialBlockStatement(partial: hbs.AST.PartialBlockStatement): void {
-    for(let expression of partial.params) {
+    for (const expression of partial.params) {
       this.Expression(expression);
     }
   }
 
   MustacheStatement(mustache: hbs.AST.MustacheStatement): void {
-    if(_.isEmpty(mustache.params)) {
-      if('original' in mustache.path) {
+    if (_.isEmpty(mustache.params)) {
+      if ('original' in mustache.path) {
         this.variables.push(mustache.path.original);
       }
     } else {
-      for(let expression of mustache.params) {
+      for (const expression of mustache.params) {
         this.Expression(expression);
       }
     }
@@ -724,12 +780,12 @@ class HandlebarsVariablesTrackingVisitor extends handlebars.Visitor {
 
   // Expression is not part of handlebars.Visitor
   Expression(expression: hbs.AST.Expression): void {
-    if('params' in expression) {
-      for(let ex of (expression as hbs.AST.SubExpression).params) {
+    if ('params' in expression) {
+      for (const ex of (expression as hbs.AST.SubExpression).params) {
         this.Expression(ex);
       }
     } else {
-      if('original' in expression) {
+      if ('original' in expression) {
         this.variables.push((expression as hbs.AST.PathExpression).original);
       }
     }
