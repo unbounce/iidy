@@ -16,7 +16,10 @@ import {getAllStackExportsWithImports} from './getAllStackExportsWithImports';
 import {getStackDescription} from './getStackDescription';
 import {showPendingChangesets} from "./showPendingChangesets";
 
-export async function summarizeStackContents(StackId: string, stackPromise?: Promise<aws.CloudFormation.Stack>): Promise<aws.CloudFormation.Stack> {
+export async function summarizeStackContents(
+  StackId: string,
+  stackPromise?: Promise<aws.CloudFormation.Stack>
+): Promise<aws.CloudFormation.Stack> {
   // TODO handle this part for when OnFailure=DELETE and stack is gone ...
   //   this would be using a stackId instead
   const cfn = new aws.CloudFormation();
@@ -25,6 +28,7 @@ export async function summarizeStackContents(StackId: string, stackPromise?: Pro
   const changeSetsPromise = cfn.listChangeSets({StackName: StackId}).promise();
   const stack = await (stackPromise || getStackDescription(StackId));
   const resources = def([], (await resourcesPromise).StackResources);
+  // TODO paginate resource lookup ^
   if (resources.length > 0) {
     console.log(formatSectionHeading('Stack Resources:'));
     const idPadding = calcPadding(resources, r => r.LogicalResourceId);
@@ -64,8 +68,8 @@ export async function summarizeStackContents(StackId: string, stackPromise?: Pro
   }
   console.log();
   console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Current Stack Status:')),
-              colorizeResourceStatus(stack.StackStatus),
-              def('', stack.StackStatusReason));
+    colorizeResourceStatus(stack.StackStatus),
+    def('', stack.StackStatusReason));
   await showPendingChangesets(StackId, changeSetsPromise);
   return stack;
 }
