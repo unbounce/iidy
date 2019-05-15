@@ -1,4 +1,3 @@
-require('./support'); // for side-effect
 import {expect} from 'chai';
 import {loadStackArgs} from "../cfn/loadStackArgs";
 import * as aws from 'aws-sdk'

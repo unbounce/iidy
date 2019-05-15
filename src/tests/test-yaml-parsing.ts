@@ -1,4 +1,3 @@
-require('./support'); // for side-effect
 import {expect} from 'chai';
 
 import * as _ from 'lodash';
