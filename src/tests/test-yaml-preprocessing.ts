@@ -1,4 +1,3 @@
-require('./support'); // for side-effect
 import {expect} from 'chai';
 import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
@@ -84,7 +83,6 @@ describe('Yaml pre-processing', () => {
     });
 
   });
-
   //////////////////////////////////////////////////////////////////////
   describe('$imports:', () => {
 
@@ -289,6 +287,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     const testEnvOutsideCustomResource = mkTestEnv({});
 
     it('!Sub ${} reference rewriting', async () => {
+      // tslint:disable no-invalid-template-strings
       for (const {input, output} of [
         {input: 'Foo', output: 'Foo'},
         {input: 'Bar', output: 'Bar'},

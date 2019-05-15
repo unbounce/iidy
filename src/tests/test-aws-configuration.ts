@@ -1,4 +1,3 @@
-require('./support'); // for side-effect
 import * as process from 'process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -32,10 +31,12 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
         });
         aws.config.region = undefined;
       };
-      const restoreOriginalEnvVarSettings = () => _.merge(process.env, originalEnvVarSettings);
 
       beforeEach(unsetAWSRegionEnvVars);
-      after(restoreOriginalEnvVarSettings);
+      afterEach(() => {
+        _.merge(process.env, originalEnvVarSettings);
+        aws.config.region = originalDefaultRegion;
+      });
 
       it("does not barf with no arguments", async () => {
         // assumes a default region is set in ~/.aws
@@ -53,7 +54,6 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
             expect(getCurrentAWSRegion()).to.equal(region);
           }
         }
-        restoreOriginalEnvVarSettings();
       });
 
       it("updates aws.config.region after each call", async () => {

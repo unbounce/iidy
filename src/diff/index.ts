@@ -5,7 +5,7 @@ import * as child_process from 'child_process';
 
 import {logger} from '../logger';
 
-export function diff(a: string, b: string, context = 3): void {
+export function diff(a: string, b: string, context = 3): boolean {
   const tmpdir = tmp.dirSync();
   const aPath = pathmod.join(tmpdir.name, 'a');
   const bPath = pathmod.join(tmpdir.name, 'b');
@@ -23,8 +23,11 @@ export function diff(a: string, b: string, context = 3): void {
 
     if (res.status === 0) {
       logger.info('Templates are the same');
+      return true;
     } else if (res.status !== 1) {
       throw new Error(`Error producing diff "${cmd}"`);
+    } else {
+      return false;
     }
   } catch (e) {
     throw e;

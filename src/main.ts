@@ -19,7 +19,12 @@ global.Promise = bluebird;
 
 import * as yargs from 'yargs';
 import * as cli from 'cli-color';
-import {Handler, description, fakeCommandSeparator, wrapCommandHandler, stackNameOpt, lintTemplateOpt} from './cli/utils';
+import {Handler,
+        description,
+        fakeCommandSeparator,
+        wrapCommandHandler,
+        stackNameOpt,
+        lintTemplateOpt} from './cli/utils';
 import {Commands} from './cli/command-types';
 
 // TODO bring these two in line with the new lazy load scheme
@@ -30,14 +35,14 @@ import {buildApprovalCommands} from './cfn/approval/cli'
 // faster. See the git history of this file to see the non-lazy form.
 // Investigate this again if we can use babel/webpack to shrinkwrap
 
-function lazyLoad(fnname: keyof Commands): Handler {
+export function lazyLoad(fnname: keyof Commands): Handler {
   return (args) => {
     const {implementations} = require('./cli/command-implemntations');
     return implementations[fnname](args);
   }
 }
 
-function lazyGetter(target: any, key: keyof Commands) {
+function lazyGetter(target: Commands, key: keyof Commands) {
   Object.defineProperty(target, key, {value: lazyLoad(key)});
 }
 
@@ -78,6 +83,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
     + '  Cancelled (130)   User responded \'No\' to iidy prompt or interrupt (CTRL-C) was received');
 
   return yargs
+    .scriptName('iidy')
     .env('IIDY')
     .command(
       'create-stack     <argsfile>',
@@ -474,6 +480,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
 
 export async function main() {
   // called for side-effect to force parsing / handling
+  // tslint:disable-next-line
   buildArgs().argv;
 }
 

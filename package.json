@@ -9,10 +9,12 @@
     "postinstall": "patch-package",
     "build": "tsc -p .",
     "watch": "tsc --watch",
-    "dev-test-watch": "mocha-typescript-watch -p tsconfig.json lib/tests/_init.js lib/tests/**/*js",
     "lint": "tslint -p . src/*ts src/**/*ts",
     "pkg-binaries": "pkg --out-path dist -t node8-macos,node8-linux package.json",
-    "test": "mocha lib/tests/_init.js lib/tests/**/*js",
+    "test": "mocha lib/tests/**/*js",
+    "test-watch": "mocha --watch lib/tests/**/*js",
+    "ts-test-watch": "mocha --watch src/tests/**/*ts",
+    "coverage": "nyc --cache mocha src/tests/**/*ts",
     "version": "auto-changelog -p && git add CHANGELOG.md"
   },
   "author": "Tavis Rudd <tavis@unbounce.com>",
@@ -74,9 +76,39 @@
     "intercept-stdout": "^0.1.2",
     "mocha": "^6.1.4",
     "mocha-typescript": "^1.1.17",
+    "nyc": "^14.0.0",
     "patch-package": "^6.1.2",
     "pkg": "^4.3.7",
+    "source-map-support": "^0.5.12",
+    "ts-mocha": "^6.0.0",
+    "ts-node": "^8.1.0",
     "tslint": "^5.16.0",
     "typescript": "^3.4.5"
+  },
+  "mocha": {
+    "require": [
+      "ts-node/register",
+      "src/tests/_init.ts"
+    ]
+  },
+  "nyc": {
+    "extension": [
+      ".js",
+      ".ts",
+      ".tsx"
+    ],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "include": [
+      "src/**/*.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true,
+    "cache": true,
+    "sourceMap": true,
+    "instrument": true
   }
 }
