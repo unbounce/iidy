@@ -5,7 +5,6 @@ import * as path from 'path';
 import * as yargs from 'yargs';
 import {Arguments} from 'yargs';
 import unparse = require('yargs-unparser');
-import {buildArgs} from '../main';
 
 import * as yaml from '../yaml';
 
@@ -26,8 +25,8 @@ function importedEnvVars(argsfile: string): string[] {
   const vars: string[] = [];
   const argsdata = yaml.loadString(fs.readFileSync(argsfile), argsfile);
   if ('$imports' in argsdata) {
-    for(const key in argsdata['$imports']) {
-      const value = argsdata['$imports'][key];
+    for(const key in argsdata.$imports) {
+      const value = argsdata.$imports[key];
       if (typeof value === 'string' && value.match(/^env:/)) {
         const name = value.split(':')[1];
         if (typeof name === 'string' && name.length > 0) {
@@ -61,7 +60,7 @@ function usedEnvVars(argsfile: string): Record<string, string> {
   return envVars;
 }
 
-export function unparseArgv(argv: Partial<Arguments>, argfile?: string) {
+export function unparseArgv(argv: Partial<Arguments>) {
   // @ts-ignore
   const options = yargs.getOptions();
   const args = unparse(argv, {
@@ -69,15 +68,6 @@ export function unparseArgv(argv: Partial<Arguments>, argfile?: string) {
     default: options.default
   });
   return args;
-  // const ignoredArgs = [
-  //   'update-existing',
-  //   'create-stack',
-  //   'update-stack',
-  //   '--track',
-  //   '--argsfile',
-  //   argfile
-  // ];
-  // return _.filter(args, (arg) => !_.includes(ignoredArgs, arg));
 }
 
 function stackMetadata(stackName: string, argsfile: string, argv: Arguments): StackMetadata {

@@ -163,12 +163,9 @@ export async function updateExistingMain(argv: GenericCLIArguments): Promise<num
     return SUCCESS;
   } else {
     for(const stack of stacks) {
-      const args = [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.argv, stack.argsfile)];
+      const args = [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.argv)];
 
-      const envVars: string [] = []
-      for (const name in stack.env) {
-        envVars.push(`${name}=${stack.env[name]}`);
-      }
+      const envVars = _.reduce(stack.env, (acc: string[], value, name) => acc.concat(`${name}=${value}`), []);
       logger.info(`${envVars.join(' ')} ${args.join(' ')}`);
 
       const env = { ...process.env, ...stack.env };

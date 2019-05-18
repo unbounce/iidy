@@ -1,2 +1,0 @@
-Template: cfn-template.test.yaml
-StackName: 'test-{{ iidy.environment }}'
