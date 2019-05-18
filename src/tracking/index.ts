@@ -57,14 +57,14 @@ function usedEnvVars(argsfile: string): Record<string, string> {
   return envVars;
 }
 
-function cliArgs(argv: object) {
+function cliArgs(argv: object, argfile: string) {
   // @ts-ignore
   const options = buildArgs().getOptions();
   const args = unparse(argv, {
     alias: options.alias,
     default: options.default
   });
-  const ignoredArgs = ['create-stack', 'update-stack', '--track'];
+  const ignoredArgs = ['create-stack', 'update-stack', '--track', '--argsfile', argfile];
   return _.filter(args, (arg) => !_.includes(ignoredArgs, arg));
 }
 
@@ -72,12 +72,12 @@ function stackMetadata(stackName: string, argsfile: string, argv: object): Stack
   return {
     name: stackName,
     argsfile: argsfile,
-    args: cliArgs(argv),
+    args: cliArgs(argv, argsfile),
     env: usedEnvVars(argsfile),
   }
 }
 
-function loadStackfile(): Stackfile {
+export function loadStackfile(): Stackfile {
   try {
     const existing = jsyaml.safeLoad(fs.readFileSync('.iidy/stacks.yaml').toString());
     if (_.isObject(existing) && _.isArray(existing.stacks)) {

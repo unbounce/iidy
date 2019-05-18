@@ -3,6 +3,8 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
+import * as yargs from 'yargs';
+import * as child_process from 'child_process';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
@@ -11,6 +13,7 @@ import {logger} from '../logger';
 import mkSpinner from '../spinner';
 import {FAILURE, INTERRUPT, SUCCESS} from '../statusCodes';
 import timeout from '../timeout';
+import { buildArgsWithOverride } from '../main';
 import {AbstractCloudFormationStackCommand} from './AbstractCloudFormationStackCommand';
 import {diffStackTemplates} from './diffStackTemplates';
 import {EstimateStackCost} from './estimateStackCost';
@@ -21,6 +24,7 @@ import {stackArgsToCreateChangeSetInput} from './stackArgsToX';
 import {summarizeStackDefinition} from './summarizeStackDefinition';
 import terminalStackStates from './terminalStackStates';
 import {CfnOperation, StackArgs} from './types';
+import {loadStackfile} from '../tracking';
 
 export async function doesStackExist(StackName: string): Promise<boolean> {
   const cfn = new aws.CloudFormation();
@@ -152,6 +156,31 @@ const wrapCommandCtor =
 export const createStackMain = wrapCommandCtor(CreateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
+
+export async function updateExistingMain(argv: GenericCLIArguments): Promise<number> {
+  const {stacks} = loadStackfile();
+  if(_.isEmpty(stacks)) {
+    logger.info(`No stacks tracked in ${process.cwd()}`);
+    return SUCCESS;
+  } else {
+    for(const stack of stacks) {
+      const args = [process.argv[1], 'update-stack', stack.argsfile, ...stack.args];
+
+      const envVars: string [] = []
+      for (const name in stack.env) {
+        envVars.push(`${name}=${stack.env[name]}`);
+      }
+      logger.info(`${envVars.join(' ')} ${args.join(' ')}`);
+
+      const env = { ...process.env, ...stack.env };
+      const child = child_process.spawnSync(process.argv[0], args, { stdio: 'inherit', env });
+      if(child.status !== 0) {
+        return FAILURE;
+      }
+    }
+    return SUCCESS;
+  }
+}
 
 export async function createOrUpdateStackMain(argv: GenericCLIArguments): Promise<number> {
   const stackArgs = await loadStackArgs(argv);

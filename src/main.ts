@@ -45,6 +45,7 @@ class LazyCommands implements Commands {
   @lazyGetter createStackMain: Handler
   @lazyGetter createOrUpdateStackMain: Handler
   @lazyGetter updateStackMain: Handler
+  @lazyGetter updateExistingMain: Handler
   @lazyGetter listStacksMain: Handler
   @lazyGetter watchStackMain: Handler
   @lazyGetter describeStackMain: Handler
@@ -69,7 +70,14 @@ const environmentOpt: yargs.Options = {
   description: description('used to load environment based settings: AWS Profile, Region, etc.')
 };
 
-export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapCommandHandler) {
+export function buildArgsWithOverride(argv: string[]) {
+  return buildArgs(new LazyCommands(), wrapCommandHandler, argv);
+}
+
+export function buildArgs(
+  commands = new LazyCommands(),
+  wrapMainHandler = wrapCommandHandler,
+  overrideArgv?: string[]) {
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
     + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
   const epilogue = ('Status Codes:\n'
@@ -77,7 +85,9 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
     + '  Error (1)         An error was encountered while executing command\n'
     + '  Cancelled (130)   User responded \'No\' to iidy prompt or interrupt (CTRL-C) was received');
 
-  return yargs
+  const argv = overrideArgv || process.argv.slice(2)
+
+  return yargs(argv)
     .env('IIDY')
     .command(
       'create-stack     <argsfile>',
@@ -88,7 +98,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .option('stack-name', stackNameOpt)
         .option('track', {
           type: 'boolean', default: false,
-          description: description('write arguments to state file')
+          description: description('track stack for use with `update-existing`')
         })
         .option('lint-template', lintTemplateOpt(false)),
       wrapMainHandler(commands.createStackMain))
@@ -102,7 +112,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .option('stack-name', stackNameOpt)
         .option('track', {
           type: 'boolean', default: false,
-          description: description('write arguments to state file')
+          description: description('track stack for use with `update-existing`')
         })
         .option('lint-template', lintTemplateOpt(false))
         .option('changeset', {
@@ -148,6 +158,14 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
           description: description('override original stack-policy for this update only')
         }),
       wrapMainHandler(commands.createOrUpdateStackMain))
+
+    .command(
+      'update-existing',
+      description('update existing tracked stacks'),
+      (args) => args
+        .demandCommand(0, 0)
+        .usage('Usage: iidy update-existing'),
+      wrapMainHandler(commands.updateExistingMain))
 
     .command(
       'estimate-cost    <argsfile>',

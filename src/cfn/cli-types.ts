@@ -3,6 +3,7 @@ import {Handler} from '../cli/types';
 export interface CfnStackCommands {
   createStackMain: Handler;
   createOrUpdateStackMain: Handler;
+  updateExistingMain: Handler;
   updateStackMain: Handler;
   listStacksMain: Handler;
   watchStackMain: Handler;
