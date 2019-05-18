@@ -1,2 +1,2 @@
-Template: foo
-StackName: a
+Template: cfn-template.test.yaml
+StackName: 'test-{{ iidy.environment }}'

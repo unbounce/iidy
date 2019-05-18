@@ -1,11 +1,15 @@
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
+import * as path from 'path';
+import * as yargs from 'yargs';
+import {Arguments} from 'yargs';
 import unparse = require('yargs-unparser');
+import {buildArgs} from '../main';
 
 import * as yaml from '../yaml';
 
-import { buildArgs } from '../main';
+const stackfilePath = '.iidy/stacks.yaml';
 
 type Stackfile = {
   stacks: StackMetadata[]
@@ -14,7 +18,7 @@ type Stackfile = {
 type StackMetadata = {
   name: string;
   argsfile: string;
-  args: string[];
+  argv: Partial<Arguments>;
   env: { [name: string]: string };
 };
 
@@ -57,29 +61,37 @@ function usedEnvVars(argsfile: string): Record<string, string> {
   return envVars;
 }
 
-function cliArgs(argv: object, argfile: string) {
+export function unparseArgv(argv: Partial<Arguments>, argfile?: string) {
   // @ts-ignore
-  const options = buildArgs().getOptions();
+  const options = yargs.getOptions();
   const args = unparse(argv, {
     alias: options.alias,
     default: options.default
   });
-  const ignoredArgs = ['create-stack', 'update-stack', '--track', '--argsfile', argfile];
-  return _.filter(args, (arg) => !_.includes(ignoredArgs, arg));
+  return args;
+  // const ignoredArgs = [
+  //   'update-existing',
+  //   'create-stack',
+  //   'update-stack',
+  //   '--track',
+  //   '--argsfile',
+  //   argfile
+  // ];
+  // return _.filter(args, (arg) => !_.includes(ignoredArgs, arg));
 }
 
-function stackMetadata(stackName: string, argsfile: string, argv: object): StackMetadata {
+function stackMetadata(stackName: string, argsfile: string, argv: Arguments): StackMetadata {
   return {
     name: stackName,
     argsfile: argsfile,
-    args: cliArgs(argv, argsfile),
+    argv: _.pick(nonDefaultOptions(argv), ['environment', 'region', 'profile', 'stack-name']),
     env: usedEnvVars(argsfile),
   }
 }
 
 export function loadStackfile(): Stackfile {
   try {
-    const existing = jsyaml.safeLoad(fs.readFileSync('.iidy/stacks.yaml').toString());
+    const existing = jsyaml.safeLoad(fs.readFileSync(stackfilePath).toString());
     if (_.isObject(existing) && _.isArray(existing.stacks)) {
       return existing;
     } else {
@@ -90,12 +102,39 @@ export function loadStackfile(): Stackfile {
   }
 }
 
+export function nonDefaultOptions(argv: Arguments): Partial<Arguments> {
+  const result: Partial<Arguments> = {};
+  // @ts-ignore
+  const options = yargs.getOptions();
+  // Skip aliases, as they just duplicate the thing they alias
+  const aliases = _.reduce(options.alias, (acc, optionAliases) => acc.concat(optionAliases), []);
+  for(const key in options.default) {
+    if(!_.includes(aliases, key) && options.default[key] !== argv[key]) {
+      result[key] = argv[key];
+    }
+  }
+  return result;
+}
+
+export function trackedStacks(providedOptions: Partial<Arguments>): StackMetadata[] {
+  const {stacks} = loadStackfile();
+  const matchingStacks: StackMetadata[] = [];
+
+  for(const stack of stacks) {
+    if(_.every(_.keys(providedOptions), (k) => stack.argv[k] === providedOptions[k])) {
+      matchingStacks.push(stack);
+    }
+  }
+
+  return matchingStacks;
+}
+
 function writeStackfile(stackfile: Stackfile) {
   try {
-    fs.mkdirSync('.iidy');
+    fs.mkdirSync(path.dirname(stackfilePath));
   } catch(e) {
     if(e.code === 'EEXIST')  {
-      const dir = fs.statSync('.iidy');
+      const dir = fs.statSync(path.dirname(stackfilePath));
       if(!dir.isDirectory()) {
         throw e;
       }
@@ -103,10 +142,10 @@ function writeStackfile(stackfile: Stackfile) {
       throw e;
     }
   }
-  fs.writeFileSync('.iidy/stacks.yaml', jsyaml.dump(stackfile));
+  fs.writeFileSync(stackfilePath, jsyaml.dump(stackfile));
 }
 
-export function track(stackName: string, argsfile: string, argv: object) {
+export function track(stackName: string, argsfile: string, argv: Arguments) {
   const stackfile = loadStackfile();
   const stack = stackMetadata(stackName, argsfile, argv);
 

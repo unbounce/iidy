@@ -70,14 +70,7 @@ const environmentOpt: yargs.Options = {
   description: description('used to load environment based settings: AWS Profile, Region, etc.')
 };
 
-export function buildArgsWithOverride(argv: string[]) {
-  return buildArgs(new LazyCommands(), wrapCommandHandler, argv);
-}
-
-export function buildArgs(
-  commands = new LazyCommands(),
-  wrapMainHandler = wrapCommandHandler,
-  overrideArgv?: string[]) {
+export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapCommandHandler) {
   const usage = (`${cli.bold(cli.green('iidy'))} - ${cli.green('CloudFormation with Confidence')}`
     + ` ${' '.repeat(18)} ${cli.blackBright('An acronym for "Is it done yet?"')}`);
   const epilogue = ('Status Codes:\n'
@@ -85,9 +78,7 @@ export function buildArgs(
     + '  Error (1)         An error was encountered while executing command\n'
     + '  Cancelled (130)   User responded \'No\' to iidy prompt or interrupt (CTRL-C) was received');
 
-  const argv = overrideArgv || process.argv.slice(2)
-
-  return yargs(argv)
+  return yargs
     .env('IIDY')
     .command(
       'create-stack     <argsfile>',
@@ -163,7 +154,7 @@ export function buildArgs(
       'update-existing',
       description('update existing tracked stacks'),
       (args) => args
-        .demandCommand(0, 0)
+        // .demandCommand(0, 0)
         .usage('Usage: iidy update-existing'),
       wrapMainHandler(commands.updateExistingMain))
 
