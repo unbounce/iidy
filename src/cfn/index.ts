@@ -163,12 +163,12 @@ export async function updateExistingMain(argv: GenericCLIArguments): Promise<num
     return SUCCESS;
   } else {
     for(const stack of stacks) {
-      const args = [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.argv)];
+      const args = [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.args)];
 
-      const envVars = _.reduce(stack.env, (acc: string[], value, name) => acc.concat(`${name}=${value}`), []);
+      const envVars = _.reduce(stack.environment, (acc: string[], value, name) => acc.concat(`${name}=${value}`), []);
       logger.info(`${envVars.join(' ')} ${args.join(' ')}`);
 
-      const env = { ...process.env, ...stack.env };
+      const env = { ...process.env, ...stack.environment };
       const child = child_process.spawnSync(process.argv[0], args, { stdio: 'inherit', env });
       if(child.status !== 0) {
         return FAILURE;

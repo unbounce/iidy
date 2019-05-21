@@ -17,8 +17,8 @@ type Stackfile = {
 type StackMetadata = {
   name: string;
   argsfile: string;
-  argv: Partial<Arguments>;
-  env: { [name: string]: string };
+  args: Partial<Arguments>;
+  environment: { [name: string]: string };
 };
 
 function importedEnvVars(argsfile: string): string[] {
@@ -74,8 +74,8 @@ function stackMetadata(stackName: string, argsfile: string, argv: Arguments): St
   return {
     name: stackName,
     argsfile: argsfile,
-    argv: _.pick(nonDefaultOptions(argv), ['environment', 'region', 'profile', 'stack-name']),
-    env: usedEnvVars(argsfile),
+    args: _.pick(nonDefaultOptions(argv), ['environment', 'region', 'profile', 'stack-name']),
+    environment: usedEnvVars(argsfile),
   }
 }
 
@@ -111,7 +111,7 @@ export function trackedStacks(providedOptions: Partial<Arguments>): StackMetadat
   const matchingStacks: StackMetadata[] = [];
 
   for(const stack of stacks) {
-    if(_.every(_.keys(providedOptions), (k) => stack.argv[k] === providedOptions[k])) {
+    if(_.every(_.keys(providedOptions), (k) => stack.args[k] === providedOptions[k])) {
       matchingStacks.push(stack);
     }
   }
