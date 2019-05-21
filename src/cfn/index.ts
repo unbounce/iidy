@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
 import * as child_process from 'child_process';
+import * as fs from 'fs';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
@@ -22,7 +23,7 @@ import {stackArgsToCreateChangeSetInput} from './stackArgsToX';
 import {summarizeStackDefinition} from './summarizeStackDefinition';
 import terminalStackStates from './terminalStackStates';
 import {CfnOperation, StackArgs} from './types';
-import {nonDefaultOptions, trackedStacks, unparseArgv} from '../tracking';
+import * as tracking from '../tracking';
 
 export async function doesStackExist(StackName: string): Promise<boolean> {
   const cfn = new aws.CloudFormation();
@@ -156,19 +157,30 @@ export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
 export async function updateExistingMain(argv: GenericCLIArguments): Promise<number> {
-  const providedOptions = nonDefaultOptions(argv);
-  const stacks = trackedStacks(providedOptions);
+  const providedOptions = tracking.nonDefaultOptions(argv);
+  const stacks = tracking.trackedStacks(providedOptions);
   if(_.isEmpty(stacks)) {
-    logger.info(`No tracked stacks in ${process.cwd()} matching ${unparseArgv(providedOptions).join(' ')}`);
+    logger.info(`No tracked stacks in ${process.cwd()} matching ${tracking.unparseArgv(providedOptions).join(' ')}`);
     return SUCCESS;
   } else {
     for(const stack of stacks) {
-      const args = [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.args)];
+      if (!fs.existsSync(stack.argsfile)) {
+        logger.error(`Tracked argsfile '${stack.argsfile}' does not exist`);
+        return FAILURE;
+      }
 
-      const envVars = _.reduce(stack.environment, (acc: string[], value, name) => acc.concat(`${name}=${value}`), []);
+      const args = [process.argv[1], 'update-stack', stack.argsfile, ...tracking.unparseArgv(stack.args)];
+      const relevantEnvVars = tracking.relevantEnvVars(stack.argsfile);
+
+      const envVars = _.reduce(
+        {...stack.environment, ...relevantEnvVars},
+        (acc: string[], value, name) => acc.concat(`${name}=${value}`),
+        []
+      );
       logger.info(`${envVars.join(' ')} ${args.join(' ')}`);
 
-      const env = { ...process.env, ...stack.environment };
+      // Allow environment variables to be overridden by merging in relevantEnvVars last
+      const env = { ...process.env, ...stack.environment, ...relevantEnvVars };
       const child = child_process.spawnSync(process.argv[0], args, { stdio: 'inherit', env });
       if(child.status !== 0) {
         return FAILURE;

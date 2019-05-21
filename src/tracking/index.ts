@@ -38,7 +38,7 @@ function importedEnvVars(argsfile: string): string[] {
   return vars;
 }
 
-function usedEnvVars(argsfile: string): Record<string, string> {
+export function relevantEnvVars(argsfile: string): Record<string, string> {
   const envVars: Record<string, string> = {};
 
   const trackedVars = [
@@ -75,7 +75,7 @@ function stackMetadata(stackName: string, argsfile: string, argv: Arguments): St
     name: stackName,
     argsfile: argsfile,
     args: _.pick(nonDefaultOptions(argv), ['environment', 'region', 'profile', 'stack-name']),
-    environment: usedEnvVars(argsfile),
+    environment: relevantEnvVars(argsfile),
   }
 }
 
