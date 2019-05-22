@@ -5,6 +5,7 @@ import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
 import * as child_process from 'child_process';
 import * as fs from 'fs';
+import * as inquirer from 'inquirer';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
@@ -158,36 +159,57 @@ export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
 export async function updateExistingMain(argv: GenericCLIArguments): Promise<number> {
   const providedOptions = tracking.nonDefaultOptions(argv);
-  const stacks = tracking.trackedStacks(providedOptions);
+  let stacks = tracking.trackedStacks();
+
   if(_.isEmpty(stacks)) {
-    logger.info(`No tracked stacks in ${process.cwd()} matching ${tracking.unparseArgv(providedOptions).join(' ')}`);
-    return SUCCESS;
-  } else {
-    for(const stack of stacks) {
-      if (!fs.existsSync(stack.argsfile)) {
-        logger.error(`Tracked argsfile '${stack.argsfile}' does not exist`);
-        return FAILURE;
-      }
-
-      const args = [process.argv[1], 'update-stack', stack.argsfile, ...tracking.unparseArgv(stack.args)];
-      const relevantEnvVars = tracking.relevantEnvVars(stack.argsfile);
-
-      const envVars = _.reduce(
-        {...stack.environment, ...relevantEnvVars},
-        (acc: string[], value, name) => acc.concat(`${name}=${value}`),
-        []
-      );
-      logger.info(`${envVars.join(' ')} ${args.join(' ')}`);
-
-      // Allow environment variables to be overridden by merging in relevantEnvVars last
-      const env = { ...process.env, ...stack.environment, ...relevantEnvVars };
-      const child = child_process.spawnSync(process.argv[0], args, { stdio: 'inherit', env });
-      if(child.status !== 0) {
-        return FAILURE;
-      }
-    }
+    logger.info(`No tracked stacks in ${process.cwd()}`);
     return SUCCESS;
   }
+
+  if(argv.all) {
+    // Include all stacks
+    // stacks = stacks;
+  } else if (_.some(providedOptions)) {
+    stacks = tracking.filterOnOptions(stacks, providedOptions);
+    if(_.isEmpty(stacks)) {
+      const cliArgs = tracking.unparseArgv(providedOptions).join(' ');
+      logger.info(`No tracked stacks in ${process.cwd()} matching ${cliArgs}`);
+      return SUCCESS;
+    }
+  } else {
+    // If no options are provided (eg. --region ... or --environment ...), prompt the user for input
+    const {selected} = await inquirer.prompt<{selected: typeof stacks}>({
+      name: 'selected',
+      type: 'checkbox',
+      default: [],
+      choices: _.map(stacks, (stack) => ({ name: stack.displayCommand, value: stack })),
+      message: 'Select stacks to update'
+    });
+
+    if(_.isEmpty(selected)) {
+      logger.info(`No stacks selected`);
+      return SUCCESS;
+    } else {
+      stacks = selected;
+    }
+  }
+
+  for(const stack of stacks) {
+    if (!fs.existsSync(stack.argsfile)) {
+      logger.error(`Tracked argsfile '${stack.argsfile}' does not exist`);
+      return FAILURE;
+    }
+
+    logger.info(`Running: ${stack.displayCommand}`);
+
+    // Allow environment variables to be overridden by merging in relevantEnvVars last
+    const env = { ...process.env, ...stack.env };
+    const child = child_process.spawnSync(process.argv[0], stack.argv, { stdio: 'inherit', env });
+    if(child.status !== 0) {
+      return FAILURE;
+    }
+  }
+  return SUCCESS;
 }
 
 export async function createOrUpdateStackMain(argv: GenericCLIArguments): Promise<number> {

@@ -155,6 +155,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
       description('update existing tracked stacks'),
       (args) => args
         .demandCommand(0, 0)
+        .option('all', {
+          type: 'boolean', default: false,
+          description: description('Update all tracked stacks without prompting')
+        })
         .usage('Usage: iidy update-existing'),
       wrapMainHandler(commands.updateExistingMain))
 

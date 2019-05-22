@@ -11,14 +11,24 @@ import * as yaml from '../yaml';
 const stackfilePath = '.iidy/stacks.yaml';
 
 type Stackfile = {
-  stacks: StackMetadata[]
+  stacks: StackfileMetadata[]
 }
 
-type StackMetadata = {
+// "Private" metadata, written to .iidy/stacks.yaml
+type StackfileMetadata = {
   name: string;
   argsfile: string;
   args: Partial<Arguments>;
   environment: { [name: string]: string };
+};
+
+// "Public" metadata for use by cfn module
+type StackMetadata = {
+  args: Partial<Arguments>;
+  argsfile: string;
+  displayCommand: string;
+  argv: string[];
+  env: object;
 };
 
 function importedEnvVars(argsfile: string): string[] {
@@ -70,25 +80,12 @@ export function unparseArgv(argv: Partial<Arguments>) {
   return args;
 }
 
-function stackMetadata(stackName: string, argsfile: string, argv: Arguments): StackMetadata {
+function stackfileMetadata(stackName: string, argsfile: string, argv: Arguments): StackfileMetadata {
   return {
     name: stackName,
     argsfile: argsfile,
     args: _.pick(nonDefaultOptions(argv), ['environment', 'region', 'profile', 'stack-name']),
     environment: relevantEnvVars(argsfile),
-  }
-}
-
-export function loadStackfile(): Stackfile {
-  try {
-    const existing = jsyaml.safeLoad(fs.readFileSync(stackfilePath).toString());
-    if (_.isObject(existing) && _.isArray(existing.stacks)) {
-      return existing;
-    } else {
-      return { stacks: [] };
-    }
-  } catch {
-    return { stacks: [] };
   }
 }
 
@@ -106,8 +103,7 @@ export function nonDefaultOptions(argv: Arguments): Partial<Arguments> {
   return result;
 }
 
-export function trackedStacks(providedOptions: Partial<Arguments>): StackMetadata[] {
-  const {stacks} = loadStackfile();
+export function filterOnOptions(stacks: StackMetadata[], providedOptions: Partial<Arguments>): StackMetadata[] {
   const matchingStacks: StackMetadata[] = [];
 
   for(const stack of stacks) {
@@ -117,6 +113,37 @@ export function trackedStacks(providedOptions: Partial<Arguments>): StackMetadat
   }
 
   return matchingStacks;
+}
+
+export function trackedStacks(): StackMetadata[] {
+  const stackfile = loadStackfile();
+
+  return _.map(stackfile.stacks, (stack) => {
+    const displayArgs = ['iidy', 'update-stack', stack.argsfile, ...unparseArgv(stack.args)];
+    const env = {...stack.environment, ...relevantEnvVars(stack.argsfile)};
+    const envVars = _.reduce(env, (acc: string[], v, k) => acc.concat(`${k}=${v}`), []);
+
+    return {
+      displayCommand: [...envVars, ...displayArgs].join(' '),
+      args: stack.args,
+      argsfile: stack.argsfile,
+      argv: [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.args)],
+      env
+    };
+  });
+}
+
+function loadStackfile(): Stackfile {
+  try {
+    const existing = jsyaml.safeLoad(fs.readFileSync(stackfilePath).toString());
+    if (_.isObject(existing) && _.isArray(existing.stacks)) {
+      return existing;
+    } else {
+      return { stacks: [] };
+    }
+  } catch {
+    return { stacks: [] };
+  }
 }
 
 function writeStackfile(stackfile: Stackfile) {
@@ -137,7 +164,7 @@ function writeStackfile(stackfile: Stackfile) {
 
 export function track(stackName: string, argsfile: string, argv: Arguments) {
   const stackfile = loadStackfile();
-  const stack = stackMetadata(stackName, argsfile, argv);
+  const stack = stackfileMetadata(stackName, argsfile, argv);
 
   if(!_.some(stackfile.stacks, (existing) => _.isEqual(existing, stack))) {
     stackfile.stacks.push(stack);
