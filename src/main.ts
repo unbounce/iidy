@@ -159,6 +159,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
           type: 'boolean', default: false,
           description: description('Update all tracked stacks without prompting')
         })
+        .option('changeset', {
+          type: 'boolean', default: false,
+          description: description('create changeset instead of updating')
+        })
         .usage('Usage: iidy update-existing'),
       wrapMainHandler(commands.updateExistingMain))
 
@@ -188,6 +192,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .option('description', {
           type: 'string', default: undefined,
           description: description('optional description of changeset')
+        })
+        .option('allow-empty', {
+          type: 'boolean', default: false,
+          description: description('do no consider an empty changeset to be an error')
         })
         .option('stack-name', stackNameOpt),
       wrapMainHandler(commands.createChangesetMain))

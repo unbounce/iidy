@@ -84,12 +84,12 @@ function stackfileMetadata(stackName: string, argsfile: string, argv: Arguments)
   return {
     name: stackName,
     argsfile: argsfile,
-    args: _.pick(nonDefaultOptions(argv), ['environment', 'region', 'profile', 'stack-name']),
+    args: relevantOptions(argv),
     environment: relevantEnvVars(argsfile),
   }
 }
 
-export function nonDefaultOptions(argv: Arguments): Partial<Arguments> {
+export function relevantOptions(argv: Arguments): Partial<Arguments> {
   const result: Partial<Arguments> = {};
   // @ts-ignore
   const options = yargs.getOptions();
@@ -100,7 +100,7 @@ export function nonDefaultOptions(argv: Arguments): Partial<Arguments> {
       result[key] = argv[key];
     }
   }
-  return result;
+  return _.pick(result, ['environment', 'region', 'profile', 'stack-name']);
 }
 
 export function filterOnOptions(stacks: StackMetadata[], providedOptions: Partial<Arguments>): StackMetadata[] {
@@ -115,19 +115,20 @@ export function filterOnOptions(stacks: StackMetadata[], providedOptions: Partia
   return matchingStacks;
 }
 
-export function trackedStacks(): StackMetadata[] {
+export function trackedStacks(iidyExecutable: string, command: string, extraArgs: string[] = []): StackMetadata[] {
   const stackfile = loadStackfile();
 
   return _.map(stackfile.stacks, (stack) => {
-    const displayArgs = ['iidy', 'update-stack', stack.argsfile, ...unparseArgv(stack.args)];
     const env = {...stack.environment, ...relevantEnvVars(stack.argsfile)};
     const envVars = _.reduce(env, (acc: string[], v, k) => acc.concat(`${k}=${v}`), []);
+    const displayArgs = ['iidy', command, stack.argsfile, ...unparseArgv(stack.args), ...extraArgs];
+    const argv = [iidyExecutable, command, stack.argsfile, ...unparseArgv(stack.args), ...extraArgs];
 
     return {
       displayCommand: [...envVars, ...displayArgs].join(' '),
       args: stack.args,
       argsfile: stack.argsfile,
-      argv: [process.argv[1], 'update-stack', stack.argsfile, ...unparseArgv(stack.args)],
+      argv,
       env
     };
   });

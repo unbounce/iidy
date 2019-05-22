@@ -86,7 +86,7 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
     if (changeSet.Status === 'FAILED') {
       logger.error(`${changeSet.StatusReason as string} Deleting failed changeset.`);
       await this.cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
-      return FAILURE;
+      return !this.hasChanges && this.argv.allowEmpty ? SUCCESS : FAILURE;
     }
     console.log();
 
@@ -158,8 +158,9 @@ export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
 export async function updateExistingMain(argv: GenericCLIArguments): Promise<number> {
-  const providedOptions = tracking.nonDefaultOptions(argv);
-  let stacks = tracking.trackedStacks();
+  const providedOptions = tracking.relevantOptions(argv);
+  const extraArgs = argv.changeset ? ['--changeset'] : [];
+  let stacks = tracking.trackedStacks(process.argv[1], 'update-stack', extraArgs);
 
   if(_.isEmpty(stacks)) {
     logger.info(`No tracked stacks in ${process.cwd()}`);
