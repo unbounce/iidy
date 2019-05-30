@@ -326,7 +326,7 @@ perform and AWS-related imports.
 If your profile requires an MFA token, iidy will prompt for it.
 
 ```
-? MFA token for arn:aws:iam::002682819933:mfa/example.user: ____
+? MFA token for arn:aws:iam::001234567890:mfa/example.user: ____
 ```
 
 If you've assumed a profile prior to running iidy and want to it to ignore
