@@ -46,6 +46,7 @@ class LazyCommands implements Commands {
   @lazyGetter createOrUpdateStackMain: Handler
   @lazyGetter updateStackMain: Handler
   @lazyGetter updateExistingMain: Handler
+  @lazyGetter ciMain: Handler
   @lazyGetter listStacksMain: Handler
   @lazyGetter watchStackMain: Handler
   @lazyGetter describeStackMain: Handler
@@ -161,10 +162,22 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         })
         .option('changeset', {
           type: 'boolean', default: false,
-          description: description('create changeset instead of updating')
+          description: description('use changesets to update stacks')
         })
         .usage('Usage: iidy update-existing'),
       wrapMainHandler(commands.updateExistingMain))
+
+    .command(
+      'ci',
+      description('update all existing tracked stacks in repository'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('changeset', {
+          type: 'boolean', default: false,
+          description: description('create changeset instead of updating')
+        })
+        .usage('Usage: iidy ci'),
+      wrapMainHandler(commands.ciMain))
 
     .command(
       'estimate-cost    <argsfile>',

@@ -3,7 +3,6 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
-import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as inquirer from 'inquirer';
 import calcElapsedSeconds from '../calcElapsedSeconds';
@@ -131,6 +130,28 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
   }
 }
 
+export async function createOrUpdateChangeSetMain(argv: GenericCLIArguments): Promise<number> {
+  const stackArgs = await loadStackArgs(argv);
+  const StackName = argv.stackName || stackArgs.StackName;
+  const changeSetExists = await doesChangeSetExist(StackName);
+  if (changeSetExists) {
+    return updateStackMain(argv, stackArgs);
+  } else if (argv.changeset) {
+    // TODO extract this into a separate createStackMain fn
+    // TODO autodetect AWS::Serverless and default to changeset=true
+    const changeSetRunner = new CreateChangeSet(argv, stackArgs);
+    const createChangesetResult = await changeSetRunner.run();
+    if (createChangesetResult > 0) {
+      return createChangesetResult;
+    } else {
+      console.log()
+      return await confirmChangesetExec(argv, changeSetRunner, stackArgs);
+    }
+  } else {
+    return new CreateStack(argv, stackArgs).run();
+  }
+}
+
 
 class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
   cfnOperation: CfnOperation = 'EXECUTE_CHANGESET'
@@ -157,13 +178,35 @@ export const createStackMain = wrapCommandCtor(CreateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
 
+export async function ciMain(argv: GenericCLIArguments): Promise<number> {
+  const providedOptions = tracking.relevantOptions(argv);
+  const extraArgs = argv.changeset ? ['--allow-empty'] : [];
+  const command = argv.changeset ? 'create-changeset' : 'update-stack';
+  const dirs = tracking.trackedDirectories(process.cwd());
+
+  for (const dir of dirs) {
+    let stacks = tracking.trackedStacks(dir, process.argv[1], command, extraArgs);
+    if (_.some(providedOptions)) {
+      stacks = tracking.filterOnOptions(stacks, providedOptions);
+    }
+
+    const success = tracking.updateExistingStacks(stacks);
+    if(!success) {
+      return FAILURE;
+    }
+  }
+
+  return SUCCESS;
+}
+
 export async function updateExistingMain(argv: GenericCLIArguments): Promise<number> {
   const providedOptions = tracking.relevantOptions(argv);
   const extraArgs = argv.changeset ? ['--changeset'] : [];
-  let stacks = tracking.trackedStacks(process.argv[1], 'update-stack', extraArgs);
+  const dir = process.cwd();
+  let stacks = tracking.trackedStacks(dir, process.argv[1], 'update-stack', extraArgs);
 
   if(_.isEmpty(stacks)) {
-    logger.info(`No tracked stacks in ${process.cwd()}`);
+    logger.info(`No tracked stacks in ${dir}`);
     return SUCCESS;
   }
 
@@ -174,7 +217,7 @@ export async function updateExistingMain(argv: GenericCLIArguments): Promise<num
     stacks = tracking.filterOnOptions(stacks, providedOptions);
     if(_.isEmpty(stacks)) {
       const cliArgs = tracking.unparseArgv(providedOptions).join(' ');
-      logger.info(`No tracked stacks in ${process.cwd()} matching ${cliArgs}`);
+      logger.info(`No tracked stacks in ${dir} matching ${cliArgs}`);
       return SUCCESS;
     }
   } else {
@@ -195,22 +238,7 @@ export async function updateExistingMain(argv: GenericCLIArguments): Promise<num
     }
   }
 
-  for(const stack of stacks) {
-    if (!fs.existsSync(stack.argsfile)) {
-      logger.error(`Tracked argsfile '${stack.argsfile}' does not exist`);
-      return FAILURE;
-    }
-
-    logger.info(`Running: ${stack.displayCommand}`);
-
-    // Allow environment variables to be overridden by merging in relevantEnvVars last
-    const env = { ...process.env, ...stack.env };
-    const child = child_process.spawnSync(process.argv[0], stack.argv, { stdio: 'inherit', env });
-    if(child.status !== 0) {
-      return FAILURE;
-    }
-  }
-  return SUCCESS;
+  return tracking.updateExistingStacks(stacks) ? SUCCESS : FAILURE;
 }
 
 export async function createOrUpdateStackMain(argv: GenericCLIArguments): Promise<number> {

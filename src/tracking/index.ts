@@ -3,12 +3,15 @@ import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
 import * as path from 'path';
 import * as yargs from 'yargs';
+import * as child_process from 'child_process';
 import {Arguments} from 'yargs';
 import unparse = require('yargs-unparser');
 
 import * as yaml from '../yaml';
+import {logger} from '../logger';
 
 const stackfilePath = '.iidy/stacks.yaml';
+const stackfileDir = path.dirname(stackfilePath);
 
 type Stackfile = {
   stacks: StackfileMetadata[]
@@ -115,8 +118,8 @@ export function filterOnOptions(stacks: StackMetadata[], providedOptions: Partia
   return matchingStacks;
 }
 
-export function trackedStacks(iidyExecutable: string, command: string, extraArgs: string[] = []): StackMetadata[] {
-  const stackfile = loadStackfile();
+export function trackedStacks(dir: string, iidyExecutable: string, command: string, extraArgs: string[] = []): StackMetadata[] {
+  const stackfile = loadStackfile(dir);
 
   return _.map(stackfile.stacks, (stack) => {
     const env = {...stack.environment, ...relevantEnvVars(stack.argsfile)};
@@ -134,9 +137,10 @@ export function trackedStacks(iidyExecutable: string, command: string, extraArgs
   });
 }
 
-function loadStackfile(): Stackfile {
+function loadStackfile(dir: string = process.cwd()): Stackfile {
   try {
-    const existing = jsyaml.safeLoad(fs.readFileSync(stackfilePath).toString());
+    const filepath = path.join(dir, stackfilePath);
+    const existing = jsyaml.safeLoad(fs.readFileSync(filepath).toString());
     if (_.isObject(existing) && _.isArray(existing.stacks)) {
       return existing;
     } else {
@@ -171,4 +175,42 @@ export function track(stackName: string, argsfile: string, argv: Arguments) {
     stackfile.stacks.push(stack);
     writeStackfile(stackfile);
   }
+}
+
+// Recursively return all directories that contain an .iidy/stack.yaml file
+export function trackedDirectories(dir: string, dirs: string[] = []) {
+  const relativePaths = fs.readdirSync(dir);
+  return _.reduce(relativePaths, (acc, relativePath) => {
+    const absolutePath = path.join(dir, relativePath);
+    const stat = fs.statSync(absolutePath);
+    if (stat.isDirectory()) {
+      if (relativePath === stackfileDir) {
+        if (fs.existsSync(path.join(dir, stackfilePath))) {
+          acc.push(dir);
+        }
+      } else {
+        trackedDirectories(absolutePath, acc);
+      }
+    }
+    return acc;
+  }, dirs);
+}
+
+export function updateExistingStacks(stacks: StackMetadata[]): boolean {
+  for(const stack of stacks) {
+    if (!fs.existsSync(stack.argsfile)) {
+      logger.error(`Tracked argsfile '${stack.argsfile}' does not exist`);
+      return false;
+    }
+
+    logger.info(`Running: ${stack.displayCommand}`);
+
+    // Allow environment variables to be overridden by merging in relevantEnvVars last
+    const env = { ...process.env, ...stack.env };
+    const child = child_process.spawnSync(process.argv[0], stack.argv, { stdio: 'inherit', env });
+    if(child.status !== 0) {
+      return false;
+    }
+  }
+  return true;
 }

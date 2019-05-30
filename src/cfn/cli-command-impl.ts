@@ -3,6 +3,7 @@ import {
   createStackMain,
   createOrUpdateStackMain,
   updateExistingMain,
+  ciMain,
   updateStackMain,
   executeChangesetMain,
   estimateCost
@@ -23,6 +24,7 @@ export const implementations: CfnStackCommands = {
   createStackMain,
   createOrUpdateStackMain,
   updateExistingMain,
+  ciMain,
   updateStackMain,
   listStacksMain,
   watchStackMain,

@@ -4,6 +4,7 @@ export interface CfnStackCommands {
   createStackMain: Handler;
   createOrUpdateStackMain: Handler;
   updateExistingMain: Handler;
+  ciMain: Handler;
   updateStackMain: Handler;
   listStacksMain: Handler;
   watchStackMain: Handler;
