@@ -41,6 +41,7 @@ if (debug()) {
 
 const consoleLogger = new winston.transports.Console({
   level: LOG_LEVEL,
+  stderrLevels: ['error'],
   format: combine((useColor ? winston.format.colorize() : winston.format.simple()),
     consoleFormat)
 });
