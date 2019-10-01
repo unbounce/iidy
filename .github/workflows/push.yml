@@ -1,0 +1,14 @@
+on: push
+name: Build and Publish
+jobs:
+  runSonarCloudScanner:
+    name: Run SonarCloud Scanner
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Run SonarCloud Scanner
+      uses: docker://unbounce/sonarcloud-github-typescript
+      env:
+        SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+        SONAR_ORG: unbounce
+        SONAR_PROJECT_KEY: iidy
