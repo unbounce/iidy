@@ -1,5 +1,7 @@
 import {expect} from 'chai';
 import {loadStackArgs} from "../cfn/loadStackArgs";
+import {readTemplateObj} from "../cfn/convertStackToIidy";
+import * as yaml from "../yaml";
 import * as aws from 'aws-sdk'
 
 describe('cfn', () => {
@@ -19,4 +21,23 @@ describe('cfn', () => {
       expect(args.ServiceRoleARN).to.equal('arn:aws:iam::001234567890:role/name');
     });
   });
+
+  describe('readTemplateObj', () => {
+    it('handles AWSTemplateFormatVersion strings properly', async function() {
+      const templateBody = 'AWSTemplateFormatVersion: 2010-09-09';
+      const templateObj = readTemplateObj(templateBody, true);
+      expect(yaml.dump(templateObj)).to.equal(
+          "AWSTemplateFormatVersion: '2010-09-09'\n"
+      );
+    });
+
+    it('handles Version strings properly', async function() {
+      const templateBody = 'Version: 2010-09-09\n';
+      const templateObj = readTemplateObj(templateBody, false);
+      expect(yaml.dump(templateObj)).to.equal(
+          "Version: '2010-09-09'\n"
+      );
+    });
+  });
+
 });
