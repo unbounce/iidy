@@ -8,6 +8,7 @@ import def from '../default';
 import {getKMSAliasForParameter} from '../params';
 import {SUCCESS} from '../statusCodes';
 import * as yaml from '../yaml';
+import {Visitor} from '../preprocess/visitor';
 import {getStackDescription} from './getStackDescription';
 import {parseTemplateBody} from "./parseTemplateBody";
 import {StackArgs} from "./types";
@@ -106,6 +107,23 @@ export type ConvertStackArguments = GenericCLIArguments & {
   moveParamsToSsm: boolean;
 };
 
+export function readTemplateObj(templateBody: string, sortkeys: boolean): Object {
+  const templateObj0 = parseTemplateBody(templateBody);
+  let templateObj;
+  if (sortkeys) {
+    templateObj = deepMapValues(templateObj0, sortCallback, 'root');
+  } else {
+    templateObj = templateObj0;
+  }
+
+  const visitor = new Visitor();
+  return visitor.visitNode(templateObj, 'Root', {
+    GlobalAccumulator: {},
+    $envValues: {},
+    Stack: []
+  });
+};
+
 export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<number> {
   const argv = argv0 as ConvertStackArguments;
   await configureAWS(argv);
@@ -119,14 +137,7 @@ export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<nu
     throw new Error(`Invalid cfn template found for ${StackName}`);
   }
 
-  const templateObj0 = parseTemplateBody(TemplateBody!);
-  let templateObj;
-  if (argv.sortkeys) {
-    templateObj = deepMapValues(templateObj0, sortCallback, 'root');
-  } else {
-    templateObj = templateObj0;
-  }
-
+  const templateObj = readTemplateObj(TemplateBody!, argv.sortkeys);
   const stack = await getStackDescription(StackName);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir);
