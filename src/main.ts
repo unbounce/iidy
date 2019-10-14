@@ -50,6 +50,8 @@ class LazyCommands implements Commands {
   @lazyGetter createStackMain: Handler
   @lazyGetter createOrUpdateStackMain: Handler
   @lazyGetter updateStackMain: Handler
+  @lazyGetter updateExistingMain: Handler
+  @lazyGetter ciMain: Handler
   @lazyGetter listStacksMain: Handler
   @lazyGetter watchStackMain: Handler
   @lazyGetter describeStackMain: Handler
@@ -92,6 +94,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy create-stack <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('track', {
+          type: 'boolean', default: false,
+          description: description('track stack for use with `update-existing`')
+        })
         .option('lint-template', lintTemplateOpt(false)),
       wrapMainHandler(commands.createStackMain))
 
@@ -102,6 +108,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .demandCommand(0, 0)
         .usage('Usage: iidy update-stack <stack-args.yaml>')
         .option('stack-name', stackNameOpt)
+        .option('track', {
+          type: 'boolean', default: false,
+          description: description('track stack for use with `update-existing`')
+        })
         .option('lint-template', lintTemplateOpt(false))
         .option('changeset', {
           type: 'boolean', default: false,
@@ -148,6 +158,34 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
       wrapMainHandler(commands.createOrUpdateStackMain))
 
     .command(
+      'update-existing',
+      description('update existing tracked stacks'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('all', {
+          type: 'boolean', default: false,
+          description: description('Update all tracked stacks without prompting')
+        })
+        .option('changeset', {
+          type: 'boolean', default: false,
+          description: description('use changesets to update stacks')
+        })
+        .usage('Usage: iidy update-existing'),
+      wrapMainHandler(commands.updateExistingMain))
+
+    .command(
+      'ci',
+      description('update all existing tracked stacks in repository'),
+      (args) => args
+        .demandCommand(0, 0)
+        .option('changeset', {
+          type: 'boolean', default: false,
+          description: description('create changeset instead of updating')
+        })
+        .usage('Usage: iidy ci'),
+      wrapMainHandler(commands.ciMain))
+
+    .command(
       'estimate-cost    <argsfile>',
       description('estimate aws costs based on stack-args.yaml'),
       (args) => args
@@ -173,6 +211,10 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
         .option('description', {
           type: 'string', default: undefined,
           description: description('optional description of changeset')
+        })
+        .option('allow-empty', {
+          type: 'boolean', default: false,
+          description: description('do no consider an empty changeset to be an error')
         })
         .option('stack-name', stackNameOpt),
       wrapMainHandler(commands.createChangesetMain))

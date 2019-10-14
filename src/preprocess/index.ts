@@ -627,6 +627,18 @@ export function validateTemplateParameter(param: $param, mergedParams: any, name
   }
 }
 
+function getUsername() {
+  try {
+    return os.userInfo().username;
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      return undefined;
+    } else {
+      throw e;
+    }
+  }
+}
+
 export function transformPostImports(
   root: ExtendedCfnDoc,
   rootDocLocation: ImportLocation,
@@ -643,7 +655,7 @@ export function transformPostImports(
         iidy: {
           Host: os.hostname(),
           Imports: accumulatedImports,
-          User: os.userInfo().username
+          User: getUsername()
         }
       }
     }

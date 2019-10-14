@@ -21,6 +21,7 @@ import {summarizeStackDefinition} from './summarizeStackDefinition';
 import {CfnOperation, StackArgs} from './types';
 import {watchStack} from './watchStack';
 import {lintTemplate} from './lint';
+import {track} from '../tracking';
 
 export async function isHttpTemplateAccessible(location?: string) {
   if (location) {
@@ -159,6 +160,8 @@ export abstract class AbstractCloudFormationStackCommand {
         }
       }
 
+      track(def(this.stackArgs.StackName, this.stackName), this.argsfile, this.argv);
+
       const createStackOutput = await this.cfn.createStack(createStackInput).promise();
       await this._updateStackTerminationPolicy();
       return this._watchAndSummarize(createStackOutput.StackId as string);
@@ -192,6 +195,8 @@ export abstract class AbstractCloudFormationStackCommand {
           return this.exitWithLintErrors(errors);
         }
       }
+
+      track(def(this.stackArgs.StackName, this.stackName), this.argsfile, this.argv);
 
       await this._updateStackTerminationPolicy();
       // TODO consider conditionally calling setStackPolicy if the policy has changed

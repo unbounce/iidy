@@ -2,6 +2,8 @@ import {CfnStackCommands} from './cli-types';
 import {
   createStackMain,
   createOrUpdateStackMain,
+  updateExistingMain,
+  ciMain,
   updateStackMain,
   executeChangesetMain,
   estimateCost
@@ -21,6 +23,8 @@ export const implementations: CfnStackCommands = {
   // TODO rename these do be consistent
   createStackMain,
   createOrUpdateStackMain,
+  updateExistingMain,
+  ciMain,
   updateStackMain,
   listStacksMain,
   watchStackMain,

@@ -3,6 +3,8 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
+import * as fs from 'fs';
+import * as inquirer from 'inquirer';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
@@ -21,6 +23,7 @@ import {stackArgsToCreateChangeSetInput} from './stackArgsToX';
 import {summarizeStackDefinition} from './summarizeStackDefinition';
 import terminalStackStates from './terminalStackStates';
 import {CfnOperation, StackArgs} from './types';
+import * as tracking from '../tracking';
 
 export async function doesStackExist(StackName: string): Promise<boolean> {
   const cfn = new aws.CloudFormation();
@@ -82,7 +85,7 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
     if (changeSet.Status === 'FAILED') {
       logger.error(`${changeSet.StatusReason as string} Deleting failed changeset.`);
       await this.cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
-      return FAILURE;
+      return !this.hasChanges && this.argv.allowEmpty ? SUCCESS : FAILURE;
     }
     console.log();
 
@@ -127,6 +130,28 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
   }
 }
 
+export async function createOrUpdateChangeSetMain(argv: GenericCLIArguments): Promise<number> {
+  const stackArgs = await loadStackArgs(argv);
+  const StackName = argv.stackName || stackArgs.StackName;
+  const changeSetExists = await doesChangeSetExist(StackName);
+  if (changeSetExists) {
+    return updateStackMain(argv, stackArgs);
+  } else if (argv.changeset) {
+    // TODO extract this into a separate createStackMain fn
+    // TODO autodetect AWS::Serverless and default to changeset=true
+    const changeSetRunner = new CreateChangeSet(argv, stackArgs);
+    const createChangesetResult = await changeSetRunner.run();
+    if (createChangesetResult > 0) {
+      return createChangesetResult;
+    } else {
+      console.log()
+      return await confirmChangesetExec(argv, changeSetRunner, stackArgs);
+    }
+  } else {
+    return new CreateStack(argv, stackArgs).run();
+  }
+}
+
 
 class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
   cfnOperation: CfnOperation = 'EXECUTE_CHANGESET'
@@ -152,6 +177,69 @@ const wrapCommandCtor =
 export const createStackMain = wrapCommandCtor(CreateStack);
 export const executeChangesetMain = wrapCommandCtor(ExecuteChangeSet);
 export const estimateCost = wrapCommandCtor(EstimateStackCost);
+
+export async function ciMain(argv: GenericCLIArguments): Promise<number> {
+  const providedOptions = tracking.relevantOptions(argv);
+  const extraArgs = argv.changeset ? ['--allow-empty'] : [];
+  const command = argv.changeset ? 'create-changeset' : 'update-stack';
+  const dirs = tracking.trackedDirectories(process.cwd());
+
+  for (const dir of dirs) {
+    let stacks = tracking.trackedStacks(dir, process.argv[1], command, extraArgs);
+    if (_.some(providedOptions)) {
+      stacks = tracking.filterOnOptions(stacks, providedOptions);
+    }
+
+    const success = tracking.updateExistingStacks(stacks);
+    if(!success) {
+      return FAILURE;
+    }
+  }
+
+  return SUCCESS;
+}
+
+export async function updateExistingMain(argv: GenericCLIArguments): Promise<number> {
+  const providedOptions = tracking.relevantOptions(argv);
+  const extraArgs = argv.changeset ? ['--changeset'] : [];
+  const dir = process.cwd();
+  let stacks = tracking.trackedStacks(dir, process.argv[1], 'update-stack', extraArgs);
+
+  if(_.isEmpty(stacks)) {
+    logger.info(`No tracked stacks in ${dir}`);
+    return SUCCESS;
+  }
+
+  if(argv.all) {
+    // Include all stacks
+    // stacks = stacks;
+  } else if (_.some(providedOptions)) {
+    stacks = tracking.filterOnOptions(stacks, providedOptions);
+    if(_.isEmpty(stacks)) {
+      const cliArgs = tracking.unparseArgv(providedOptions).join(' ');
+      logger.info(`No tracked stacks in ${dir} matching ${cliArgs}`);
+      return SUCCESS;
+    }
+  } else {
+    // If no options are provided (eg. --region ... or --environment ...), prompt the user for input
+    const {selected} = await inquirer.prompt<{selected: typeof stacks}>({
+      name: 'selected',
+      type: 'checkbox',
+      default: [],
+      choices: _.map(stacks, (stack) => ({ name: stack.displayCommand, value: stack })),
+      message: 'Select stacks to update'
+    });
+
+    if(_.isEmpty(selected)) {
+      logger.info(`No stacks selected`);
+      return SUCCESS;
+    } else {
+      stacks = selected;
+    }
+  }
+
+  return tracking.updateExistingStacks(stacks) ? SUCCESS : FAILURE;
+}
 
 export async function createOrUpdateStackMain(argv: GenericCLIArguments): Promise<number> {
   const stackArgs = await loadStackArgs(argv);
