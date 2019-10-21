@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "auto-changelog": "^1.13.0",
-    "aws-sdk": "unbounce/aws-sdk-js#c28cd0e923149586778cc6ef5b756b28724bc18a",
+    "aws-sdk": "unbounce/aws-sdk-js#e3528b1490257ec60ea2c2bc9eb0129d42f17263",
     "bluebird": "^3.5.4",
     "cli-color": "^1.4.0",
     "dateformat": "^3.0.3",
