@@ -203,7 +203,7 @@ export class Visitor {
       // TODO remove the need for this cast
       const template: ExtendedCfnDoc = _.clone(lookupInEnv(templateName, path, env)) as ExtendedCfnDoc;
       const stackFrame = {location: template.$location, path: appendPath(path, '!$expand')};
-      const $paramDefaultsEnv = mkSubEnv(env, _.merge(template.$envValues), stackFrame);
+      const $paramDefaultsEnv = mkSubEnv(env, {...template.$envValues}, stackFrame);
       const $paramDefaults = _.fromPairs(
         _.filter(
           _.map(
@@ -215,7 +215,7 @@ export class Visitor {
       const providedParams = this.visitNode(params, appendPath(path, 'params'), env);
       const mergedParams = _.assign({}, $paramDefaults, providedParams);
       _.forEach(template.$params, (param) => validateTemplateParameter(param, mergedParams, '!$expand', env));
-      const subEnv = mkSubEnv(env, _.merge({}, mergedParams, template.$envValues), stackFrame);
+      const subEnv = mkSubEnv(env, {...mergedParams, ...template.$envValues}, stackFrame);
       delete template.$params;
       // TODO might also need to delete template.$imports, template.$envValues, and template.$defs
       return this.visitNode(template, path, subEnv);
@@ -238,7 +238,7 @@ export class Visitor {
           const dynamicKey = bracketsMatch[1].trim();
           return this._visit$includeDynamicKey(dynamicKey, basekey, `${dynamicKey} in ${path}`, env, result);
         } else {
-          const subEnv = i === 0 ? env : mkSubEnv(env, _.merge({}, result), {path});
+          const subEnv = i === 0 ? env : mkSubEnv(env, {...result}, {path});
           return lookupInEnv(subKey.trim(), `${subKey} in ${path}`, subEnv);
         }
       },
@@ -270,7 +270,7 @@ export class Visitor {
       }
     }
     const newKey = basekey + '.' + newKeyParts.join('.');
-    const subEnv = _.isUndefined(lastResult) ? env : mkSubEnv(env, _.merge({}, lastResult), {path});
+    const subEnv = _.isUndefined(lastResult) ? env : mkSubEnv(env, {...lastResult}, {path});
     return this.visit$include(new yaml.$include(newKey), `${newKey} from ${basekey} in ${path}`, subEnv);
   }
 
@@ -296,8 +296,7 @@ export class Visitor {
   visit$let(node: yaml.$let, path: string, env: Env): AnyButUndefined {
     const subEnv = mkSubEnv(
       env,
-      _.merge({}, env.$envValues,
-        this.visitNode(_.omit(node.data, ['in']), path, env)),
+      {...env.$envValues, ...this.visitNode(_.omit(node.data, ['in']), path, env)},
       {path});
     return this.visitNode(node.data.in, path, subEnv);
   }
@@ -385,7 +384,7 @@ export class Visitor {
     const varName = node.data.var || 'item';
     const grouped = _.groupBy(this.visitNode(node.data.items, path, env), (item0) => {
       const item = this.visitNode(item0, path, env); // visit pre expansion
-      const subEnv = mkSubEnv(env, _.merge({}, env.$envValues, {[varName]: item}), {path});
+      const subEnv = mkSubEnv(env, {...env.$envValues, [varName]: item}, {path});
       return this.visitNode(node.data.key, path, subEnv);
     });
 
@@ -394,7 +393,7 @@ export class Visitor {
         grouped,
         (items) => _.map(items, (item0) => {
           const item = this.visitNode(item0, path, env); // visit pre expansion
-          const subEnv = mkSubEnv(env, _.merge({}, env.$envValues, {[varName]: item}), {path});
+          const subEnv = mkSubEnv(env, {...env.$envValues, [varName]: item}, {path});
           return this.visitNode(node.data.template, path, subEnv);
         }));
     } else {
@@ -480,7 +479,7 @@ export class Visitor {
     } else if (_.isArray(node.data) && node.data.length === 2) {
       const templateEnv = node.data[1];
       const subEnv = mkSubEnv(
-        env, _.merge({}, env.$envValues, {$globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))}),
+        env, {...env.$envValues, $globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))},
         {path});
       const template = this.visitSubStringTemplate(this.visitNode(node.data[0], path, env), path, subEnv);
       return new yaml.Sub([template, this.visitNode(templateEnv, path, env)]);
@@ -696,8 +695,7 @@ export class Visitor {
         }
       });
 
-    const $paramDefaultsEnv = mkSubEnv(
-      env, _.merge({Prefix: prefix}, template.$envValues), stackFrame);
+    const $paramDefaultsEnv = mkSubEnv(env, {Prefix: prefix, ...template.$envValues}, stackFrame);
 
     const $paramDefaults = _.fromPairs(
       _.filter(
@@ -718,10 +716,12 @@ export class Visitor {
 
     const subEnv = mkSubEnv(
       env,
-      _.merge(
-        {Prefix: prefix, $globalRefs},
-        mergedParams,
-        template.$envValues),
+      {
+        Prefix: prefix,
+        $globalRefs,
+        ...mergedParams,
+        ...template.$envValues
+      },
       stackFrame);
 
     // TODO consider just visitNode on the entire resourceDoc here
