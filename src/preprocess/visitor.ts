@@ -314,7 +314,7 @@ export class Visitor {
       const subPath = appendPath(path, idx.toString());
       const item = this.visitNode(item0, subPath, env); // visit pre expansion
       const subEnv = mkSubEnv(
-        env, _.merge({[varName]: item, [varName + 'Idx']: idx}, env.$envValues), {path: subPath});
+        env, {...env.$envValues, [varName]: item, [varName + 'Idx']: idx}, {path: subPath});
       if (node.data.filter && !this.visitNode(node.data.filter, path, subEnv)) {
         return SENTINEL;
       } else {
@@ -493,7 +493,10 @@ export class Visitor {
 
   visitNode(node: any, path: string, env: Env): any {
     const currNode = path.split('.').pop();
-    logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
+    // Avoid serializing large `env` data when debug is not enabled
+    if(logger.isDebugEnabled()) {
+      logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
+    }
     const result = (() => {
       if (currNode === 'Resources' && path.indexOf('Overrides') === -1) {
         return this.visitResourceNode(node, path, env);
@@ -514,7 +517,9 @@ export class Visitor {
         return node;
       }
     })();
-    logger.debug(`exiting ${path}:`, {result, node, env});;
+    if(logger.isDebugEnabled()) {
+      logger.debug(`exiting ${path}:`, {result, node, env});;
+    }
     return result;
   };
 
