@@ -5,7 +5,7 @@ import def from '../default';
 import eventIsFromSubstack from './eventIsFromSubstack';
 
 const getSubStacksFromEvents = (events: aws.CloudFormation.StackEvents): Set<string> => {
-  const subStackIds = new Set();
+  const subStackIds = new Set<string>();
   events.forEach((ev) => {
     if (eventIsFromSubstack(ev)) {
       subStackIds.add(ev.PhysicalResourceId as string);

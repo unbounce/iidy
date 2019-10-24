@@ -158,7 +158,7 @@ function gitValue(valueType: GitValue): string {
 
   const result = child_process
     .spawnSync(command, [], {shell: true});
-  if (result.status > 0) {
+  if (result.status) {
     throw new Error('git value lookup failed. Are you inside a git repo?');
   } else {
     return result.stdout.toString().trim();
@@ -492,7 +492,7 @@ export async function loadImports(
       const importData = await importLoader(loc, baseLocation);
       logger.debug('loaded import:', loc, asKey, importData);
       if (_.isObject(importData.doc)) {
-        importData.doc.$location = loc;
+        (importData.doc as any).$location = loc;
       }
 
       importsAccum.push({
