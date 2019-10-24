@@ -100,7 +100,8 @@ endif
 	cp Makefile.test dist/docker/Makefile
 	cp -a examples dist/docker/
 	docker build $(DOCKER_BUILD_ARGS) -t iidy-test dist/docker
-	docker run --rm -it -v ~/.aws/:/root/.aws/ iidy-test make test
+	bash -c 'docker run --env-file=<(env | grep AWS) --rm -it -v ~/.aws/:/root/.aws/ iidy-test make test'
+#	^ bash -c required due to <() redirection not working with Make directly
 	touch $(TESTS_STATEFILE)
 
 $(DOCKER_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)

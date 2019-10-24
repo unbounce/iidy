@@ -20,8 +20,8 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
   const awsConfigIni = iniLoader.loadFrom({filename: path.join(awsUserDir, 'credentials')});
   const availableProfileNames = _.keys(awsConfigIni);
 
-  describe("AWS configuration", () => {
-    describe("configureAWS", () => {
+  describe("AWS configuration", function () {
+    describe("configureAWS", function () {
       const awsRegionEnvVars = ['AWS_REGION', 'AWS_DEFAULT_REGION'];
       const originalDefaultRegion = aws.config.region;
       const originalEnvVarSettings = _.fromPairs(_.map(awsRegionEnvVars, v => [v, process.env[v]]));
@@ -45,9 +45,10 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
         expect(getCurrentAWSRegion()).to.be.a('string');
       });
 
-      it("respects env AWS_REGION and AWS_DEFAULT_REGION", async () => {
+      it("respects env AWS_REGION and AWS_DEFAULT_REGION", async function () {
+        this.timeout(15000);
         for (const envVar of awsRegionEnvVars) {
-          for (const region of AWSRegions) {
+          for (const region of AWSRegions.slice(0, 3)) {
             unsetAWSRegionEnvVars();
             process.env[envVar] = region;
             await configureAWS({});
@@ -56,8 +57,9 @@ if (awsUserDir && fs.existsSync(awsUserDir)) {
         }
       });
 
-      it("updates aws.config.region after each call", async () => {
-        for (const region of AWSRegions) {
+      it("updates aws.config.region after each call", async function () {
+        this.timeout(15000);
+        for (const region of AWSRegions.slice(0, 2)) {
           await configureAWS({region});
           expect(getCurrentAWSRegion()).to.equal(region);
         }

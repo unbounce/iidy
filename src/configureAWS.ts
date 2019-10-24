@@ -21,7 +21,7 @@ import {AWSRegion} from './aws-regions';
 
 function getCredentialsProviderChain(profile?: string) {
   const hasDotAWS = (awsUserDir && fs.existsSync(awsUserDir));
-  if (profile && ! _.includes(['no-profile', 'noprofile'], profile)) {
+  if (profile && ! _.includes(['no-profile', 'noprofile'], profile) && process.env.AWS_VAULT != profile) {
     if (profile.startsWith('arn:')) {
       throw new Error('profile was set to a role ARN. Use AssumeRoleArn instead');
     }
@@ -43,7 +43,9 @@ function getCredentialsProviderChain(profile?: string) {
         });
     };
     return new aws.CredentialProviderChain(
-      [() => new aws.SharedIniFileCredentials({profile, tokenCodeFn, useCache: true})]);
+      [() => new aws.SharedIniFileCredentials({profile, tokenCodeFn, useCache: true}),
+       () => new aws.ProcessCredentials({profile})
+      ]);
   } else {
     return new aws.CredentialProviderChain();
   }
