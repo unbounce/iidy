@@ -119,7 +119,7 @@ export async function _loadStackArgs(
       // might alter the values in $imports. For example, an import of
       // `filehash:lambda.zip` would change after the
       //
-      const argsdataPass1: ExtendedCfnDoc = _.omit(_.cloneDeep(argsdata), ['CommandsBefore']);
+      const argsdataPass1 = _.omit(_.cloneDeep(argsdata), ['CommandsBefore']) as ExtendedCfnDoc;
       // NOTE any AWS api calls made in the imports will be made twice
       // because of the multiple passes. TODO use transformPostImports
       // instead and loadImports only once.

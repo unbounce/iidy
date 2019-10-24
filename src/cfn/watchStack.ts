@@ -53,16 +53,16 @@ export async function watchStack(
     }
   }, 1000);
 
-  const subStacksToIgnore = new Set();
+  const subStacksToIgnore = new Set<string>();
   while (!DONE) {
     let evs = await getAllStackEvents(StackName, true, subStacksToIgnore);
     const statusPadding = calcPadding(evs, ev => ev.ResourceStatus!);
     for (const ev of evs) {
       if (eventIsFromSubstack(ev) && !seen[ev.EventId]) {
         if (_.includes(terminalStackStates, ev.ResourceStatus) && ev.Timestamp > startTime) {
-          subStacksToIgnore.add(ev.PhysicalResourceId);
+          subStacksToIgnore.add(ev.PhysicalResourceId as string);
         } else {
-          subStacksToIgnore.delete(ev.PhysicalResourceId);
+          subStacksToIgnore.delete(ev.PhysicalResourceId as string);
         }
       }
       if (ev.Timestamp < startTime) {

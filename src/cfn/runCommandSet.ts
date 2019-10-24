@@ -58,7 +58,7 @@ export function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: o
     };
     console.log('--', `Command ${index + 1} Output`, '-'.repeat(25));
     const result = child_process.spawnSync(expandedCommand, [], spawnOptions);
-    if (result.status > 0) {
+    if (result.status) {
       throw new Error(`Error running command (exit code ${result.status}):\n` + command);
     }
   });

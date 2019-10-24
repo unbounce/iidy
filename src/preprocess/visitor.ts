@@ -25,7 +25,7 @@ const _flatten = <T>(arrs: T[][]): T[] => _.flatten(arrs)
 
 const _isPlainMap = (node: any): node is object =>
   _.isObject(node) &&
-  !node.is_yaml_tag &&
+  !_.get(node, 'is_yaml_tag') &&
   !_.isDate(node) &&
   !_.isRegExp(node) &&
   !_.isFunction(node);
