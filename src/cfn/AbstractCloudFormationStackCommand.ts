@@ -217,7 +217,7 @@ export abstract class AbstractCloudFormationStackCommand {
 
   _exitWithTemplateApprovalFailure(): number {
     logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
-    logger.error(`  iidy template-approval request ${this.argsfile}`);
+    logger.error('  ' + this.normalizeIidyCLICommand(`template-approval request ${this.argsfile}`));
     logger.error('to begin the approval process.');
     return FAILURE;
   }
