@@ -8,6 +8,19 @@ import {loadCFNTemplate} from "./loadCFNTemplate";
 import {loadCFNStackPolicy} from "./loadCFNStackPolicy";
 import {approvedTemplateVersionLocation} from "./approvedTemplateVersionLocation";
 
+export type CFNInputsSupportingUsePreviousValue =
+  aws.CloudFormation.CreateChangeSetInput | aws.CloudFormation.UpdateStackInput;
+
+export function _normalizeUsePreviousTemplateOrParamValues(stackArgs: StackArgs, input: CFNInputsSupportingUsePreviousValue): void {
+  input.UsePreviousTemplate = stackArgs.UsePreviousTemplate;
+  if (stackArgs.UsePreviousValueParameters && input.Parameters) {
+    for (const paramName in stackArgs.UsePreviousValueParameters) {
+      input.Parameters[paramName].UsePreviousValue = true;
+      delete input.Parameters[paramName].ParameterValue;
+    }
+  }
+}
+
 export async function stackArgsToCreateStackInput(
   stackArgs: StackArgs, argsFilePath: string, environment: string, stackName?: string)
   : Promise<aws.CloudFormation.CreateStackInput> {
@@ -70,6 +83,7 @@ export async function stackArgsToCreateChangeSetInput(
   const ClientToken = input0.ClientRequestToken; // damn CFN has inconsistent naming here
   delete input0.ClientRequestToken;
   const input = input0 as aws.CloudFormation.CreateChangeSetInput;
+  _normalizeUsePreviousTemplateOrParamValues(stackArgs, input);
   input.ChangeSetName = changeSetName;
   input.ClientToken = ClientToken;
   return input;
@@ -85,6 +99,6 @@ export async function stackArgsToUpdateStackInput(
   delete input0.TimeoutInMinutes;
   delete input0.OnFailure;
   const input = input0 as aws.CloudFormation.UpdateStackInput;
-  input.UsePreviousTemplate = stackArgs.UsePreviousTemplate;
-  return input0;
+  _normalizeUsePreviousTemplateOrParamValues(stackArgs, input);
+  return input;
 }
