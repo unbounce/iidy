@@ -30,5 +30,7 @@ export type StackArgs = {
   ClientRequestToken?: string; //aws.CloudFormation.ClientToken,
   // for updates
   UsePreviousTemplate?: boolean;
+  UsePreviousValueParameters?: string[];
+
   CommandsBefore?: string[];
 };
