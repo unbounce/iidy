@@ -14,10 +14,14 @@ export type CFNInputsSupportingUsePreviousValue =
 export function _normalizeUsePreviousTemplateOrParamValues(stackArgs: StackArgs, input: CFNInputsSupportingUsePreviousValue): void {
   input.UsePreviousTemplate = stackArgs.UsePreviousTemplate;
   if (stackArgs.UsePreviousValueParameters && input.Parameters) {
-    for (const paramName in stackArgs.UsePreviousValueParameters) {
-      input.Parameters[paramName].UsePreviousValue = true;
-      delete input.Parameters[paramName].ParameterValue;
-    }
+    stackArgs.UsePreviousValueParameters.forEach((paramName, index) => {
+      input.Parameters!.forEach((inputParam, iindex) => {
+        if (inputParam.ParameterKey == paramName) {
+          inputParam.UsePreviousValue = true;
+          delete inputParam.ParameterValue;
+        }
+      })
+    });
   }
 }
 
