@@ -3,6 +3,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as process from 'process';
 
+// reuse http connections to aws to improve perf. Set it here before import of aws.
+process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = '1';
+
 const awsUserDir = process.env.HOME ? path.join(process.env.HOME as string, '.aws') : null;
 if (awsUserDir && fs.existsSync(awsUserDir)) {
   // We need to set this early because of https://github.com/aws/aws-sdk-js/pull/1391
