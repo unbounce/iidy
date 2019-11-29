@@ -57,6 +57,7 @@ function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
 addCFNTagType('Base64', 'scalar');
 addCFNTagType('Base64', 'mapping');
 
+addCFNTagType('CIDR', 'scalar');
 
 // [ MapName, TopLevelKey, SecondLevelKey ]
 export class FindInMap extends Tag<string[]> {}
@@ -73,6 +74,9 @@ addCFNTagType('GetAZs', 'mapping');
 addCFNTagType('GetAZs', 'sequence');
 
 // TODO add !Transform
+
+// http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/continuous-delivery-codepipeline-action-reference.html
+addCFNTagType('GetParam', 'sequence');
 
 // ImportValue will be either a literal string or a !Sub string
 export class ImportValue extends Tag<string | Sub> {}
@@ -96,9 +100,8 @@ addCFNTagType('Sub', 'scalar');
 addCFNTagType('Sub', 'sequence');
 addCFNTagType('Sub', 'mapping');
 
-
-// http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/continuous-delivery-codepipeline-action-reference.html
-addCFNTagType('GetParam', 'sequence');
+// https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-transform.html
+addCFNTagType('Transform', 'mapping');
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-conditions.html
 addCFNTagType('And', 'sequence');
