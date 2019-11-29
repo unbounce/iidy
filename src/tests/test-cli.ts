@@ -6,7 +6,9 @@ import {} from "../cfn/approval/cli";
 import {} from "../cfn/approval/index";
 
 describe('cli', () => {
-  it('--help displays help', async () => {
+  it('--help displays help', async function () {
+    this.timeout(3000); // timesout in test-watch mode sometimes
+
     const parser = buildArgs().exitProcess(false);
     const output = await new Promise((resolve) => {
       parser.parse("--help", (_err: {}, _argv: {}, data: string) => {
