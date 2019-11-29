@@ -199,6 +199,8 @@ data for creating or updating a CloudFormation stack.
 | NotificationARNs | List of [SNS Topic ARNs to send CloudFormation notifications to] | `arn:aws:sns:us-east-1:123467890:my-topic` |
 | TimeoutInMinutes | Number of minutes to provide as [timeout to the CloudFormation service](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html) | `10` |
 | OnFailure | options: `ROLLBACK`, `DELETE`, `DO_NOTHING`, default `ROLLBACK` | `DELETE`
+| DisableRollback | [boolean defaulting to false](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html)
+| EnableTerminationProtection | [boolean defaulting to false](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html)
 | StackPolicy | Location, `https`, or `s3` location of CloudFormation policy document | `policy.json` |
 | ResourceTypes | List of [allowed resource types to create in CloudFormation stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html) | `['AWS::EC2::*']` |
 | CommandsBefore | List of commands to run before `create-` and `update-stack` commands | `['make build']` |
