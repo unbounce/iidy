@@ -511,7 +511,7 @@ export class Visitor {
       const subArg0 = this.visitNode(node.data[0], path, env);
       if (!_.isString(subArg0)) {
         throw new Error(
-          `Invalid argument to !Sub: expected string, got ${node.data[0]}: ${subArg0}`);
+          `Invalid argument to !Sub: expected first member of list to be string, got ${node.data[0]}: ${subArg0}`);
       }
       const templateEnv = node.data[1];
       const subEnv = mkSubEnv(
