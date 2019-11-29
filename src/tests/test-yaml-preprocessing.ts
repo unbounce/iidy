@@ -592,6 +592,28 @@ m: !$merge
 `)).to.deep.equal({m: result});
         });
 
+        it('with a list of maps with first item being an include', async () => {
+          expect(await transform(`
+$defs:
+  map1: ${JSON.stringify(map1)}
+m: !$merge
+    - !$ map1
+    - ${JSON.stringify(map2)}
+    - ${JSON.stringify(map3)}
+`)).to.deep.equal({m: result});
+        });
+
+        it('with a list of maps with last item being an include', async () => {
+          expect(await transform(`
+$defs:
+  map3: ${JSON.stringify(map3)}
+m: !$merge
+    - ${JSON.stringify(map1)}
+    - ${JSON.stringify(map2)}
+    - !$ map3
+`)).to.deep.equal({m: result});
+        });
+
         it('with a string argument referring to a variable', async () => {
           expect(await transform(`
 $defs:

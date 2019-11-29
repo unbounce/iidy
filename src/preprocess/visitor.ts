@@ -343,7 +343,7 @@ export class Visitor {
   }
 
   visit$merge(node: yaml.$merge, path: string, env: Env): AnyButUndefined[] {
-    const input: any = _.isString(node.data) ? this.visit$include(new yaml.$include(node.data), path, env) : node.data;
+    const input: any = _.isString(node.data) ? this.visit$include(new yaml.$include(node.data), path, env) : this.visitNode(node.data, path, env);
     if (!_.isArray(input) && _.every(input, _.isObject)) {
       throw new Error(`Invalid argument to $merge at "${path}".`
         + " Must be array of arrays.");
