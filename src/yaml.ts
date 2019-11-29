@@ -30,10 +30,11 @@ function mkTagClass(tag_name: string) {
 
 const schemaTypes: jsyaml.Type[] = [];
 export const customTags: {[key: string]: typeof Tag} = {};
+export const cfnIntrinsicTags: {[key: string]: typeof Tag} = {};
 
 type Resolver = any;
 
-function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
+function addTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
   const kls = _.has(customTags, tag_name) ? customTags[tag_name] : mkTagClass(tag_name);
   customTags[tag_name] = kls;
   schemaTypes.push(new jsyaml.Type('!' + tag_name, {
@@ -43,6 +44,13 @@ function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
     construct: (data: any) => new kls(data),
     represent: (node: any) => node.data
   }));
+  return kls;
+}
+
+function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
+  const kls = addTagType(tag_name, kind, resolve);
+  cfnIntrinsicTags[tag_name] = kls;
+  return kls;
 }
 
 // http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html
@@ -64,9 +72,10 @@ addCFNTagType('GetAZs', 'scalar');
 addCFNTagType('GetAZs', 'mapping');
 addCFNTagType('GetAZs', 'sequence');
 
+// TODO add !Transform
 
 // ImportValue will be either a literal string or a !Sub string
-export class ImportValue extends Tag<string | object> {}
+export class ImportValue extends Tag<string | Sub> {}
 customTags.ImportValue = ImportValue;
 addCFNTagType('ImportValue', 'scalar');
 addCFNTagType('ImportValue', 'mapping');
@@ -108,9 +117,9 @@ function addCustomTag(name: string | string[], kls: any, resolve?: Resolver) {
     customTags[nm] = kls
     // add all even if primitive types even if only a subset is valid as
     // the error reporting is better handled elsewhere.
-    addCFNTagType(nm, 'scalar', resolve);
-    addCFNTagType(nm, 'sequence', resolve);
-    addCFNTagType(nm, 'mapping', resolve);
+    addTagType(nm, 'scalar', resolve);
+    addTagType(nm, 'sequence', resolve);
+    addTagType(nm, 'mapping', resolve);
   }
 }
 
