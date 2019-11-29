@@ -186,7 +186,15 @@ export class Visitor {
     } else if (node instanceof yaml.Sub) {
       return this.visitSub(node, path, env);
     } else {
-      return node.update(this.visitNode(node.data, path, env));
+      if (_.isArray(node.data)
+        && node.data.length === 1
+        && node.data[0] instanceof yaml.Tag) {
+        // unwrap Tags like !ImportValue [!$ someVar]
+        return node.update(this.visitNode(node.data[0], path, env));
+      } else {
+        return node.update(this.visitNode(node.data, path, env));
+      }
+
     }
   }
 
@@ -259,7 +267,7 @@ export class Visitor {
       if (Number.isSafeInteger(parseInt(part, 10))) {
         newKeyParts.push(part)
       } else {
-        const bracketVal = this.visit$include(new yaml.$include(part), `${path} / ${dynamicKey}` , env);
+        const bracketVal = this.visit$include(new yaml.$include(part), `${path} / ${dynamicKey}`, env);
         if (typeof bracketVal === 'number') {
           newKeyParts.push(String(bracketVal))
         } else if (typeof bracketVal === 'string') {
@@ -373,6 +381,10 @@ export class Visitor {
   }
 
   visit$parseYaml(node: yaml.$parseYaml, path: string, env: Env): AnyButUndefined {
+    if (!_.isString(node.data)) {
+      throw new Error(
+        `Invalid argument to !$parseYaml: expected string, got ${node.data}`);
+    }
     return this.visitNode(yaml.loadString(this.visitString(node.data, path, env), path), path, env);
   }
 
@@ -446,16 +458,30 @@ export class Visitor {
   }
 
   visitRef(node: yaml.Ref, path: string, env: Env): yaml.Ref {
-    return new yaml.Ref(this.maybeRewriteRef(node.data, path, env));
+    const refInput = _.isArray(node.data) ? node.data[0] : node.data;
+    const ref = this.visitNode(refInput, path, env);
+    if (!_.isString(ref)) {
+      throw new Error(
+        `Invalid argument to !Ref: expected string, got ${ref} ${typeof ref}`);
+    }
+
+    return new yaml.Ref(this.maybeRewriteRef(ref, path, env));
   }
 
   visitGetAtt(node: yaml.GetAtt, path: string, env: Env): yaml.GetAtt {
-    if (_.isArray(node.data)) {
-      const argsArray = _.clone(node.data);
+    const arg = this.visitNode(node.data, path, env);
+    if (!(_.isString(arg)
+      || (_.isArray(arg) && _.isString(arg[0])))) {
+      throw new Error(
+        `Invalid argument to !GetAtt: expected string or list, got ${node.data}
+         type=${typeof node.data}`);
+    }
+    if (_.isArray(arg)) {
+      const argsArray = _.clone(arg);
       argsArray[0] = this.maybeRewriteRef(argsArray[0], path, env);
-      return new yaml.GetAtt(argsArray);
-    } else { // it's a string
-      return new yaml.GetAtt(this.maybeRewriteRef(node.data, path, env));
+      return new yaml.GetAtt(argsArray.length === 1 ? argsArray[0] : argsArray);
+    } else { // it should be a string
+      return new yaml.GetAtt(this.maybeRewriteRef(arg, path, env));
     }
   }
 
@@ -475,13 +501,26 @@ export class Visitor {
 
   visitSub(node: yaml.Sub, path: string, env: Env): yaml.Sub {
     if (_.isArray(node.data) && node.data.length === 1) {
-      return new yaml.Sub(this.visitSubStringTemplate(this.visitNode(node.data[0], path, env), path, env));
+      const subArg = this.visitNode(node.data[0], path, env);
+      if (!_.isString(subArg)) {
+        throw new Error(
+          `Invalid argument to !Sub: expected string, got ${node.data[0]}`);
+      }
+      return new yaml.Sub(this.visitSubStringTemplate(subArg, path, env));
     } else if (_.isArray(node.data) && node.data.length === 2) {
+      const subArg0 = this.visitNode(node.data[0], path, env);
+      if (!_.isString(subArg0)) {
+        throw new Error(
+          `Invalid argument to !Sub: expected string, got ${node.data[0]}: ${subArg0}`);
+      }
       const templateEnv = node.data[1];
       const subEnv = mkSubEnv(
-        env, {...env.$envValues, $globalRefs: _.fromPairs(_.map(_.keys(templateEnv), (k) => [k, true]))},
+        env, {
+        ...env.$envValues, $globalRefs: _.fromPairs(
+          _.map(_.keys(templateEnv), (k) => [k, true]))
+      },
         {path});
-      const template = this.visitSubStringTemplate(this.visitNode(node.data[0], path, env), path, subEnv);
+      const template = this.visitSubStringTemplate(subArg0, path, subEnv);
       return new yaml.Sub([template, this.visitNode(templateEnv, path, env)]);
     } else if (_.isString(node.data)) {
       return new yaml.Sub(this.visitSubStringTemplate(node.data, path, env));
@@ -493,7 +532,7 @@ export class Visitor {
   visitNode(node: any, path: string, env: Env): any {
     const currNode = path.split('.').pop();
     // Avoid serializing large `env` data when debug is not enabled
-    if(logger.isDebugEnabled()) {
+    if (logger.isDebugEnabled()) {
       logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
     }
     const result = (() => {
@@ -516,7 +555,7 @@ export class Visitor {
         return node;
       }
     })();
-    if(logger.isDebugEnabled()) {
+    if (logger.isDebugEnabled()) {
       logger.debug(`exiting ${path}:`, {result, node, env});;
     }
     return result;
@@ -583,7 +622,7 @@ export class Visitor {
         const sub: any = this.visitNode(node[k], appendPath(path, k), env);
         for (const k2 in sub) {
           // mutate in place to acheive a deep merge
-          _.merge(res, {[this.visitString(k2, path, env)]: sub[k2]});
+          _.merge(res, {[this.visitNode(k2, path, env)]: sub[k2]});
         }
         // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions
         //} else if ( .. Fn:Ref, etc. ) {
@@ -591,7 +630,7 @@ export class Visitor {
         // we don't want to include things like $imports and $envValues in the output doc
         continue;
       } else {
-        res[this.visitString(k, path, env)] = this.visitNode(node[k], appendPath(path, k), env);
+        res[this.visitNode(k, path, env)] = this.visitNode(node[k], appendPath(path, k), env);
       }
     }
     return res;
@@ -606,6 +645,7 @@ export class Visitor {
   }
 
   visitString(node: string, path: string, env: Env): string {
+    // NOTE: devs, please assert node is string before calling this
     let res: string;
     if (node.search(HANDLEBARS_RE) > -1) {
       res = this.visitHandlebarsString(node, path, env);
@@ -632,7 +672,7 @@ export class Visitor {
       if (k.indexOf('$merge') === 0) {
         const sub: any = visitor.visitNode(node[k], appendPath(path, k), env);
         for (const k2 in sub) {
-          expanded[visitor.visitString(k2, path, env)] = sub[k2];
+          expanded[visitor.visitNode(k2, path, env)] = sub[k2];
         }
       } else if (_.includes(extendedCfnDocKeys, k)) {
         continue;

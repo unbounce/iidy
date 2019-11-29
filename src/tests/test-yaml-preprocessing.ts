@@ -82,6 +82,31 @@ describe('Yaml pre-processing', () => {
       }
     });
 
+    it('leaves AWS Intrinsic functions (!Sub, !Ref, ...) unchanged', () => {
+      const input = {
+        GetAtt_a: new yaml.GetAtt('arg0'),
+        GetAtt_b: {"Fn::GetAtt": 'arg0'},
+        GetAtt_c: new yaml.GetAtt(['logical', 'attrname']),
+
+        GetParam_a: new yaml.customTags['GetParam']('arg0'),
+        GetParam_b: {"Fn::GetParam": 'arg0'},
+
+        GetAZs_a: new yaml.customTags['GetAZs']('arg0'),
+        GetAZs_b: {"Fn::GetAZs": 'arg0'},
+
+        ImportValue_a: new yaml.ImportValue('arg0'),
+        ImportValue_with_sub: new yaml.ImportValue(new yaml.Sub('arg0')),
+
+        Ref_a: new yaml.Ref('arg0'),
+        Ref_b: {Ref: 'arg0'},
+
+        Sub_x: new yaml.Sub('arg0'),
+        Sub_y: new yaml.Sub(['arg0', {a: 'a'}]),
+        Sub_z: new yaml.Sub(['${a}', {a: 'a'}])
+      };
+      expect(transformNoImport(input)).to.deep.equal(input);
+    });
+
   });
   //////////////////////////////////////////////////////////////////////
   describe('$imports:', () => {
@@ -158,25 +183,54 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
   //////////////////////////////////////////////////////////////////////
   describe('$defs:', () => {
 
-    it('basic usage with !$ works', async () => {
+    it('basic usage with !$ works', () => {
 
-      expect(await transform({$defs: {a: 'b'}, out: '{{a}}'}))
+      expect(transformNoImport(
+        {$envValues: {a: 'b'}, out: '{{a}}'}))
         .to.deep.equal({out: 'b'});
 
-      expect(await transform({$defs: {a: 'b'}, out: new yaml.$include('a')}))
+      expect(transformNoImport(
+        {$envValues: {a: 'b'}, out: new yaml.$include('a')}))
         .to.deep.equal({out: 'b'});
 
-      expect(await transform({$defs: {a: {b: 'c'}}, out: '{{a.b}}'}))
+      expect(transformNoImport(
+        {$envValues: {a: {b: 'c'}}, out: '{{a.b}}'}))
         .to.deep.equal({out: 'c'});
 
-      expect(await transform({
-        $defs: {a: new yaml.$include('b'), b: 'xref'},
+      expect(transformNoImport({
+        $envValues: {a: new yaml.$include('b'), b: 'xref'},
         out: new yaml.$include('a')
       }))
         .to.deep.equal({out: 'xref'});
     });
-  });
 
+    it('!$ works inside AWS Intrinsic functions', () => {
+      for (const [tag_name, ctor] of Object.entries(yaml.cfnIntrinsicTags)) {
+        try {
+          expect(transformNoImport({
+            $envValues: {a: 'abc'},
+            out: new ctor([new yaml.$include('a')]) // list required
+          }))
+            .to.deep.equal({out: new ctor('abc')});
+
+          expect(transformNoImport({
+            $envValues: {a: 'abc'},
+            out: new ctor('{{a}}')
+          }))
+            .to.deep.equal({out: new ctor('abc')});
+
+          expect(transformNoImport({
+            $envValues: {a: '{{xref}}', xref: 'abc'},
+            out: new ctor('{{a}}')
+          }))
+            .to.deep.equal({out: new ctor('abc')});
+        } catch (err) {
+          err.message = `${tag_name}: ${err.message}`;
+          throw err;
+        }
+      }
+    });
+  });
   //////////////////////////////////////////////////////////////////////
   describe('{{handlebars}} syntax', () => {
 
