@@ -82,7 +82,7 @@ export const mkSubEnv = (env: Env, $envValues: $EnvValues, frame: MaybeStackFram
 const _liftKVPairs = (objects: {key: string, value: any}[]) =>
   _.fromPairs(_.map(objects, ({key, value}) => [key, value]))
 
-export const extendedCfnDocKeys = [
+export const iidyDollarKeywordsAndInternalKeys = [
   '$imports',
   '$defs',
   '$params',
@@ -90,36 +90,6 @@ export const extendedCfnDocKeys = [
   '$envValues'
 ];
 
-function mapCustomResourceToGlobalSections(
-  resourceDoc: ExtendedCfnDoc,
-  path: string,
-  env: Env
-): void {
-
-  _.forEach(GlobalSectionNames, (section: GlobalSection) => {
-    if (resourceDoc[section]) {
-      const visitor = new Visitor();
-      const res = _.merge(
-        env.GlobalAccumulator[section], // mutate in place
-        _.fromPairs(
-          // TOOD is this the right place to be visiting the subsections
-          _.map(_.toPairs(visitor.visitNode(resourceDoc[section], appendPath(path, section), env)),
-            ([k, v]: [string, any]) => {
-              const isGlobal = _.has(v, '$global');
-              delete v.$global;
-              if (isGlobal) {
-                // TODO validate that there is no clash with
-                // values already in env.GlobalAccumulator
-                return [k, v];
-              } else {
-                return [`${env.$envValues.Prefix}${k}`, v];
-              }
-            }))
-      );
-      return res;
-    }
-  });
-}
 
 function lookupInEnv(key: string, path: string, env: Env): AnyButUndefined {
   if (typeof key !== 'string') { // tslint:disable-line
@@ -626,7 +596,7 @@ export class Visitor {
         }
         // TODO handle ref rewriting on the Fn:Ref, Fn:GetAtt type functions
         //} else if ( .. Fn:Ref, etc. ) {
-      } else if (_.includes(extendedCfnDocKeys, k)) {
+      } else if (_.includes(iidyDollarKeywordsAndInternalKeys, k)) {
         // we don't want to include things like $imports and $envValues in the output doc
         continue;
       } else {
@@ -665,19 +635,19 @@ export class Visitor {
     return res;
   }
 
+  // Special handling for CloudFormation `Resource` entries and iidy custom Resource templates.
   visitResourceNode(node: any, path: string, env: Env): AnyButUndefined {
-    const visitor = new Visitor();
     const expanded: {[key: string]: any} = {};
     for (const k in node) {
       if (k.indexOf('$merge') === 0) {
-        const sub: any = visitor.visitNode(node[k], appendPath(path, k), env);
+        const sub: any = this.visitNode(node[k], appendPath(path, k), env);
         for (const k2 in sub) {
-          expanded[visitor.visitNode(k2, path, env)] = sub[k2];
+          expanded[this.visitNode(k2, path, env)] = sub[k2];
         }
-      } else if (_.includes(extendedCfnDocKeys, k)) {
+      } else if (_.includes(iidyDollarKeywordsAndInternalKeys, k)) {
         continue;
       } else {
-        expanded[visitor.visitString(k, path, env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
+        expanded[this.visitString(k, path, env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
       }
     }
     return this._visitResourceNode(expanded, path, env);
@@ -685,7 +655,6 @@ export class Visitor {
 
   // TODO tighten up the return type here: {[key: string]: any}
   _visitResourceNode(node: object, path: string, env: Env): AnyButUndefined {
-    const visitor = new Visitor();
     return _.fromPairs(
       _flatten( // as we may output > 1 resource for each template
         _.map(_.toPairs(node), ([name, resource]) => {
@@ -694,7 +663,7 @@ export class Visitor {
           } else if (resource.Type &&
             (resource.Type.indexOf('AWS') === 0
               || resource.Type.indexOf('Custom') === 0)) {
-            return [[name, visitor.visitNode(resource, appendPath(path, name), env)]]
+            return [[name, this.visitNode(resource, appendPath(path, name), env)]]
           } else {
             throw new Error(
               `Invalid resource type: ${resource.Type} at ${path}: ${JSON.stringify(resource, null, ' ')}`)
@@ -712,10 +681,9 @@ export class Visitor {
     // TODO s/NamePrefix/$namePrefix/
     const prefix = _.isUndefined(resource.NamePrefix) ? name : resource.NamePrefix;
     const stackFrame = {location: template.$location, path: appendPath(path, name)};
-    const visitor = new Visitor();
     const resourceDoc = _.merge(
       {}, template,
-      visitor.visitNode(resource.Overrides,
+      this.visitNode(resource.Overrides,
         appendPath(path, `${name}.Overrides`),
         // This is pre template expansion so the names
         // used by $include, etc. must be in scope of the current
@@ -742,10 +710,10 @@ export class Visitor {
         _.map(
           template.$params,
           (v) => [v.Name,
-          visitor.visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
+          this.visitNode(v.Default, appendPath(path, `${name}.$params.${v.Name}`), $paramDefaultsEnv)]),
         ([_k, v]) => !_.isUndefined(v)));
 
-    const providedParams = visitor.visitNode(resource.Properties, appendPath(path, `${name}.Properties`), env);
+    const providedParams = this.visitNode(resource.Properties, appendPath(path, `${name}.Properties`), env);
     // TODO factor this out:
     // TODO validate providedParams against template.$params[].type json-schema
     // ! 1 find any missing params with no defaults
@@ -766,9 +734,9 @@ export class Visitor {
 
     // TODO consider just visitNode on the entire resourceDoc here
     //      ... that requires finding a way to avoid double processing of .Resources
-    const outputResources = visitor.visitNode(resourceDoc.Resources, appendPath(path, `${name}.Resources`), subEnv)
+    const outputResources = this.visitNode(resourceDoc.Resources, appendPath(path, `${name}.Resources`), subEnv)
     // this will call visitNode on each section as it goes. See above ^
-    mapCustomResourceToGlobalSections(resourceDoc, path, subEnv);
+    this._mapCustomResourceToGlobalSections(resourceDoc, path, subEnv);
 
     // TODO allow individual output resources to have distinct $namePrefixes
     //    prefix could be a map of resname: prefix
@@ -782,6 +750,32 @@ export class Visitor {
         return [resname, val];
       } else {
         return [`${subEnv.$envValues.Prefix}${resname}`, val];
+      }
+    });
+  }
+
+  _mapCustomResourceToGlobalSections(resourceDoc: ExtendedCfnDoc, path: string, env: Env): void {
+
+    _.forEach(GlobalSectionNames, (section: GlobalSection) => {
+      if (resourceDoc[section]) {
+        const res = _.merge(
+          env.GlobalAccumulator[section], // mutate in place
+          _.fromPairs(
+            // TOOD is this the right place to be visiting the subsections
+            _.map(_.toPairs(this.visitNode(resourceDoc[section], appendPath(path, section), env)),
+              ([k, v]: [string, any]) => {
+                const isGlobal = _.has(v, '$global');
+                delete v.$global;
+                if (isGlobal) {
+                  // TODO validate that there is no clash with
+                  // values already in env.GlobalAccumulator
+                  return [k, v];
+                } else {
+                  return [`${env.$envValues.Prefix}${k}`, v];
+                }
+              }))
+        );
+        return res;
       }
     });
   }
