@@ -32,6 +32,7 @@ import {_getParamsByPath} from '../params';
 import {Visitor} from './visitor';
 
 handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
+handlebars.registerHelper('tojsonPretty', (context: any) => JSON.stringify(context, null, ' '));
 handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
 handlebars.registerHelper('base64', (context: any) => Buffer.from(context).toString('base64'));
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
