@@ -205,7 +205,7 @@ data for creating or updating a CloudFormation stack.
 | ResourceTypes | List of [allowed resource types to create in CloudFormation stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html) | `['AWS::EC2::*']` |
 | CommandsBefore | List of commands to run before `create-` and `update-stack` commands | `['make build']` |
 | UsePreviousTemplate | for updates, [boolean defaulting to false](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_UpdateStack.html)
-| UsePreviousValueParameters | list of parameter names for updates, [equivalent to UsePreviousValue](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_Parameter.html)
+| UsePreviousParameterValues | list of parameter names for updates, [equivalent to UsePreviousValue](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_Parameter.html)
 
 #### Example
 
