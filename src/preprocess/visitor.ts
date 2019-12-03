@@ -658,6 +658,10 @@ export class Visitor {
     return _.fromPairs(
       _flatten( // as we may output > 1 resource for each template
         _.map(_.toPairs(node), ([name, resource]) => {
+          if (_.has(resource, 'DependsOn')) {
+            resource.DependsOn = this.maybeRewriteRef(
+              resource.DependsOn, appendPath(path, 'DependsOn'), env);
+          }
           if (_.has(env.$envValues, resource.Type)) {
             return this.visitCustomResource(name, resource, path, env);
           } else if (resource.Type &&
