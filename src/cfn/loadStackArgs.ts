@@ -24,7 +24,7 @@ function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   }) as T;
 }
 
-async function applySnsNotificationGlobalConfiguration(args: StackArgs, TopicArn: string) {
+async function applySnsNotificationGlobalConfiguration(args: StackArgs, TopicArn: string): Promise<void> {
   const sns = new aws.SNS();
   if (await sns.getTopicAttributes({TopicArn}).promise().return(true).catchReturn(false)) {
     args.NotificationARNs = (args.NotificationARNs || []).concat(TopicArn);
@@ -34,7 +34,7 @@ async function applySnsNotificationGlobalConfiguration(args: StackArgs, TopicArn
   }
 }
 
-export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SSM()): Promise<StackArgs> {
+export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SSM()): Promise<void> {
   try {
     const {Parameters} = await ssm.getParametersByPath({Path: '/iidy/', WithDecryption: true}).promise();
     if (Parameters) {
@@ -46,7 +46,7 @@ export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SS
             }
             break;
           case '/iidy/disable-template-approval':
-            if (args.ApprovedTemplateLocation) {
+            if (parameter.Value && parameter.Value.match(/true/i) && args.ApprovedTemplateLocation) {
               logger.info(`Disabling template approval based on global ${parameter.Name} parameter store configuration`);
               delete args.ApprovedTemplateLocation;
             }
@@ -57,7 +57,6 @@ export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SS
   } catch (e) {
     logger.debug(`Failed to fetch global configuration from parameter store, path /iidy/`);
   }
-  return args;
 }
 
 export async function _loadStackArgs(
@@ -184,5 +183,6 @@ export async function loadStackArgs(
   if (argv.clientRequestToken) {
     args.ClientRequestToken = argv.clientRequestToken;
   }
-  return applyGlobalConfiguration(args);
+  await applyGlobalConfiguration(args);
+  return args;
 }
