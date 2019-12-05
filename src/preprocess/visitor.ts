@@ -658,9 +658,21 @@ export class Visitor {
     return _.fromPairs(
       _flatten( // as we may output > 1 resource for each template
         _.map(_.toPairs(node), ([name, resource]) => {
+          if (_.has(resource, 'Condition')) {
+            resource.Condition = this.maybeRewriteRef(
+              resource.Condition, appendPath(path, 'Condition'), env);
+          }
           if (_.has(resource, 'DependsOn')) {
-            resource.DependsOn = this.maybeRewriteRef(
-              resource.DependsOn, appendPath(path, 'DependsOn'), env);
+            if (_.isArray(resource.DependsOn)) {
+              const subPath = appendPath(path, 'DependsOn');
+              resource.DependsOn = _.map(resource.DependsOn, (item: any, idx: number) => {
+                return this.maybeRewriteRef(item, appendPath(subPath, idx.toString()), env);
+              });
+            }
+            else {
+              resource.DependsOn = this.maybeRewriteRef(
+                resource.DependsOn, appendPath(path, 'DependsOn'), env);
+            }
           }
           if (_.has(env.$envValues, resource.Type)) {
             return this.visitCustomResource(name, resource, path, env);
