@@ -24,21 +24,39 @@ function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   }) as T;
 }
 
-async function addDefaultNotificationArn(args: StackArgs): Promise<StackArgs> {
-  const ssm = new aws.SSM();
-  const ssmLookup = await ssm.getParameter(
-    {Name: '/iidy/default-notification-arn', WithDecryption: true}).promise().catch(() => null);
-  if (ssmLookup && ssmLookup.Parameter && ssmLookup.Parameter.Value) {
-    const TopicArn = ssmLookup.Parameter.Value;
-    const sns = new aws.SNS();
-    if (await sns.getTopicAttributes({TopicArn}).promise().return(true).catchReturn(false)) {
-      args.NotificationARNs = (args.NotificationARNs || []).concat(TopicArn);
-    } else {
-      logger.warn(
-        `iidy's default NotificationARN set in this region is invalid: ${TopicArn}`);
-    }
+async function applySnsNotificationGlobalConfiguration(args: StackArgs, TopicArn: string): Promise<void> {
+  const sns = new aws.SNS();
+  if (await sns.getTopicAttributes({TopicArn}).promise().return(true).catchReturn(false)) {
+    args.NotificationARNs = (args.NotificationARNs || []).concat(TopicArn);
+  } else {
+    logger.warn(
+      `iidy's default NotificationARN set in this region is invalid: ${TopicArn}`);
   }
-  return args;
+}
+
+export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SSM()): Promise<void> {
+  try {
+    const {Parameters} = await ssm.getParametersByPath({Path: '/iidy/', WithDecryption: true}).promise();
+    if (Parameters) {
+      for (const parameter of Parameters) {
+        switch(parameter.Name) {
+          case '/iidy/default-notification-arn':
+            if (parameter.Value) {
+              await applySnsNotificationGlobalConfiguration(args, parameter.Value);
+            }
+            break;
+          case '/iidy/disable-template-approval':
+            if (parameter.Value && parameter.Value.match(/true/i) && args.ApprovedTemplateLocation) {
+              logger.info(`Disabling template approval based on global ${parameter.Name} parameter store configuration`);
+              delete args.ApprovedTemplateLocation;
+            }
+            break;
+        }
+      }
+    }
+  } catch (e) {
+    logger.debug(`Failed to fetch global configuration from parameter store, path /iidy/`);
+  }
 }
 
 export async function _loadStackArgs(
@@ -165,5 +183,6 @@ export async function loadStackArgs(
   if (argv.clientRequestToken) {
     args.ClientRequestToken = argv.clientRequestToken;
   }
-  return addDefaultNotificationArn(args);
+  await applyGlobalConfiguration(args);
+  return args;
 }

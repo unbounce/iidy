@@ -357,6 +357,19 @@ modules (what Node uses). See the `Makefile` and the script commands in
 Please format all files with `tsfmt` and remove extra whitespace before
 submitting a PR.
 
+## Global Configuration
+
+Some iidy features can be configured globally via [SSM Parameter
+Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
+configurations.
+
+| Parameter | Value |Description |
+|-----------|-------|------------|
+| `/iidy/default-notification-arn` | An ARN, eg. `"arn:aws:sns:us-east-1:0123456789:mytopic"` | Provides a value for `NotificationARNs` if it is not set |
+| `/iidy/disable-template-approval` | Must be the string `"true"` | Unsets `ApprovedTemplateLocation` to disable the template approval process |
+
+**Note** that SSM Parameter Store values are isolated to the AWS Account and Region they are set in.
+
 ## License
 
 MIT.
