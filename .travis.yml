@@ -1,5 +1,7 @@
 language: node_js
 node_js:
   - "9"
+env:
+  - SKIP_IIDY_AWS_TEST=yes
 before_install:
   - rm yarn.lock # prefer npm until yarn / typescript issue fixed
