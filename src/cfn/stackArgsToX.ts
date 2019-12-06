@@ -15,8 +15,8 @@ export function _normalizeUsePreviousTemplateOrParamValues(stackArgs: StackArgs,
   input.UsePreviousTemplate = stackArgs.UsePreviousTemplate;
   if (stackArgs.UsePreviousParameterValues
     && input.Parameters) {
-    stackArgs.UsePreviousParameterValues.forEach((paramName, index) => {
-      input.Parameters!.forEach((inputParam, index) => {
+    stackArgs.UsePreviousParameterValues.forEach((paramName, _index) => {
+      input.Parameters!.forEach((inputParam, _index) => {
         if (inputParam.ParameterKey == paramName) {
           inputParam.UsePreviousValue = true;
           delete inputParam.ParameterValue;
