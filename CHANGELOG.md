@@ -1,9 +1,39 @@
 ### Changelog
 
-#### [1.10.0](https://github.com/unbounce/iidy/compare/v1.9.0...v1.10.0)
+#### [v1.10.0](https://github.com/unbounce/iidy/compare/v1.9.0...v1.10.0)
 
 > 6 December 2019
 
+##### Merged PRs
+- #220 - @tavisrudd - npm audit fix
+- #207 - @tavisrudd - implement UsePreviousParameterValues per #170
+- #217 - @tavisrudd - fix missing reference rewrites in custom resource tmpl DependsOn
+- #218 - @jpb - Add parameter store global configuration to disable template approval
+- #216 - @tavisrudd - complete the refactoring of visitResourceNode, etc.
+- #212 - @tavisrudd - add missing stack-args options in README
+- #215 - @tavisrudd - Add missing cfn intrinsic fn tags: CIDR, Transform
+- #214 - @tavisrudd - normalize handling of $! inside cfn tags like !Sub + tests
+- #211 - @tavisrudd - add `tojsonPretty` mustache helper to output newlines in json
+- #210 - @tavisrudd - fix bug in !$merge: !$ tags in the input not being processed
+- #209 - @tavisrudd - reuse http connections to aws to improve perf via env-var setting
+- #208 - @kalupa - Bump cli-color to 2.0.0
+- #206 - @tavisrudd - bump laundry-cfn to v1.4.0
+- #202 - @tavisrudd - Bump deps oct 2019
+- #201 - @tavisrudd - add support for aws-vault profiles and aws `credential_process`
+- #204 - @rymndhng - Normalize iidy command for template-approval
+- #200 - @jpb - Fixes a performance regression between v1.6.5..v1.6.6-rc2
+- #199 - @tavisrudd - Update aws-sdk
+- #192 - @dependabot[bot] - Bump lodash from 4.17.11 to 4.17.13
+- #194 - @dependabot[bot] - Bump sshpk from 1.13.1 to 1.16.1
+- #191 - @dependabot[bot] - Bump mixin-deep from 1.3.1 to 1.3.2
+- #193 - @dependabot[bot] - Bump extend from 3.0.1 to 3.0.2
+- #197 - @dependabot[bot] - Bump debug from 2.6.8 to 2.6.9
+- #198 - @frodeaa - FIX: convert stack output Version format
+- #190 - @jpb - CO-1436 Migrate GitHub Actions HCL to YAML
+- #188 - @jpb - Write error-level logs to stderr
+- #183 - @tavisrudd - beef up tests and add nyc for coverage reporting
+
+##### Commits (reverse chronological)
 - Add parameter store global configuration to disable template approval [`#218`](https://github.com/unbounce/iidy/pull/218)
 - CO-1436 Migrate GitHub Actions HCL to YAML [`#190`](https://github.com/unbounce/iidy/pull/190)
 - Write error-level logs to stderr [`#188`](https://github.com/unbounce/iidy/pull/188)

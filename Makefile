@@ -40,12 +40,18 @@ clean :								## Clean the dist/ directory (binaries, etc.)
 fullclean : clean ## Clean dist, node_modules and .make (make state tracking)
 	rm -rf .make node_modules
 
+changelog:
+	@echo Changelog:
+	@bin/gen-changelog
+
 package: SHELL:=/bin/bash
 package: $(RELEASE_PACKAGES)
 	@git diff --quiet --ignore-submodules HEAD || echo -e '\x1b[0;31mWARNING: git workding dir not clean\x1b[0m'
 	@echo
 	@ls -alh dist/*zip
 	@shasum -p -a 256 dist/* || true
+	@echo
+	make changelog
 	@echo
 	@echo open dist/
 
