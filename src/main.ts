@@ -457,6 +457,16 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
             + 'Use --assume-role-arn=no-role to override values in stack-args.yaml and use AWS_* env vars.')
         })
 
+        .option('color', {
+          type: 'string', default: 'auto',
+          choices: ['auto', 'always', 'never'],
+          description: description('whether to color output using ANSI escape codes')
+        })
+        .middleware((args) => {
+          if (args.color === 'never' || (args.color === 'auto' && ! process.stdout.columns)) {
+            process.env.NO_COLOR='1';
+          }
+        })
         .option('debug', {
           type: 'boolean', default: false,
           description: description('log debug information to stderr.')
