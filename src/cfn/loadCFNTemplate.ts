@@ -24,7 +24,7 @@ export async function loadCFNTemplate(location0: string, baseLocation: string, e
   // relative imports. This is probably an edge-case we don't need to
   // support but it's worth noting.
   if (!shouldRender && location.match(/^s3:/)) {
-    throw new Error(`Use https:// urls when using a plain (non-rendered) Template from S3: ${location}`);
+    throw new Error(`Use https:// S3 path-based urls when using a plain (non-rendered) Template from S3: ${location}`);
     // note, s3 urls are valid for the shouldRender case below
   }
   else if (!shouldRender && location.match(/^http/)) {

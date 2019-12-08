@@ -2,11 +2,10 @@ import * as aws from 'aws-sdk'
 import * as url from 'url';
 
 function parseS3HttpUrl(input: string) {
-  const error = new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
   const uri = url.parse(input);
 
   if (typeof uri === "undefined") {
-    throw error;
+    throw new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
   } else {
     let bucket, key, region;
     const hostname = uri.hostname || '';
@@ -19,7 +18,7 @@ function parseS3HttpUrl(input: string) {
       bucket = hostname.split('.')[0];
       key = pathname.slice(1);
     } else {
-      throw error;
+      throw new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
     }
 
     if (/^s3\.amazonaws\.com/.test(uri.hostname || '')) {
@@ -29,7 +28,7 @@ function parseS3HttpUrl(input: string) {
       if (match[1]) {
         region = match[1];
       } else {
-        throw error;
+        throw new Error(`HTTP URL '${input}' is not a well-formed S3 URL`);
       }
     }
 
