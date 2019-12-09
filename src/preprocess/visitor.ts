@@ -638,23 +638,28 @@ export class Visitor {
   // Special handling for CloudFormation `Resource` entries and iidy custom Resource templates.
   visitResourceNode(node: any, path: string, env: Env): AnyButUndefined {
     if (node instanceof yaml.Tag) {
-      return this.visitResourceNode(this.visitNode(node, appendPath(path, '$Preprocess'), env), path, env);
-    } // else
-    const expanded: {[key: string]: any} = {};
-    for (const k in node) {
-      if (k.indexOf('$merge') === 0) {
-        const sub: any = this.visitNode(node[k], appendPath(path, k), env);
-        for (const k2 in sub) {
-          expanded[this.visitString(k2, appendPath(path, `key:${k2}`), env)] = sub[k2];
-          //            ^ rather than visitNode as that could land us back here.
-        }
-      } else if (_.includes(iidyDollarKeywordsAndInternalKeys, k)) {
-        continue;
-      } else {
-        expanded[this.visitString(k, appendPath(path, `key:${k}`), env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
+      const resolved = this.visitNode(node, appendPath(path, `!${node.constructor.name}`), env);
+      if (resolved instanceof yaml.Tag) {
+        throw new Error(`Invalid value for cloudformation Resources node: ${node}`);
       }
+      return this.visitResourceNode(resolved, path, env);
+    } else {
+      const expanded: {[key: string]: any} = {};
+      for (const k in node) {
+        if (k.indexOf('$merge') === 0) {
+          const sub: any = this.visitNode(node[k], appendPath(path, k), env);
+          for (const k2 in sub) {
+            expanded[this.visitString(k2, appendPath(path, `key:${k2}`), env)] = sub[k2];
+            //            ^ rather than visitNode as that could land us back here.
+          }
+        } else if (_.includes(iidyDollarKeywordsAndInternalKeys, k)) {
+          continue;
+        } else {
+          expanded[this.visitString(k, appendPath(path, `key:${k}`), env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
+        }
+      }
+      return this._visitResourceNode(expanded, path, env);
     }
-    return this._visitResourceNode(expanded, path, env);
   }
 
   // TODO tighten up the return type here: {[key: string]: any}
