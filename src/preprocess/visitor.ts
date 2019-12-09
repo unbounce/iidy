@@ -642,12 +642,13 @@ export class Visitor {
       if (k.indexOf('$merge') === 0) {
         const sub: any = this.visitNode(node[k], appendPath(path, k), env);
         for (const k2 in sub) {
-          expanded[this.visitString(k2, path, env)] = sub[k2];
+          expanded[this.visitString(k2, appendPath(path, `key:${k2}`), env)] = sub[k2];
+          //            ^ rather than visitNode as that could land us back here.
         }
       } else if (_.includes(iidyDollarKeywordsAndInternalKeys, k)) {
         continue;
       } else {
-        expanded[this.visitString(k, path, env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
+        expanded[this.visitString(k, appendPath(path, `key:${k}`), env)] = node[k]; // TODO? visitNode(node[k], appendPath(path, k), env);
       }
     }
     return this._visitResourceNode(expanded, path, env);
