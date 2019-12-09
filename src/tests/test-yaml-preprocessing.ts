@@ -320,6 +320,11 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.equal({out: '{"b":9}'});
       });
 
+      it('tojsonPretty', async () => {
+        expect(await transform({$defs: {a: {b: {c: 9}}}, out: '{{tojsonPretty a}}'}))
+          .to.deep.equal({out: '{\n \"b\": {\n  \"c\": 9\n }\n}'});
+      });
+
       it('toyaml', async () => {
         expect(await transform({$defs: {a: {b: 9}}, out: '{{toyaml a}}'}))
           .to.deep.equal({out: 'b: 9\n'});
