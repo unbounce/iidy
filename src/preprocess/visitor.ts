@@ -637,6 +637,9 @@ export class Visitor {
 
   // Special handling for CloudFormation `Resource` entries and iidy custom Resource templates.
   visitResourceNode(node: any, path: string, env: Env): AnyButUndefined {
+    if (node instanceof yaml.Tag) {
+      return this.visitResourceNode(this.visitNode(node, appendPath(path, '$Preprocess'), env), path, env);
+    } // else
     const expanded: {[key: string]: any} = {};
     for (const k in node) {
       if (k.indexOf('$merge') === 0) {
