@@ -642,7 +642,7 @@ export class Visitor {
       if (k.indexOf('$merge') === 0) {
         const sub: any = this.visitNode(node[k], appendPath(path, k), env);
         for (const k2 in sub) {
-          expanded[this.visitNode(k2, path, env)] = sub[k2];
+          expanded[this.visitString(k2, path, env)] = sub[k2];
         }
       } else if (_.includes(iidyDollarKeywordsAndInternalKeys, k)) {
         continue;
