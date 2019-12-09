@@ -82,6 +82,11 @@ describe('Yaml pre-processing', () => {
       }
     });
 
+    it('warns about invalid Cloudformation Resources node with a yaml tag rather than a map', () => {
+      const input = {Resources: new yaml.Sub("a")};
+      expect(() => transformNoImport(input)).to.throw();
+    });
+
     it('leaves AWS Intrinsic functions (!Sub, !Ref, ...) unchanged', () => {
       const input = {
         GetAtt_a: new yaml.GetAtt('arg0'),
@@ -230,6 +235,18 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
         }
       }
     });
+
+    it('!$ works at the top level in the cloudformation Resources node', () => {
+      const waitConditionResource = {
+        Type: 'AWS::CloudFormation::WaitConditionHandle',
+        Parameters: {}};
+      expect(transformNoImport({
+        $envValues: {a: {Resource1: waitConditionResource}},
+        Resources: new yaml.$include('a')
+      }).Resources)
+        .to.deep.equal({Resource1: waitConditionResource});
+    });
+
   });
   //////////////////////////////////////////////////////////////////////
   describe('{{handlebars}} syntax', () => {
