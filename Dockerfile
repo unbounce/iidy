@@ -17,7 +17,7 @@ RUN apk update && apk add --no-cache binutils git \
 # We run pkg twice. First to grab the base binary then again after we strip it.
 # This strips 8Mb off the total image size.
 
-FROM alpine:3.6
+FROM alpine:3.9
 
 RUN apk --no-cache add libstdc++ git
 
