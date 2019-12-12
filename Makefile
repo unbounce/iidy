@@ -45,7 +45,7 @@ package: $(RELEASE_PACKAGES)
 	@git diff --quiet --ignore-submodules HEAD || echo -e '\x1b[0;31mWARNING: git workding dir not clean\x1b[0m'
 	@echo
 	@ls -alh dist/*zip
-	@shasum -p -a 256 dist/* || true
+	@shasum -a 256 dist/* || true
 	@echo
 	@echo open dist/
 
