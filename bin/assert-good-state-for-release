@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+trap "exit 1" TERM
+export TOP_PID="$$"
+die() {
+    echo ">> ERROR: $@" 1>&2
+    # this next line is required because we are using subshells and we
+    # want to terminate the top level script not just the subshell
+    kill -s TERM $TOP_PID
+    exit 1
+}
+
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+RELEASE_TAG_VERSION="$(git tag --sort 'version:refname' | tail -n1)"
+PACKAGE_VERSION="$(jq -r .version < "${ROOT_DIR}/package.json")"
+
+assert_on_master() {
+  local CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+  [[ $CURRENT_BRANCH == 'master' ]] || die "Not on master branch: ${CURRENT_BRANCH}"
+}
+
+assert_versions_match() {
+  [[ $RELEASE_TAG_VERSION == v$PACKAGE_VERSION ]] || \
+    die "Version mismatch between latest tag and package.json: $RELEASE_TAG_VERSION != v$PACKAGE_VERSION";
+}
+
+assert_no_commits_since_version_tag() {
+  local NEWER_COMMITS="$(git log --oneline ${RELEASE_TAG_VERSION}..)"
+  [[ $NEWER_COMMITS == "" ]] || die "You have new commits since ${RELEASE_TAG_VERSION}: ${NEWER_COMMITS}"
+}
+
+assert_no_unpushed_commits() {
+  local UNPUSHED_COMMITS="$(git log --oneline origin/master..HEAD)"
+  [[ $UNPUSHED_COMMITS == "" ]] || die "You have commits not pushed to origin/master: ${UNPUSHED_COMMITS}"
+}
+
+main() {
+  assert_on_master
+  assert_no_unpushed_commits
+  assert_versions_match
+  assert_no_commits_since_version_tag
+}
+
+[[ "$BASH_SOURCE" == "$0" ]] && main $@
