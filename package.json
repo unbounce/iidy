@@ -73,6 +73,7 @@
     "@types/wrap-ansi": "^3.0.0",
     "@types/yargs": "12.0.1",
     "chai": "^4.2.0",
+    "chai-exclude": "2.0.2",
     "intercept-stdout": "^0.1.2",
     "mocha": "6.2.2",
     "mocha-typescript": "^1.1.17",
