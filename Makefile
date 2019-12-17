@@ -49,7 +49,14 @@ package: $(RELEASE_PACKAGES)
 	@echo
 	@echo open dist/
 
-prepare_release : check_working_dir_is_clean test package  ## Prepare a new public release. Requires clean git workdir
+changelog:
+	@./bin/gen-changelog.sh
+
+prepare_release :  ## Prepare a new public release. Requires clean git workdir
+	./bin/assert-good-state-for-release
+	make clean
+	make test
+	make package
 	@echo update https://github.com/unbounce/iidy/releases
 	@echo and remember to update https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb
 
@@ -118,6 +125,3 @@ $(DOCKER_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	docker run -it --rm iidy help > /dev/null
 
 	@rm -rf /tmp/iidy
-
-check_working_dir_is_clean :
-	@git diff --quiet --ignore-submodules HEAD || ( echo '\x1b[0;31mERROR: git workding dir not clean\x1b[0m'; false )
