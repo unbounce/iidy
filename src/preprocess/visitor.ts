@@ -428,6 +428,9 @@ export class Visitor {
   }
 
   visitRef(node: yaml.Ref, path: string, env: Env): yaml.Ref {
+    if (node.visited) {
+      return node;
+    }
     const refInput = _.isArray(node.data) ? node.data[0] : node.data;
     const ref = this.visitNode(refInput, path, env);
     if (!_.isString(ref)) {
@@ -435,10 +438,13 @@ export class Visitor {
         `Invalid argument to !Ref: expected string, got ${ref} ${typeof ref}`);
     }
 
-    return new yaml.Ref(this.maybeRewriteRef(ref, path, env));
+    return new yaml.Ref(this.maybeRewriteRef(ref, path, env), true /* visited */);
   }
 
   visitGetAtt(node: yaml.GetAtt, path: string, env: Env): yaml.GetAtt {
+    if (node.visited) {
+      return node;
+    }
     const arg = this.visitNode(node.data, path, env);
     if (!(_.isString(arg)
       || (_.isArray(arg) && _.isString(arg[0])))) {
@@ -449,9 +455,9 @@ export class Visitor {
     if (_.isArray(arg)) {
       const argsArray = _.clone(arg);
       argsArray[0] = this.maybeRewriteRef(argsArray[0], path, env);
-      return new yaml.GetAtt(argsArray.length === 1 ? argsArray[0] : argsArray);
+      return new yaml.GetAtt(argsArray.length === 1 ? argsArray[0] : argsArray, true /* visited */);
     } else { // it should be a string
-      return new yaml.GetAtt(this.maybeRewriteRef(arg, path, env));
+      return new yaml.GetAtt(this.maybeRewriteRef(arg, path, env), true /* visited */);
     }
   }
 

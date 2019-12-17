@@ -1,4 +1,7 @@
-import {expect} from 'chai';
+import chaiExclude from 'chai-exclude';
+import {expect, use} from 'chai';
+use(chaiExclude);
+
 import * as _ from 'lodash';
 import * as jsyaml from 'js-yaml';
 
@@ -109,7 +112,11 @@ describe('Yaml pre-processing', () => {
         Sub_y: new yaml.Sub(['arg0', {a: 'a'}]),
         Sub_z: new yaml.Sub(['${a}', {a: 'a'}])
       };
-      expect(transformNoImport(input)).to.deep.equal(input);
+      const output = transformNoImport(input);
+      expect(output).excludingEvery(['visited']).to.deep.equal(input);
+      // also check the yaml output to ensure that Ref.visited, etc.
+      // isn't serialized.
+      expect(yaml.dump(input)).to.equal(yaml.dump(output));
     });
 
   });
@@ -216,18 +223,21 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
             $envValues: {a: 'abc'},
             out: new ctor([new yaml.$include('a')]) // list required
           }))
+            .excludingEvery(['visited'])
             .to.deep.equal({out: new ctor('abc')});
 
           expect(transformNoImport({
             $envValues: {a: 'abc'},
             out: new ctor('{{a}}')
           }))
+            .excludingEvery(['visited'])
             .to.deep.equal({out: new ctor('abc')});
 
           expect(transformNoImport({
             $envValues: {a: '{{xref}}', xref: 'abc'},
             out: new ctor('{{a}}')
           }))
+            .excludingEvery(['visited'])
             .to.deep.equal({out: new ctor('abc')});
         } catch (err) {
           err.message = `${tag_name}: ${err.message}`;
@@ -418,22 +428,26 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
         expect(
           visitor.visitRef(
             new yaml.Ref(input), 'test', testEnvInsideCustomResource))
+          .excludingEvery(['visited'])
           .to.deep.equal(new yaml.Ref(output));
 
         expect(
           visitor.visitGetAtt(
             new yaml.GetAtt(input), 'test', testEnvInsideCustomResource))
+          .excludingEvery(['visited'])
           .to.deep.equal(new yaml.GetAtt(output));
 
         // no rewrite
         expect(
           visitor.visitRef(
             new yaml.Ref(input), 'test', testEnvOutsideCustomResource))
+          .excludingEvery(['visited'])
           .to.deep.equal(new yaml.Ref(input));
 
         expect(
           visitor.visitGetAtt(
             new yaml.GetAtt(input), 'test', testEnvOutsideCustomResource))
+          .excludingEvery(['visited'])
           .to.deep.equal(new yaml.GetAtt(input));
       }
 

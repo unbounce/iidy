@@ -6,14 +6,15 @@ type YamlKind = 'scalar' | 'mapping' | 'sequence';
 
 export class Tag<T = any> {
   ctor: any // see below re fugly
-  constructor(private _data: any) {
+  constructor(private _data: any, public visited: boolean = false) {
+    // this.visited is used avoid double visiting/ref-rewriting in iidy's preprocessing step.
     this.ctor = new.target;
   }
 
   update(data: T): this {
     // fugly but can't call new.target from here. This is equivalent
     // to this.constructor in plain js.
-    return new this.ctor(data);
+    return new this.ctor(data, this.visited);
   }
 
   get data(): T {
