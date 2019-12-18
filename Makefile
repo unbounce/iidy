@@ -117,12 +117,6 @@ $(DOCKER_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 	sleep 0.5
 	docker run -it --rm iidy help > /dev/null
 
-## Yarn is currently broken for typescript 2.6.1 installs with iidy
-#	docker build $(DOCKER_BUILD_ARGS) -t iidy-yarn -f /tmp/iidy/Dockerfile.test-yarn-build /tmp/iidy
-#	sleep 0.5
-#	docker run -it --rm iidy-yarn help > /dev/null
-#	docker rmi iidy-yarn
-
 	@rm -rf /tmp/iidy
 
 check_working_dir_is_clean :
