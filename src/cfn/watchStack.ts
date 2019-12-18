@@ -19,6 +19,7 @@ import {summarizeStackContents} from "./summarizeStackContents";
 import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {showStackEvents} from './showStackEvents';
 import terminalStackStates from './terminalStackStates';
+import calcEventTimings from './calcEventTimings';
 
 export async function watchStack(
   StackName: string, startTime: Date, pollInterval = DEFAULT_EVENT_POLL_INTERVAL, inactivityTimeout = 0) {
@@ -56,6 +57,7 @@ export async function watchStack(
   const subStacksToIgnore = new Set<string>();
   while (!DONE) {
     let evs = await getAllStackEvents(StackName, true, subStacksToIgnore);
+    const {timeToCompletion} = calcEventTimings(evs);
     const statusPadding = calcPadding(evs, ev => ev.ResourceStatus!);
     for (const ev of evs) {
       if (eventIsFromSubstack(ev) && !seen[ev.EventId]) {
@@ -72,7 +74,8 @@ export async function watchStack(
       if (!seen[ev.EventId]) {
         logger.debug('displaying new event', {ev, startTime});
         spinner.stop();
-        displayStackEvent(ev, statusPadding);
+        const seconds = timeToCompletion[ev.EventId];
+        displayStackEvent(ev, statusPadding, seconds);
         lastEvTimestamp = ev.Timestamp;
       }
       if (ev.ResourceType === 'AWS::CloudFormation::Stack') {

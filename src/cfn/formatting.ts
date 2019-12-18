@@ -4,6 +4,7 @@ import * as dateformat from 'dateformat';
 import * as _ from 'lodash';
 import {sprintf} from 'sprintf-js';
 import {FAILURE, SUCCESS} from '../statusCodes';
+import {COMPLETE, FAILED, IN_PROGRESS} from './statusTypes';
 
 export const COLUMN2_START = 25;
 export const DEFAULT_STATUS_PADDING = 35;
@@ -37,46 +38,17 @@ export function colorizeResourceStatus(status: string, padding = DEFAULT_STATUS_
   const fail = cli.redBright;
   const progress = cli.yellow;
   const complete = cli.green;
-  switch (status) {
-    case 'CREATE_IN_PROGRESS':
-      return progress(padded);
-    case 'CREATE_FAILED':
-      return fail(padded);
-    case 'CREATE_COMPLETE':
-      return complete(padded);
-    case 'REVIEW_IN_PROGRESS':
-      return progress(padded);
-    case 'ROLLBACK_COMPLETE':
-      return complete(padded);
-    case 'ROLLBACK_FAILED':
-      return fail(padded);
-    case 'ROLLBACK_IN_PROGRESS':
-      return progress(padded);
-    case 'DELETE_IN_PROGRESS':
-      return progress(padded);
-    case 'DELETE_FAILED':
-      return fail(padded);
-    case 'DELETE_COMPLETE':
-      return complete(padded);
-    case 'UPDATE_COMPLETE':
-      return complete(padded);
-    case 'UPDATE_IN_PROGRESS':
-      return progress(padded);
-    case 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS':
-      return progress(padded);
-    case 'UPDATE_ROLLBACK_COMPLETE':
-      return complete(padded);
-    case 'UPDATE_ROLLBACK_IN_PROGRESS':
-      return progress(padded);
-    case 'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS':
-      return progress(padded);
-    case 'UPDATE_ROLLBACK_FAILED':
-      return fail(padded);
-    case 'UPDATE_FAILED':
-      return fail(padded);
-    default:
-      return padded;
+
+  if (_.includes(FAILED, status)) {
+    return fail(padded);
+  } else if (_.includes(COMPLETE, status)) {
+    return complete(padded);
+  } else if (_.includes(IN_PROGRESS, status)) {
+    return progress(padded);
+  } else {
+    return padded;
   }
+
 }
 
 export const prettyFormatSmallMap = (map: {[key: string]: string}): string => {
@@ -114,4 +86,15 @@ export function showFinalComandSummary(wasSuccessful: boolean): number {
                 cli.bgRedBright('Failure'), ' (╯°□°）╯︵ ┻━┻ ', 'Fix and try again.');
     return FAILURE;
   }
+}
+
+export function formatDuration(seconds: number) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return [
+    h ? `${h}h` : 0,
+    m ? `${m}m` : 0,
+    s ? `${s}s` : 0,
+  ].filter(a => a).join(' ');
 }

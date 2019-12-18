@@ -9,6 +9,7 @@ import {
   DEFAULT_STATUS_PADDING,
   renderTimestamp,
   formatTimestamp,
+  formatDuration,
   formatLogicalId,
   colorizeResourceStatus
 } from './formatting';
@@ -18,23 +19,29 @@ export let getStrippedLength: (s: string) => number;
 getStrippedLength = require('cli-color/get-stripped-length'); // tslint:disable-line
 
 
-export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPadding = DEFAULT_STATUS_PADDING) {
+export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPadding = DEFAULT_STATUS_PADDING, durationSeconds?: number) {
   const tty: any = process.stdout; // tslint:disable-line
   const screenWidth = def(130, tty.columns);
   const status = def('', ev.ResourceStatus);
+  const timingString = durationSeconds ? cli.xterm(252)(` (${formatDuration(durationSeconds)})`) : '';
+
   const reason = def('', ev.ResourceStatusReason).replace(/.*Initiated/, '');
   const resourceTypePadding = 40;
   // const resourceIdPadding = 35;
   const LogicalResourceId = def('', ev.LogicalResourceId);
-  let line = sprintf(` %s %s `, formatTimestamp(renderTimestamp(ev.Timestamp)), colorizeResourceStatus(status, statusPadding));
+  let line = sprintf(` %s %s `,
+                     formatTimestamp(renderTimestamp(ev.Timestamp)),
+                     colorizeResourceStatus(status, statusPadding)
+                    );
   const columnOfResourceType = getStrippedLength(line);
   line += sprintf(`%-${resourceTypePadding}s `, ev.ResourceType);
   process.stdout.write(line);
-  if (getStrippedLength(line) + LogicalResourceId.length < screenWidth) {
-    process.stdout.write(formatLogicalId(LogicalResourceId));
+  const finalPart = formatLogicalId(LogicalResourceId)  + timingString;
+  if (getStrippedLength(line) + getStrippedLength(finalPart) < screenWidth) {
+    process.stdout.write(finalPart);
     line += LogicalResourceId;
   } else {
-    line = ' '.repeat(columnOfResourceType + 3) + formatLogicalId(LogicalResourceId);
+    line = ' '.repeat(columnOfResourceType + 3) + finalPart;
     process.stdout.write('\n' + line);
   }
   if (reason.length > 0) {
