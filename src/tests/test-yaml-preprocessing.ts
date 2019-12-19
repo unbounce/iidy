@@ -217,7 +217,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
 
     it('!$ works inside AWS Intrinsic functions', () => {
-      for (const [tag_name, ctor] of Object.entries(yaml.cfnIntrinsicTags)) {
+      for (const [tagName, ctor] of Object.entries(yaml.cfnIntrinsicTags)) {
         try {
           expect(transformNoImport({
             $envValues: {a: 'abc'},
@@ -240,7 +240,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
             .excludingEvery(['visited'])
             .to.deep.equal({out: new ctor('abc')});
         } catch (err) {
-          err.message = `${tag_name}: ${err.message}`;
+          err.message = `${tagName}: ${err.message}`;
           throw err;
         }
       }

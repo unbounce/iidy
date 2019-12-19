@@ -13,10 +13,12 @@ import {getStackDescription} from './getStackDescription';
 import {parseTemplateBody} from "./parseTemplateBody";
 import {StackArgs} from "./types";
 
+const environmentHandlebarsTmpl = '{{environment}}';
+
 function parameterizeEnv(s0: string, environments = ['development', 'integration', 'staging', 'production']): string {
   let s = s0;
   for (const env of environments) {
-    s = s.replace(env, '{{environment}}');
+    s = s.replace(env, environmentHandlebarsTmpl);
   }
   return s;
 }
@@ -125,7 +127,7 @@ export function readTemplateObj(templateBody: string, sortkeys: boolean): Object
 };
 
 export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<number> {
-  const argv = argv0 as ConvertStackArguments;
+  const argv = argv0 as ConvertStackArguments; // NOSONAR
   await configureAWS(argv);
   const outputDir = argv.outputDir;
   const StackName = argv.stackname;
@@ -137,7 +139,7 @@ export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<nu
     throw new Error(`Invalid cfn template found for ${StackName}`);
   }
 
-  const templateObj = readTemplateObj(TemplateBody!, argv.sortkeys);
+  const templateObj = readTemplateObj(TemplateBody, argv.sortkeys);
   const stack = await getStackDescription(StackName);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir);
@@ -160,7 +162,7 @@ export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<nu
   }
   fs.writeFileSync(pathmod.join(outputDir, 'stack-policy.json'), JSON.stringify(StackPolicy, null, ' '));
   const originalFileExt = (TemplateBody.match(/^ *\{/) !== null) ? 'json' : 'yaml';
-  fs.writeFileSync(pathmod.join(outputDir, '_original-template.' + originalFileExt), TemplateBody);
+  fs.writeFileSync(pathmod.join(outputDir, `_original-template.${originalFileExt}`), TemplateBody);
   fs.writeFileSync(pathmod.join(outputDir, 'cfn-template.yaml'), yaml.dump(templateObj));
 
   const Tags = _.fromPairs(_.map(stack.Tags, ({Key, Value}) => [Key, Value]));
@@ -192,13 +194,13 @@ export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<nu
     stackArgs.DisableRollback = true;
   }
   if (stackArgs.Tags && stackArgs.Tags.environment) {
-    stackArgs.Tags.environment = '{{environment}}';
+    stackArgs.Tags.environment = environmentHandlebarsTmpl;
   }
   if (stackArgs.Tags && stackArgs.Tags.Environment) {
-    stackArgs.Tags.Environment = '{{environment}}';
+    stackArgs.Tags.Environment = environmentHandlebarsTmpl;
   }
   if (stackArgs.Parameters && stackArgs.Parameters.Environment) {
-    stackArgs.Parameters.Environment = '{{environment}}';
+    stackArgs.Parameters.Environment = environmentHandlebarsTmpl;
   }
 
   // TODO validate the tags and warn about outdated ones

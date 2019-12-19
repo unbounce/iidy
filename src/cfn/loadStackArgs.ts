@@ -14,9 +14,9 @@ import {filter} from '../preprocess/filter';
 
 function recursivelyMapValues<T extends object>(o: T, f: (a: any) => any): T {
   return _.mapValues(o, function(a: any) {
-    if(_.isArray(a)) {
+    if (_.isArray(a)) {
       return _.map(a, f);
-    } else if(_.isObject(a)) {
+    } else if (_.isObject(a)) {
       return recursivelyMapValues(a, f);
     } else {
       return f(a);
@@ -37,21 +37,22 @@ async function applySnsNotificationGlobalConfiguration(args: StackArgs, TopicArn
 export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SSM()): Promise<void> {
   try {
     const {Parameters} = await ssm.getParametersByPath({Path: '/iidy/', WithDecryption: true}).promise();
-    if (Parameters) {
-      for (const parameter of Parameters) {
-        switch(parameter.Name) {
-          case '/iidy/default-notification-arn':
-            if (parameter.Value) {
-              await applySnsNotificationGlobalConfiguration(args, parameter.Value);
-            }
-            break;
-          case '/iidy/disable-template-approval':
-            if (parameter.Value && parameter.Value.match(/true/i) && args.ApprovedTemplateLocation) {
-              logger.info(`Disabling template approval based on global ${parameter.Name} parameter store configuration`);
-              delete args.ApprovedTemplateLocation;
-            }
-            break;
-        }
+    if (!Parameters) {
+      return;
+    }
+    for (const parameter of Parameters) {
+      switch (parameter.Name) {
+        case '/iidy/default-notification-arn':
+          if (parameter.Value) {
+            await applySnsNotificationGlobalConfiguration(args, parameter.Value);
+          }
+          break;
+        case '/iidy/disable-template-approval':
+          if (parameter.Value && parameter.Value.match(/true/i) && args.ApprovedTemplateLocation) {
+            logger.info(`Disabling template approval based on global ${parameter.Name} parameter store configuration`);
+            delete args.ApprovedTemplateLocation;
+          }
+          break;
       }
     }
   } catch (e) {
@@ -64,7 +65,7 @@ export async function _loadStackArgs(
   argv: GenericCLIArguments,
   filterKeys: string[] = [],
   setupAWSCredentails = configureAWS)
-: Promise<StackArgs> {
+  : Promise<StackArgs> {
   const environment: string | undefined = argv.environment;
   const iidy_command = argv._.join(' ');
   let argsdata: any; // tslint:disable-line
@@ -80,7 +81,7 @@ export async function _loadStackArgs(
   else {
     throw new Error(`Invalid stack args file "${argsfile}" extension ${pathmod.extname(argsfile)}`);
   }
-  if(!_.isEmpty(filterKeys)) {
+  if (!_.isEmpty(filterKeys)) {
     argsdata = filter(filterKeys, argsdata, argsfile);
   }
   // There is chicken-and-egg situation between use of imports for
@@ -177,7 +178,7 @@ export async function loadStackArgs(
   argv: GenericCLIArguments,
   filterKeys: string[] = [],
   setupAWSCredentails = configureAWS)
-: Promise<StackArgs> {
+  : Promise<StackArgs> {
   // TODO json schema validation
   const args = await _loadStackArgs(argv.argsfile, argv, filterKeys, setupAWSCredentails);
   if (argv.clientRequestToken) {

@@ -47,10 +47,10 @@ export abstract class AbstractCloudFormationStackCommand {
   protected startTime: Date;
   protected cfn: aws.CloudFormation;
   protected expectedFinalStackStatus: string[];
-  protected showTimesInSummary: boolean = true;
-  protected showPreviousEvents: boolean = true;
+  protected showTimesInSummary = true;
+  protected showPreviousEvents = true;
   protected previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>;
-  protected watchStackEvents: boolean = true;
+  protected watchStackEvents = true;
 
   constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
     // region, profile, and assumeRoleArn are the only used for cli output here
@@ -74,10 +74,10 @@ export abstract class AbstractCloudFormationStackCommand {
     }
   }
 
-  async _updateStackTerminationPolicy() {
+  async _updateStackTerminationPolicy(): Promise<void> {
     if (_.isBoolean(this.stackArgs.EnableTerminationProtection)) {
       const cfn = new aws.CloudFormation();
-      return cfn.updateTerminationProtection({
+      await cfn.updateTerminationProtection({
         StackName: this.stackName,
         EnableTerminationProtection: this.stackArgs.EnableTerminationProtection
       }).promise();
@@ -217,7 +217,8 @@ export abstract class AbstractCloudFormationStackCommand {
 
   _exitWithTemplateApprovalFailure(): number {
     logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
-    logger.error('  ' + this.normalizeIidyCLICommand(`template-approval request ${this.argsfile}`));
+    const command = this.normalizeIidyCLICommand(`template-approval request ${this.argsfile}`);
+    logger.error(`  ${command}`);
     logger.error('to begin the approval process.');
     return FAILURE;
   }

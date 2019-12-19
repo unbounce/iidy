@@ -110,9 +110,12 @@ export async function review(argv: ReviewArguments): Promise<number> {
           }
         });
 
+      if (_.isUndefined(previouslyApprovedTemplate) || _.isUndefined(pendingTemplate)) {
+        throw new Error(`Error looking up previous template version or new on S3`);
+      }
       diff(
-        previouslyApprovedTemplate!.toString(),
-        pendingTemplate!.toString(),
+        previouslyApprovedTemplate.toString(),
+        pendingTemplate.toString(),
         500
       );
 

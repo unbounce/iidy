@@ -1,4 +1,4 @@
-import * as aws from 'aws-sdk'
+import * as aws from 'aws-sdk';
 import * as wrapAnsi from 'wrap-ansi';
 import * as cli from 'cli-color';
 
@@ -13,10 +13,7 @@ import {
   colorizeResourceStatus
 } from './formatting';
 
-export let getStrippedLength: (s: string) => number;
-// TODO declare module for this:
-getStrippedLength = require('cli-color/get-stripped-length'); // tslint:disable-line
-
+import * as getStrippedLength from 'cli-color/get-stripped-length';
 
 export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPadding = DEFAULT_STATUS_PADDING) {
   const tty: any = process.stdout; // tslint:disable-line
@@ -24,7 +21,6 @@ export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPaddi
   const status = def('', ev.ResourceStatus);
   const reason = def('', ev.ResourceStatusReason).replace(/.*Initiated/, '');
   const resourceTypePadding = 40;
-  // const resourceIdPadding = 35;
   const LogicalResourceId = def('', ev.LogicalResourceId);
   let line = sprintf(` %s %s `, formatTimestamp(renderTimestamp(ev.Timestamp)), colorizeResourceStatus(status, statusPadding));
   const columnOfResourceType = getStrippedLength(line);

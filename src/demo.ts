@@ -64,8 +64,6 @@ class DemoRunner {
     try {
       this._unpackFiles(script.files);
       await this._runCommands(_.map(script.demo, normalizeRawCommand));
-    } catch (e) {
-      throw e;
     } finally {
       // TODO check result
       child_process.execSync(`rm -r "${this.tmpdir.name}"`, {cwd: this.tmpdir.name});
