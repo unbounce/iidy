@@ -81,6 +81,9 @@ export interface AWSConfig {
 }
 
 async function configureAWS(config: AWSConfig) {
+  if (process.env.AWS_MOCK) {
+    return
+  }
   const resolvedProfile: string | undefined = (
     config.profile || process.env.AWS_PROFILE || process.env.AWS_DEFAULT_PROFILE);
   await resolveCredentials(resolvedProfile, config.assumeRoleArn);

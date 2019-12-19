@@ -10,6 +10,7 @@
     "sourceMap": true,
     "outDir": "./lib",
     "strict": true,
+    "resolveJsonModule": true,
     "noStrictGenericChecks": true,
     "strictPropertyInitialization": false,
     "typeRoots": ["@types", "node_modules/@types"],
