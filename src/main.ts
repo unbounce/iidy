@@ -494,7 +494,7 @@ export function buildArgs(commands = new LazyCommands(), wrapMainHandler = wrapC
 export async function main() {
   // called for side-effect to force parsing / handling
   // tslint:disable-next-line
-  buildArgs().argv;
+  buildArgs().argv; // NOSONAR
 }
 
 
