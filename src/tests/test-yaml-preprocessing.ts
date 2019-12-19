@@ -110,7 +110,7 @@ describe('Yaml pre-processing', () => {
 
         Sub_x: new yaml.Sub('arg0'),
         Sub_y: new yaml.Sub(['arg0', {a: 'a'}]),
-        Sub_z: new yaml.Sub(['${a}', {a: 'a'}])
+        Sub_z: new yaml.Sub(['${a}', {a: 'a'}]) // NOSONAR
       };
       const output = transformNoImport(input);
       expect(output).excludingEvery(['visited']).to.deep.equal(input);
