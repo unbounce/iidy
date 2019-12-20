@@ -23,10 +23,10 @@ const visitor = new Visitor();
 const waitConditionTemplate = {
   Resources: {
     blah:
-      {
-        Type: 'AWS::CloudFormation::WaitConditionHandle',
-        Properties: {}
-      }
+    {
+      Type: 'AWS::CloudFormation::WaitConditionHandle',
+      Properties: {}
+    }
   }
 };
 
@@ -249,7 +249,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     it('!$ works at the top level in the cloudformation Resources node', () => {
       const waitConditionResource = {
         Type: 'AWS::CloudFormation::WaitConditionHandle',
-        Parameters: {}};
+        Parameters: {}
+      };
       expect(transformNoImport({
         $envValues: {a: {Resource1: waitConditionResource}},
         Resources: new yaml.$include('a')
@@ -361,6 +362,32 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
 
 
+  });
+
+
+  describe('!$escape', () => {
+    it('stops pre-processing of child nodes', () => {
+      expect(transformNoImport({out: new yaml.$escape(['{{a}}'])}))
+        .to.deep.equal({out: ['{{a}}']});
+    })
+  });
+
+  describe('!$string', () => {
+    it('pre-processes child nodes and then yaml dumps them to a string', () => {
+      expect(transformNoImport({
+        $envValues: {a: 1234},
+        out: new yaml.$string(['-{{a}}-', new yaml.$include('a')])}))
+        .to.deep.equal({out: "- '-1234-'\n- 1234\n"});
+    })
+  });
+
+  describe('!$parseYaml', () => {
+    it('parses its arg as yaml and then pre-processes the resulting nodes', () => {
+      expect(transformNoImport({
+        $envValues: {a: 1234},
+        out: new yaml.$parseYaml('m1: ["{{a}}", !$ a]')}))
+        .to.deep.equal({out: {m1: ["1234", 1234]}});
+    })
   });
 
   //////////////////////////////////////////////////////////////////////
@@ -523,6 +550,16 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
         expect(await transform(`out: !$eq [false,true]`))
           .to.deep.equal(jsyaml.load(`out: false`));
+      });
+
+      it('!$if', () => {
+
+        expect(transformNoImport(`out: !$if {test: true, then: 't', else:'f'}`))
+          .to.deep.equal({out: 't'});
+
+        expect(transformNoImport(`out: !$if {test: false, then: 't', else: 'f'}`))
+          .to.deep.equal({out: 'f'});
+
       });
 
       it('!$not', async () => {
