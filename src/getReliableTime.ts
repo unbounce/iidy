@@ -10,10 +10,11 @@ ntpClient.ntpReplyTimeout = 2000;
 type _getNetworkTime = (server: string, port: number, callback: (err: any, ts: Date) => void) => void;
 let _getNetworkTime: _getNetworkTime;
 _getNetworkTime = ntpClient.getNetworkTime;
-const getNetworkTime = Promise.promisify(_getNetworkTime);
+
+export const getNetworkTime = Promise.promisify(_getNetworkTime);
 // tslint:enable
 
-const getReliableTime = (): Promise<Date> =>
+export const getReliableTime = (): Promise<Date> =>
   getNetworkTime("pool.ntp.org", 123)
     .catch((e) => {
       logger.debug('error in getNetworkTime. Retrying', {e})
