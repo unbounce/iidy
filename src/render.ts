@@ -33,11 +33,11 @@ export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
   // Read from STDIN (0) if the template is `-`
   // For some reason, yargs converts the `-` to `true`
   const isStdin = typeof argv.template === 'boolean' && argv.template === true;
-  const templatePath = pathmod.resolve(isStdin ? '-' : argv.template);
+  const templatePath = pathmod.resolve(isStdin ? '/dev/stdin' : argv.template);
   const file = isStdin ? 0 : templatePath;
   let output: string[] = [];
 
-  if (fs.statSync(templatePath).isDirectory()) {
+  if (fs.existsSync(templatePath) && fs.statSync(templatePath).isDirectory()) {
     for (const filename of fs.readdirSync(templatePath)) {
       if (filename.match(/\.(yml|yaml)$/)) {
         const filepath = pathmod.resolve(templatePath, filename);
