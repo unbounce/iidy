@@ -1,4 +1,4 @@
-import {S3} from 'aws-sdk';
+import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as path from 'path';
@@ -28,9 +28,8 @@ export async function request(argv: RequestArguments): Promise<number> {
   const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
 
   if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
-    const s3 = new S3();
+    const s3 = new aws.S3();
     const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile, argv.environment);
-
     try {
       await s3.headObject(s3Args).promise();
       logSuccess(`👍 Your template has already been approved`);
@@ -74,7 +73,7 @@ export type ReviewArguments = GlobalArguments & {
 
 export async function review(argv: ReviewArguments): Promise<number> {
   await configureAWS(_.merge({}, argv, {region: 'us-east-1'})); // TODO why is this hard-coded to us-east-1?
-  const s3 = new S3();
+  const s3 = new aws.S3();
 
   const s3Url = url.parse(argv.url);
   const s3Path = s3Url.path ? s3Url.path.replace(/^\//, '') : '';
