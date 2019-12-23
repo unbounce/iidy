@@ -78,7 +78,10 @@ class DemoRunner {
       }
       const fullpath = pathmod.resolve(this.tmpdir.name, fp);
       if (fp.indexOf(pathmod.sep) !== -1) {
-        fs.mkdirSync(pathmod.dirname(fullpath));
+        const subDirName = pathmod.dirname(fullpath);
+        if (! fs.existsSync(subDirName)) {
+          fs.mkdirSync(subDirName);
+        }
       }
       fs.writeFileSync(fullpath, files[fp]);
     }
