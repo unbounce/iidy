@@ -376,7 +376,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     it('pre-processes child nodes and then yaml dumps them to a string', () => {
       expect(transformNoImport({
         $envValues: {a: 1234},
-        out: new yaml.$string(['-{{a}}-', new yaml.$include('a')])}))
+        out: new yaml.$string(['-{{a}}-', new yaml.$include('a')])
+      }))
         .to.deep.equal({out: "- '-1234-'\n- 1234\n"});
     })
   });
@@ -385,7 +386,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     it('parses its arg as yaml and then pre-processes the resulting nodes', () => {
       expect(transformNoImport({
         $envValues: {a: 1234},
-        out: new yaml.$parseYaml('m1: ["{{a}}", !$ a]')}))
+        out: new yaml.$parseYaml('m1: ["{{a}}", !$ a]')
+      }))
         .to.deep.equal({out: {m1: ["1234", 1234]}});
     })
   });
