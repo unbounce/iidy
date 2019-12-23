@@ -11,7 +11,7 @@ export interface ParamCommands {
 const lazyLoad = (fnname: keyof ParamCommands): Handler =>
   (args) => require('../params')[fnname](args);
 
-const lazy: ParamCommands = {
+export const lazyParamCommands: ParamCommands = {
   setParam: lazyLoad('setParam'),
   reviewParam: lazyLoad('reviewParam'),
   getParam: lazyLoad('getParam'),
@@ -30,7 +30,7 @@ const formatOption: Options = {
   choices: ['simple', 'yaml', 'json']
 };
 
-export function buildParamCommands(args: Argv, commands = lazy): Argv {
+export function buildParamCommands(args: Argv, commands = lazyParamCommands): Argv {
   return args
     .strict()
     .demandCommand(1, 0)

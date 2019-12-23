@@ -8,12 +8,12 @@ export interface ApprovalCommands {
 const lazyLoad = (fnname: keyof ApprovalCommands): Handler =>
   (args) => require('./index')[fnname](args);
 
-const lazy: ApprovalCommands = {
+export const lazyApprovalCommands: ApprovalCommands = {
   request: lazyLoad('request'),
   review: lazyLoad('review')
 }
 
-export function buildApprovalCommands(args: Argv, commands = lazy): Argv {
+export function buildApprovalCommands(args: Argv, commands = lazyApprovalCommands): Argv {
   return args
     .strict()
     .demandCommand(1, 0)
