@@ -706,6 +706,30 @@ nested:
 
       });
 
+      describe('!$mapValues', () => {
+
+        it('basic forms', async () => {
+
+          expect(await transform(`
+things: !$mapValues
+  items:
+    a: 1
+    b: 2
+  template: !$ item`
+          )).to.deep.equal(jsyaml.load(`
+things:
+  a:
+    value: 1
+    key: a
+  b:
+    value: 2
+    key: b`));
+
+
+        });
+
+      });
+
       describe('!$merge', () => {
         const map1 = {a: 1, b: 2};
         const map2 = {a: 91, c: 3};
@@ -846,6 +870,32 @@ m: !$split
    b
    c
 `)).to.deep.equal({m: ['a', 'b', 'c']});
+        });
+      });
+
+      describe('!$groupBy', () => {
+        // # !$groupBy { template: {}, items: [], var: 'item', filter: ~ }
+        // TODO filter
+        it('basic form', async () => {
+          expect(await transform(`
+people: !$groupBy
+  key: !$ item.company
+  items:
+    - name: Ken Tompson
+      company: Bell
+    - name: Margaret Hamilton
+      company: NASA
+    - name: Dennis Ritchie
+      company: Bell
+  template: !$ item.name`
+          )).to.deep.equal(jsyaml.load(`
+people:
+  Bell:
+    - Ken Tompson
+    - Dennis Ritchie
+  NASA:
+    - Margaret Hamilton`));
+
         });
       });
 
