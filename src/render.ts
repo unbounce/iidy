@@ -26,7 +26,9 @@ export type RenderArguments = GenericCLIArguments & {
   format?: string;
 };
 
-export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
+export type Writer = (output: string, outputPath: string, overwrite: boolean) => void;
+
+export async function renderMain(argv0: GenericCLIArguments, writer: Writer = writeOutput): Promise<number> {
   const argv = argv0 as RenderArguments // ts, trust me
   await configureAWS(argv);
 
@@ -52,7 +54,7 @@ export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
     output = await render(templatePath, documents, argv);
   }
 
-  writeOutput(output, argv);
+  writer(output.join('\n'), argv.outfile, argv.overwrite);
   return SUCCESS;
 }
 
@@ -68,8 +70,7 @@ export async function render(
   for (const input of documents) {
     let outputDoc: any;
     if (isStackArgsFile(rootDocLocation, input)) {
-      // TODO remove the cast to any below after tightening the args on _loadStackArgs
-      outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
+      outputDoc = await _loadStackArgs(rootDocLocation, argv);
     } else {
       // injection of iidy env is handled by _loadStackArgs in the if branch above
       input.$envValues = _.merge({}, input.$envValues, {
@@ -101,19 +102,20 @@ export async function render(
   return output;
 };
 
-function writeOutput(output: string[], argv: RenderArguments) {
+
+function writeOutput(output: string, outputPath: string, overwrite: boolean): void {
   let outputStream: NodeJS.WritableStream;
 
-  if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
+  if (_.includes(['/dev/stdout', 'stdout'], outputPath)) {
     outputStream = process.stdout;
-  } else if (_.includes(['/dev/stderr', 'stderr'], argv.outfile)) {
+  } else if (_.includes(['/dev/stderr', 'stderr'], outputPath)) {
     outputStream = process.stderr;
   } else {
-    if (fs.existsSync(argv.outfile) && !argv.overwrite) {
-      throw new Error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
+    if (fs.existsSync(outputPath) && !overwrite) {
+      throw new Error(`outfile '${outputPath}' exists. Use --overwrite to proceed.`);
     }
-    outputStream = fs.createWriteStream(argv.outfile);
+    outputStream = fs.createWriteStream(outputPath);
   }
 
-  outputStream.write(output.join('\n'));
+  outputStream.write(output);
 }
