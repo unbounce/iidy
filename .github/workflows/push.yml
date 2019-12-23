@@ -28,11 +28,11 @@ jobs:
       working-directory: ./coverage
       run: |
         sed -i 's/\/home\/runner\/work\/iidy\/iidy\//\/github\/workspace\//g' lcov.info
-    - name: Archive Code Coverage Results
-      uses: actions/upload-artifact@v1
-      with:
-        name: code-coverage-report
-        path: coverage
+    # - name: Archive Code Coverage Results
+    #   uses: actions/upload-artifact@v1
+    #   with:
+    #     name: code-coverage-report
+    #     path: coverage
     - name: Analyze with SonarCloud
       #uses: sonarsource/sonarcloud-github-action@master
       uses: docker://unbounce/sonarcloud-github-action
