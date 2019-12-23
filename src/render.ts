@@ -14,7 +14,7 @@ export function isStackArgsFile(location: string, doc: any): boolean {
   if (pathmod.basename(location).match(/stack-args/)) {
     return true;
   } else {
-    return doc && doc.Template && (doc.Parameters || doc.Tags || doc.StackName);
+    return !! (doc && doc.Template && (doc.Parameters || doc.Tags || doc.StackName));
   }
 }
 
