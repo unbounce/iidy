@@ -33,6 +33,10 @@ export async function watchStack(
   let lastEvTimestamp: Date = new Date();    // might be off because of drift
   let DONE = false;
 
+  if (inactivityTimeout < 0) {
+    // this is for testing
+    return;
+  }
   spinner.start();
 
   const spinnerInterval = setInterval(async () => {
