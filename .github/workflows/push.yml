@@ -1,7 +1,6 @@
 on: push
-name: Build and Publish
+name: Push / PR Builder
 jobs:
-
   sonar:
     name: Run Tests & Sonar Analysis
     runs-on: ubuntu-latest
