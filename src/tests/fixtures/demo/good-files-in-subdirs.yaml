@@ -1,0 +1,9 @@
+files:
+  "subdir/abc.txt": abc
+  "subdir/def.txt": def
+  "subdir/subsub/ghi.txt": ghi
+
+demo:
+  - "grep abc subdir/abc.txt"
+  - "grep def subdir/def.txt"
+  - "grep ghi subdir/subsub/ghi.txt"

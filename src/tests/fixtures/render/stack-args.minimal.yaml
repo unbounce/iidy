@@ -1,0 +1,2 @@
+StackName: minimal-test
+Template: ./cfn-template.minimal.yaml

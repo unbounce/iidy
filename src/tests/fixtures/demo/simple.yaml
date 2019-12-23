@@ -1,0 +1,11 @@
+files:
+  demo-example.yaml: |-
+    Hello: world
+demo:
+  - setenv:
+      DEMO: yep
+  - banner: hi
+  - grep Hello demo-example.yaml
+  - 'echo $DEMO'
+  - silent: 'echo $DEMO'
+  - sleep: 0.001
