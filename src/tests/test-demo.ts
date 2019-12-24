@@ -1,8 +1,22 @@
 import {expect} from 'chai';
+import * as sinon from 'sinon'
 
+import * as output from '../output';
 import {demoMain} from '../demo';
 
 describe("iidy demo", async () => {
+  let stubbedWriteLine: sinon.SinonStub;
+  let stubbedWriteRaw: sinon.SinonStub;
+  beforeEach(() => {
+    stubbedWriteLine = sinon.stub(output, 'writeLine');
+    stubbedWriteRaw = sinon.stub(output, 'writeRaw');
+  });
+
+  afterEach(() => {
+    stubbedWriteLine.restore();
+    stubbedWriteRaw.restore();
+  });
+
   it("works on valid scripts", async () => {
     const result = await demoMain(
       {demoscript: './src/tests/fixtures/demo/simple.yaml', timescaling: 0 } as any);

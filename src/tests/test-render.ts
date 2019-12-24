@@ -1,5 +1,7 @@
 import {expect} from 'chai';
+import * as sinon from 'sinon'
 
+import * as output from '../output';
 import * as yaml from '../yaml';
 import {render} from '../render';
 
@@ -15,6 +17,18 @@ describe('render', () => {
     _: [''],
     '$0': ''
   };
+
+  let stubbedWriteLine: sinon.SinonStub;
+  let stubbedWriteRaw: sinon.SinonStub;
+  beforeEach(() => {
+    stubbedWriteLine = sinon.stub(output, 'writeLine');
+    stubbedWriteRaw = sinon.stub(output, 'writeRaw');
+  });
+
+  afterEach(() => {
+    stubbedWriteLine.restore();
+    stubbedWriteRaw.restore();
+  });
 
   it('can handle single documents', async () => {
     const documents = [

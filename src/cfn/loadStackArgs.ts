@@ -2,6 +2,7 @@ import * as aws from 'aws-sdk';
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
+
 import {GenericCLIArguments} from '../cli/utils';
 import configureAWS from '../configureAWS';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
@@ -49,7 +50,7 @@ export async function applyGlobalConfiguration(args: StackArgs, ssm = new aws.SS
           break;
         case '/iidy/disable-template-approval':
           if (parameter.Value && parameter.Value.match(/true/i) && args.ApprovedTemplateLocation) {
-            logger.info(`Disabling template approval based on global ${parameter.Name} parameter store configuration`);
+            logger.debug(`Disabling template approval based on global ${parameter.Name} parameter store configuration`);
             delete args.ApprovedTemplateLocation;
           }
           break;

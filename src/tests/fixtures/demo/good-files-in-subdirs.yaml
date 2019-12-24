@@ -4,6 +4,6 @@ files:
   "subdir/subsub/ghi.txt": ghi
 
 demo:
-  - "grep abc subdir/abc.txt"
-  - "grep def subdir/def.txt"
-  - "grep ghi subdir/subsub/ghi.txt"
+  - "grep abc subdir/abc.txt > /dev/null"
+  - "grep def subdir/def.txt > /dev/null"
+  - "grep ghi subdir/subsub/ghi.txt > /dev/null"

@@ -3,7 +3,7 @@ import * as tmp from 'tmp';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 
-import {logger} from '../logger';
+import {writeLine} from '../output';
 
 export function diff(a: string, b: string, context = 3): boolean {
   const tmpdir = tmp.dirSync();
@@ -22,7 +22,7 @@ export function diff(a: string, b: string, context = 3): boolean {
     );
 
     if (res.status === 0) {
-      logger.info('Templates are the same');
+      writeLine('Templates are the same');
       return true;
     } else if (res.status !== 1) {
       throw new Error(`Error producing diff "${cmd}"`);

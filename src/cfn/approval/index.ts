@@ -161,7 +161,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
 }
 
 function logSuccess(text: string) {
-  logger.info(cli.green(text));
+  writeLine(cli.green(text));
 }
 
 function logDebug(text: string) {

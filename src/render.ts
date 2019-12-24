@@ -102,6 +102,8 @@ export async function render(
   return output;
 };
 
+// a stub'able wrapper around stream.write for easier testing
+export const _writeToStream = (stream: NodeJS.WritableStream, output: string) => stream.write(output)
 
 function writeOutput(output: string, outputPath: string, overwrite: boolean): void {
   let outputStream: NodeJS.WritableStream;
@@ -117,5 +119,5 @@ function writeOutput(output: string, outputPath: string, overwrite: boolean): vo
     outputStream = fs.createWriteStream(outputPath);
   }
 
-  outputStream.write(output);
+  _writeToStream(outputStream, output);
 }

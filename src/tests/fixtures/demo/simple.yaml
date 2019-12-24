@@ -5,7 +5,7 @@ demo:
   - setenv:
       DEMO: yep
   - banner: hi
-  - grep Hello demo-example.yaml
-  - 'echo $DEMO'
-  - silent: 'echo $DEMO'
+  - 'grep Hello demo-example.yaml > /dev/null'
+  - 'echo $DEMO > /dev/null'
+  - silent: 'echo $DEMO > /dev/null'
   - sleep: 0.001

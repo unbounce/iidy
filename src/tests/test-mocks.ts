@@ -7,6 +7,7 @@ import * as _aws from 'aws-sdk';
 import * as sinon from 'sinon';
 
 
+import * as output from '../output';
 import {listStacks, listStacksMain} from '../cfn/listStacks';
 import {describeStackMain} from '../cfn/describeStack';
 import * as mockStacks from './fixtures/mock-stacks.json'
@@ -22,6 +23,7 @@ import {buildApprovalCommands, lazyApprovalCommands} from '../cfn/approval/cli';
 import {Handler} from '../cli/types';
 import {getImportMain} from '../getImport';
 import {renderMain, RenderArguments, isStackArgsFile} from '../render';
+import * as render from '../render';
 
 mockStackEvents.StackEvents.forEach(ev => {
   (ev as any).Timestamp = Date.parse(ev.Timestamp)
@@ -72,6 +74,8 @@ describe('cfn operations with aws-sdk-mock', async function() {
 
   let stubbedExit: sinon.SinonStub;
   let stubbedPrompt: sinon.SinonStub;
+  let stubbedWriteLine: sinon.SinonStub;
+  let stubbedWriteRaw: sinon.SinonStub;
 
   const runApprovalCLI = async (argstring: string, expectedExitCode: number = 0) => {
     const result = await promisifyCLI(buildApprovalCommands, lazyApprovalCommands as any, argstring);
@@ -90,6 +94,9 @@ describe('cfn operations with aws-sdk-mock', async function() {
   }
 
   beforeEach(() => {
+    stubbedWriteLine = sinon.stub(output, 'writeLine');
+    stubbedWriteRaw = sinon.stub(output, 'writeRaw');
+
     stubbedExit = sinon.stub(process, 'exit');
 
     //awsMock.setSDKInstance(aws);
@@ -107,6 +114,8 @@ describe('cfn operations with aws-sdk-mock', async function() {
   });
 
   afterEach(() => {
+    stubbedWriteLine.restore();
+    stubbedWriteRaw.restore();
     stubbedExit.restore();
     if (stubbedPrompt) {
       stubbedPrompt.restore();
@@ -256,6 +265,14 @@ describe('cfn operations with aws-sdk-mock', async function() {
   });
 
   describe('render', () => {
+    let stubbedWriteToStream: sinon.SinonStub;
+    beforeEach(() => {
+      stubbedWriteToStream = sinon.stub(render, '_writeToStream');
+    });
+
+    afterEach(() => {
+      stubbedWriteToStream.restore();
+    });
     const baseArgs = {
       _: [],
       '$0': 'iidy',
