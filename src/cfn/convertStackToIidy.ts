@@ -2,6 +2,8 @@ import * as aws from 'aws-sdk';
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
+
+import {writeLine} from '../output';
 import {GenericCLIArguments} from '../cli/utils';
 import configureAWS from '../configureAWS';
 import def from '../default';
@@ -224,7 +226,7 @@ export async function convertStackToIIDY(argv0: GenericCLIArguments): Promise<nu
         continue;
       }
       const Name = `${ssmPrefix}${key}`;
-      console.log(`Writing ssm param: ${Name}`)
+      writeLine(`Writing ssm param: ${Name}`)
       const Overwrite = true;
       await ssm.putParameter({Name, Value: value, Type: 'SecureString', KeyId, Overwrite}).promise();
       _.set(outputDoc, ['Parameters', key], new yaml.customTags.$(`ssmParams.${key}`));

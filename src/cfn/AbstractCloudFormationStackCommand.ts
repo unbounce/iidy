@@ -3,6 +3,8 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
 import * as request from 'request-promise-native';
+
+import {writeLine} from '../output';
 import {AWSRegion} from '../aws-regions';
 import {GenericCLIArguments} from '../cli/utils';
 import def from '../default';
@@ -88,8 +90,8 @@ export abstract class AbstractCloudFormationStackCommand {
     const sts = new aws.STS();
     const iamIdentPromise = sts.getCallerIdentity().promise();
     const roleARN = this.stackArgs.ServiceRoleARN || this.stackArgs.RoleARN;
-    console.log(); // blank line
-    console.log(formatSectionHeading('Command Metadata:'));
+    writeLine(); // blank line
+    writeLine(formatSectionHeading('Command Metadata:'));
     printSectionEntry('CFN Operation:', cli.magenta(this.cfnOperation));
     printSectionEntry('iidy Environment:', cli.magenta(this.environment));
     printSectionEntry('Region:', cli.magenta(this.region));
@@ -101,7 +103,7 @@ export abstract class AbstractCloudFormationStackCommand {
     const iamIdent = await iamIdentPromise;
     printSectionEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
     printSectionEntry('iidy Version:', cli.blackBright(require('../../package.json').version));
-    console.log();
+    writeLine();
   }
 
   async run(): Promise<number> {
@@ -118,15 +120,15 @@ export abstract class AbstractCloudFormationStackCommand {
     const stackPromise = getStackDescription(stackId);
     await summarizeStackDefinition(stackId, this.region, this.showTimesInSummary, stackPromise);
     if (this.showPreviousEvents) {
-      console.log();
-      console.log(formatSectionHeading('Previous Stack Events (max 10):'));
+      writeLine();
+      writeLine(formatSectionHeading('Previous Stack Events (max 10):'));
       await showStackEvents(stackId, 10, this.previousStackEventsPromise);
     }
-    console.log();
+    writeLine();
     if (this.watchStackEvents) {
       await watchStack(stackId, this.startTime);
     }
-    console.log();
+    writeLine();
     const stack = await summarizeStackContents(stackId);
     return showFinalComandSummary(_.includes(this.expectedFinalStackStatus, stack.StackStatus));
   }

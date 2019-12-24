@@ -3,6 +3,8 @@ import * as cli from 'cli-color';
 import * as dateformat from 'dateformat';
 import * as _ from 'lodash';
 import {sprintf} from 'sprintf-js';
+
+import {writeLine, writeRaw} from '../output';
 import {FAILURE, SUCCESS} from '../statusCodes';
 
 export const COLUMN2_START = 25;
@@ -21,7 +23,7 @@ export const formatSectionLabel = (s: string) => cli.xterm(255)(s);
 export const formatSectionEntry = (label: string, data: string): string =>
   ' ' + formatSectionLabel(sprintf(`%-${COLUMN2_START - 1}s `, label)) + data + '\n';
 export const printSectionEntry = (label: string, data: string): boolean =>
-  process.stdout.write(formatSectionEntry(label, data));
+  writeRaw(formatSectionEntry(label, data));
 
 export const formatLogicalId = (s: string) => cli.xterm(252)(s);
 export const formatStackOutputName = formatLogicalId;
@@ -106,11 +108,11 @@ export const prettyFormatParameters = (params?: aws.CloudFormation.Parameters): 
 
 export function showFinalComandSummary(wasSuccessful: boolean): number {
   if (wasSuccessful) {
-    console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Command Summary:')),
+    writeLine(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Command Summary:')),
                 cli.black(cli.bgGreenBright('Success')), '👍');
     return SUCCESS;
   } else {
-    console.log(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Command Summary:')),
+    writeLine(formatSectionHeading(sprintf(`%-${COLUMN2_START}s`, 'Command Summary:')),
                 cli.bgRedBright('Failure'), ' (╯°□°）╯︵ ┻━┻ ', 'Fix and try again.');
     return FAILURE;
   }

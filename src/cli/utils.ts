@@ -3,6 +3,7 @@ import * as yargs from 'yargs';
 import {GlobalArguments, Handler} from './types';
 import debug from '../debug';
 import {logger, setLogLevel} from '../logger';
+import {writeErrorLine} from '../output';
 
 export {Handler, GlobalArguments, GenericCLIArguments, Argv, Options, ExitCode} from './types';
 
@@ -28,7 +29,7 @@ export const wrapCommandHandler = (handler: Handler) =>
       .catch(error => {
         if (debug() || args.logFullError || process.env.LOG_IIDY_ERROR) {
           logger.error(error.message ? error.message : "unhandled exception");
-          console.error(error);
+          writeErrorLine(error);
         } else if (error.message) {
           logger.error(error.message);
         } else {

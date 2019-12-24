@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
 import * as cli from 'cli-color';
 
+import {writeLine} from '../output';
 import {displayStackEvent} from './displayStackEvent';
 import {getAllStackEvents} from './getAllStackEvents';
 import {calcPadding} from './formatting';
@@ -15,6 +16,6 @@ export async function showStackEvents(StackName: string, limit = 10, eventsPromi
     displayStackEvent(ev, statusPadding);
   }
   if (evs.length > selectedEvs.length) {
-    console.log(cli.blackBright(` ${selectedEvs.length} of ${evs.length} total events shown`))
+    writeLine(cli.blackBright(` ${selectedEvs.length} of ${evs.length} total events shown`))
   }
 }

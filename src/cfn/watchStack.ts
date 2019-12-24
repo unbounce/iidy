@@ -1,5 +1,7 @@
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
+
+import {writeLine} from '../output';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
@@ -23,7 +25,7 @@ import terminalStackStates from './terminalStackStates';
 export async function watchStack(
   StackName: string, startTime: Date, pollInterval = DEFAULT_EVENT_POLL_INTERVAL, inactivityTimeout = 0) {
   // TODO passthrough of statusPadding
-  console.log(formatSectionHeading(`Live Stack Events (${pollInterval}s poll):`))
+  writeLine(formatSectionHeading(`Live Stack Events (${pollInterval}s poll):`))
 
   // TODO add a timeout for super long stacks
   const seen: {[key: string]: boolean} = {};
@@ -86,7 +88,7 @@ export async function watchStack(
           ev.Timestamp > startTime
         ) {
           spinner.stop();
-          console.log(
+          writeLine(
             cli.blackBright(` ${calcElapsedSeconds(startTime)} seconds elapsed total.`));
           DONE = true;
         }
@@ -108,17 +110,17 @@ export async function watchStackMain(argv: GenericCLIArguments): Promise<number>
   const region = getCurrentAWSRegion();
   const startTime = await getReliableStartTime();
 
-  console.log();
+  writeLine();
   const stack = await summarizeStackDefinition(StackName, region, true);
   const StackId = stack.StackId as string;
-  console.log();
+  writeLine();
 
-  console.log(formatSectionHeading('Previous Stack Events (max 10):'))
+  writeLine(formatSectionHeading('Previous Stack Events (max 10):'))
   await showStackEvents(StackId, 10);
 
-  console.log();
+  writeLine();
   await watchStack(StackId, startTime, DEFAULT_EVENT_POLL_INTERVAL, argv.inactivityTimeout);
-  console.log();
+  writeLine();
   await summarizeStackContents(StackId);
   return SUCCESS;
 }

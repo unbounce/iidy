@@ -2,6 +2,8 @@ import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as querystring from 'querystring';
+
+import {writeLine} from '../output';
 import def from '../default';
 import {
   colorizeResourceStatus,
@@ -19,7 +21,7 @@ export async function summarizeStackDefinition(
   showTimes = false,
   stackPromise?: Promise<aws.CloudFormation.Stack>)
   : Promise<aws.CloudFormation.Stack> {
-  console.log(formatSectionHeading('Stack Details:'));
+  writeLine(formatSectionHeading('Stack Details:'));
   // TODO replace the stackPromise arg with just a stack as we're not leveraging the deferred awaits
   stackPromise = (stackPromise ? stackPromise : getStackDescription(StackName));
   const cfn = new aws.CloudFormation();
@@ -45,7 +47,7 @@ export async function summarizeStackDefinition(
   printSectionEntry('DisableRollback:', cli.blackBright(stack.DisableRollback));
     printSectionEntry('TerminationProtection:', cli.blackBright(stack.EnableTerminationProtection) +
                       (stack.EnableTerminationProtection ? '🔒 ' : ''));
-  //console.log('Stack OnFailure Mode:', cli.blackBright(OnFailure));
+  //output.writeLine('Stack OnFailure Mode:', cli.blackBright(OnFailure));
   if (showTimes) {
     printSectionEntry('Creation Time:', cli.blackBright(renderTimestamp(stack.CreationTime)));
     if (!_.isUndefined(stack.LastUpdatedTime)) {

@@ -3,6 +3,7 @@ import * as cli from 'cli-color';
 import * as fs from 'fs';
 import * as handlebars from 'handlebars';
 import * as _ from 'lodash';
+import {writeLine} from '../output';
 import filehash from '../filehash';
 import normalizePath from '../normalizePath';
 import {interpolateHandlebarsString} from '../preprocess';
@@ -12,22 +13,22 @@ export function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: o
   // https://stackoverflow.com/a/37217166 for a means of doing light
   // weight string templates of the input command
   // TODO might want to inject AWS_* envvars and helper bash functions as ENV vars
-  console.log('==', 'Executing CommandsBefore from argsfile', '='.repeat(28));
+  writeLine('==', 'Executing CommandsBefore from argsfile', '='.repeat(28));
   handlebars.registerHelper('filehash', (context: any) => filehash(normalizePath(cwd, context)));
   handlebars.registerHelper('filehashBase64', (context: any) => filehash(normalizePath(cwd, context), 'base64'));
   const expandedCommands: string[] = [];
   commands.forEach((command, index) => {
     const expandedCommand = interpolateHandlebarsString(command, handleBarsEnv || {}, "CommandsBefore");
     expandedCommands.push(expandedCommand);
-    console.log(`\n-- Command ${index + 1}`, '-'.repeat(50));
+    writeLine(`\n-- Command ${index + 1}`, '-'.repeat(50));
     if (expandedCommand !== command) {
-      console.log(cli.red('# raw command before processing handlebars variables:'));
-      console.log(cli.blackBright(command));
-      console.log(cli.red('# command after processing handlebars variables:'));
-      console.log(cli.blackBright(expandedCommand));
+      writeLine(cli.red('# raw command before processing handlebars variables:'));
+      writeLine(cli.blackBright(command));
+      writeLine(cli.red('# command after processing handlebars variables:'));
+      writeLine(cli.blackBright(expandedCommand));
     }
     else {
-      console.log(cli.blackBright(command));
+      writeLine(cli.blackBright(command));
     }
     const shellEnv = _.merge({
       'BASH_FUNC_iidy_filehash%%': `() {   shasum -p -a 256 "$1" | cut -f 1 -d ' '; }`,
@@ -56,15 +57,15 @@ export function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: o
       // TODO extract definition of iidy_s3_upload to somewhere else
       env: shellEnv
     };
-    console.log('--', `Command ${index + 1} Output`, '-'.repeat(25));
+    writeLine('--', `Command ${index + 1} Output`, '-'.repeat(25));
     const result = child_process.spawnSync(expandedCommand, [], spawnOptions);
     if (result.status) {
       throw new Error(`Error running command (exit code ${result.status}):\n` + command);
     }
   });
   handlebars.unregisterHelper('filehash');
-  console.log();
-  console.log('==', 'End CommandsBefore', '='.repeat(48));
-  console.log();
+  writeLine();
+  writeLine('==', 'End CommandsBefore', '='.repeat(48));
+  writeLine();
   return expandedCommands;
 }

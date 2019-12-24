@@ -3,6 +3,8 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as path from 'path';
 import * as url from 'url';
+
+import {writeLine} from '../../output';
 import {GlobalArguments} from '../../cli/utils';
 import configureAWS from '../../configureAWS';
 import confirmationPrompt from '../../confirmationPrompt';
@@ -143,7 +145,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
         }).promise();
         logDebug('Deleted pending file.');
 
-        console.log();
+        writeLine();
         logSuccess(`Template has been successfully approved!`);
         return SUCCESS;
       } else {

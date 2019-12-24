@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import {Arguments} from 'yargs';
+
+import * as output from './output';
 import {SUCCESS} from './statusCodes';
 
 export async function initStackArgs(argv: Arguments): Promise<number> {
@@ -68,20 +70,20 @@ NotificationARNs:
   let forceCfnTemplate = argv.force || argv.forceCfnTemplate;
 
   if (stackArgsInitialized && !forceStackArgs) {
-    console.log("stack-args.yaml already exists! See help [-h] for overwrite options");
+    output.writeLine("stack-args.yaml already exists! See help [-h] for overwrite options");
   }
   else {
     fs.writeFileSync('stack-args.yaml', stackArgs);
-    console.log("stack-args.yaml has been created!");
+    output.writeLine("stack-args.yaml has been created!");
   }
 
 
   if (cfnTemplateInitialized && !forceCfnTemplate) {
-    console.log("cfn-template.yaml already exists! See help [-h] for overwrite options");
+    output.writeLine("cfn-template.yaml already exists! See help [-h] for overwrite options");
   }
   else {
     fs.writeFileSync('cfn-template.yaml', cfnTemplateArgs);
-    console.log("cfn-template.yaml has been created!");
+    output.writeLine("cfn-template.yaml has been created!");
   }
 
   return SUCCESS;

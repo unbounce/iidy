@@ -1,3 +1,4 @@
+import {writeLine} from '../output';
 import {GenericCLIArguments} from '../cli/utils';
 import {SUCCESS} from '../statusCodes';
 import {DEFAULT_EVENT_POLL_INTERVAL} from './defaults';
@@ -10,9 +11,9 @@ export async function createChangesetMain(argv: GenericCLIArguments): Promise<nu
   const changesetRunner = new CreateChangeSet(argv, await loadStackArgs(argv));
   const changesetExitCode = await changesetRunner.run();
   if (argv.watch && changesetExitCode === 0) {
-    console.log();
+    writeLine();
     await watchStack(changesetRunner.stackName, new Date(), DEFAULT_EVENT_POLL_INTERVAL, argv.watchInactivityTimeout);
-    console.log();
+    writeLine();
     await summarizeStackContents(changesetRunner.stackName);
     return SUCCESS;
   }

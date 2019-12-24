@@ -1,6 +1,7 @@
 import {search} from 'jmespath';
 import {GenericCLIArguments} from "./cli/types";
 import {SUCCESS} from './statusCodes';
+import * as output from './output';
 import * as yaml from './yaml';
 import configureAWS from "./configureAWS";
 import {readFromImportLocation} from "./preprocess";
@@ -18,9 +19,9 @@ export async function getImportMain(argv: GenericCLIArguments): Promise<number> 
   }
 
   if (argv.format === 'yaml') {
-    console.log(yaml.dump(outputDoc))
+    output.writeLine(yaml.dump(outputDoc))
   } else {
-    console.log(JSON.stringify(outputDoc, null, ' '));
+    output.writeLine(JSON.stringify(outputDoc, null, ' '));
   }
   return SUCCESS;
 }
