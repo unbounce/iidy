@@ -211,7 +211,7 @@ export const loadStringAll = (content: string | Buffer, filename: string): any =
   jsyaml.loadAll(content.toString(), undefined, {schema: schema, filename: filename});
 
 export const dump = (doc: object): string =>
-  jsyaml.safeDump(doc, {schema: schema, lineWidth: 999})
+  jsyaml.safeDump(doc, {schema: schema, lineWidth: 999, noRefs: true})
     .replace(/!<!([^>]+?)>/g, '!$1')
     .replace(/ !\$include /g, ' !$ ')
     .replace(/: \$0string (0\d+)$/gm, ": '$1'")
@@ -219,3 +219,6 @@ export const dump = (doc: object): string =>
 // $0string ^ is an encoding added in preprocess/index.ts:visitString. The first
 // regex handles non-octal strings on their own, which must be quoted. The
 // second handles them in the middle of a string, where they must not be quoted.
+//
+// "noRefs: true" forces jsyaml to resolve duplicate objects rather than creating
+// yaml references, which is invalid CFN template syntax.
