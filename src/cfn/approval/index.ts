@@ -50,6 +50,7 @@ export async function request(argv: RequestArguments): Promise<number> {
         }
         await s3.putObject({
           Body: cfnTemplate.TemplateBody,
+          ACL: 'bucket-owner-full-control',
           ...s3Args
         }).promise();
 
