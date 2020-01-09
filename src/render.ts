@@ -102,22 +102,25 @@ export async function render(
   return output;
 };
 
-// a stub'able wrapper around stream.write for easier testing
-export const _writeToStream = (stream: NodeJS.WritableStream, output: string) => stream.write(output)
+// a stub'able wrapper around fs.writeSync for easier testing
+export const _writeSyncToFile = (fd: number, output: string) => {
+  fs.writeSync(fd, output);
+}
 
 function writeOutput(output: string, outputPath: string, overwrite: boolean): void {
-  let outputStream: NodeJS.WritableStream;
+  let outputFD: number;
+  // Note, we reopen stdout/stderr here using fs.openSync to ensure we don't encounter partial writes to pipes/ttys.
+  // See issue #238.
 
   if (_.includes(['/dev/stdout', 'stdout'], outputPath)) {
-    outputStream = process.stdout;
+    outputFD = fs.openSync('/dev/stdout', 'w');
   } else if (_.includes(['/dev/stderr', 'stderr'], outputPath)) {
-    outputStream = process.stderr;
+    outputFD = fs.openSync('/dev/stderr', 'w');
   } else {
     if (fs.existsSync(outputPath) && !overwrite) {
       throw new Error(`outfile '${outputPath}' exists. Use --overwrite to proceed.`);
     }
-    outputStream = fs.createWriteStream(outputPath);
+    outputFD = fs.openSync(outputPath, 'w');
   }
-
-  _writeToStream(outputStream, output);
+  _writeSyncToFile(outputFD, output);
 }
