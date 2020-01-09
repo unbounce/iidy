@@ -29,17 +29,18 @@ export function displayStackEvent(ev: aws.CloudFormation.StackEvent, statusPaddi
   const resourceTypePadding = 40;
   // const resourceIdPadding = 35;
   const LogicalResourceId = def('', ev.LogicalResourceId);
+
   let line = sprintf(` %s %s `,
-                     formatTimestamp(renderTimestamp(ev.Timestamp)),
-                     colorizeResourceStatus(status, statusPadding)
-                    );
+    formatTimestamp(renderTimestamp(ev.Timestamp)),
+    colorizeResourceStatus(status, statusPadding)
+  );
   const columnOfResourceType = getStrippedLength(line);
   line += sprintf(`%-${resourceTypePadding}s `, ev.ResourceType);
   process.stdout.write(line);
-  const finalPart = formatLogicalId(LogicalResourceId)  + timingString;
+  const finalPart = formatLogicalId(LogicalResourceId) + timingString;
   if (getStrippedLength(line) + getStrippedLength(finalPart) < screenWidth) {
     process.stdout.write(finalPart);
-    line += LogicalResourceId;
+    line += finalPart; // we don't need to write it again but want to record its length for use below
   } else {
     line = ' '.repeat(columnOfResourceType + 3) + finalPart;
     process.stdout.write('\n' + line);

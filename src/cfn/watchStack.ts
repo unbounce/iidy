@@ -18,7 +18,7 @@ import {getStackNameFromArgsAndConfigureAWS} from "./getStackNameFromArgsAndConf
 import {summarizeStackContents} from "./summarizeStackContents";
 import {summarizeStackDefinition} from "./summarizeStackDefinition";
 import {showStackEvents} from './showStackEvents';
-import terminalStackStates from './terminalStackStates';
+import {TERMINAL as terminalStackStates} from './statusTypes';
 import calcEventTimings from './calcEventTimings';
 
 export async function watchStack(
