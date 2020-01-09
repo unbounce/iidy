@@ -1,4 +1,6 @@
 import * as aws from 'aws-sdk';
+
+import {writeLine} from '../output';
 import {diff} from '../diff';
 import {readFromImportLocation} from '../preprocess';
 import * as yaml from '../yaml';
@@ -10,7 +12,7 @@ export async function diffStackTemplates(StackName: string, stackArgs: StackArgs
   const cfn = new aws.CloudFormation();
   const {TemplateBody} = await cfn.getTemplate({StackName, TemplateStage: 'Original'}).promise();
   if (TemplateBody) {
-    let oldTemplate = parseTemplateBody(TemplateBody);
+    const oldTemplate = parseTemplateBody(TemplateBody);
     const {TemplateBody: newTemplateBody,
       TemplateURL: newTemplateURL} = await loadCFNTemplate(stackArgs.Template, argsfile, environment);
     let newTemplate: object;
@@ -24,7 +26,7 @@ export async function diffStackTemplates(StackName: string, stackArgs: StackArgs
     else {
       throw new Error('Invalid template found');
     }
-    console.log();
+    writeLine();
     diff(yaml.dump(oldTemplate), yaml.dump(newTemplate));
   }
 }

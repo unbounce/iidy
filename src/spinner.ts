@@ -19,7 +19,8 @@ const INCOMPATIBLE_TERMS = ['eterm', 'eterm-color'];
 
 export function spinnerSupported() {
   const tty: any = process.stdout; // tslint:disable-line
-  return _.isNumber(tty.columns) && ! _.includes(INCOMPATIBLE_TERMS, process.env.TERM)
+  const DISABLE_SPINNER = ! _.isUndefined(process.env.DISABLE_SPINNER);
+  return ! DISABLE_SPINNER && _.isNumber(tty.columns) && ! _.includes(INCOMPATIBLE_TERMS, process.env.TERM)
 }
 
 export default function (text: string=''): Spinner {

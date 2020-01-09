@@ -3,6 +3,8 @@ import * as yargs from 'yargs';
 import * as dateformat from 'dateformat';
 import * as Octokit from "@octokit/rest";
 
+import {writeLine} from '../src/output';
+
 const client = new Octokit();
 
 const getTagDate = (tag: string) =>
@@ -30,16 +32,16 @@ async function listPRs(prevTag: string, currentTag: string) {
     ).sort(pr => pr.number);
 
   for (const pr of pulls) {
-    console.log(`- PR #${pr.number} by @${pr.user.login} - ${pr.title}`)
+    writeLine(`- PR #${pr.number} by @${pr.user.login} - ${pr.title}`)
   }
 };
 
 async function writeReleaseNotes(prevTag: string, currentTag: string) {
   const releaseDate = getTagDate(currentTag);
-  console.log(`#### [${currentTag.replace('v', '')}](https://github.com/unbounce/iidy/compare/${prevTag}...${currentTag})`);
-  console.log();
-  console.log(dateformat(releaseDate, 'd mmmm yyyy'));
-  console.log();
+  writeLine(`#### [${currentTag.replace('v', '')}](https://github.com/unbounce/iidy/compare/${prevTag}...${currentTag})`);
+  writeLine();
+  writeLine(dateformat(releaseDate, 'd mmmm yyyy'));
+  writeLine();
   await listPRs(prevTag, currentTag)
 }
 
@@ -54,8 +56,8 @@ async function main() {
   const prevTag = args.from;
 
   if (args.includeHeader) {
-    console.log('### Changelog');
-    console.log();
+    writeLine('### Changelog');
+    writeLine();
   }
   await writeReleaseNotes(prevTag, currentTag);
 };

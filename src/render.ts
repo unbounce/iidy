@@ -14,7 +14,7 @@ export function isStackArgsFile(location: string, doc: any): boolean {
   if (pathmod.basename(location).match(/stack-args/)) {
     return true;
   } else {
-    return doc && doc.Template && (doc.Parameters || doc.Tags || doc.StackName);
+    return !! (doc && doc.Template && (doc.Parameters || doc.Tags || doc.StackName));
   }
 }
 
@@ -26,18 +26,20 @@ export type RenderArguments = GenericCLIArguments & {
   format?: string;
 };
 
-export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
+export type Writer = (output: string, outputPath: string, overwrite: boolean) => void;
+
+export async function renderMain(argv0: GenericCLIArguments, writer: Writer = writeOutput): Promise<number> {
   const argv = argv0 as RenderArguments // ts, trust me
   await configureAWS(argv);
 
   // Read from STDIN (0) if the template is `-`
   // For some reason, yargs converts the `-` to `true`
   const isStdin = typeof argv.template === 'boolean' && argv.template === true;
-  const templatePath = pathmod.resolve(isStdin ? '-' : argv.template);
+  const templatePath = pathmod.resolve(isStdin ? '/dev/stdin' : argv.template);
   const file = isStdin ? 0 : templatePath;
   let output: string[] = [];
 
-  if (fs.statSync(templatePath).isDirectory()) {
+  if (fs.existsSync(templatePath) && fs.statSync(templatePath).isDirectory()) {
     for (const filename of fs.readdirSync(templatePath)) {
       if (filename.match(/\.(yml|yaml)$/)) {
         const filepath = pathmod.resolve(templatePath, filename);
@@ -52,7 +54,7 @@ export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
     output = await render(templatePath, documents, argv);
   }
 
-  writeOutput(output, argv);
+  writer(output.join('\n'), argv.outfile, argv.overwrite);
   return SUCCESS;
 }
 
@@ -68,8 +70,7 @@ export async function render(
   for (const input of documents) {
     let outputDoc: any;
     if (isStackArgsFile(rootDocLocation, input)) {
-      // TODO remove the cast to any below after tightening the args on _loadStackArgs
-      outputDoc = await _loadStackArgs(rootDocLocation, argv as any);
+      outputDoc = await _loadStackArgs(rootDocLocation, argv);
     } else {
       // injection of iidy env is handled by _loadStackArgs in the if branch above
       input.$envValues = _.merge({}, input.$envValues, {
@@ -101,19 +102,25 @@ export async function render(
   return output;
 };
 
-function writeOutput(output: string[], argv: RenderArguments) {
-  let outputStream: NodeJS.WritableStream;
+// a stub'able wrapper around fs.writeSync for easier testing
+export const _writeSyncToFile = (fd: number, output: string) => {
+  fs.writeSync(fd, output);
+}
 
-  if (_.includes(['/dev/stdout', 'stdout'], argv.outfile)) {
-    outputStream = process.stdout;
-  } else if (_.includes(['/dev/stderr', 'stderr'], argv.outfile)) {
-    outputStream = process.stderr;
+function writeOutput(output: string, outputPath: string, overwrite: boolean): void {
+  let outputFD: number;
+  // Note, we reopen stdout/stderr here using fs.openSync to ensure we don't encounter partial writes to pipes/ttys.
+  // See issue #238.
+
+  if (_.includes(['/dev/stdout', 'stdout'], outputPath)) {
+    outputFD = fs.openSync('/dev/stdout', 'w');
+  } else if (_.includes(['/dev/stderr', 'stderr'], outputPath)) {
+    outputFD = fs.openSync('/dev/stderr', 'w');
   } else {
-    if (fs.existsSync(argv.outfile) && !argv.overwrite) {
-      throw new Error(`outfile '${argv.outfile}' exists. Use --overwrite to proceed.`);
+    if (fs.existsSync(outputPath) && !overwrite) {
+      throw new Error(`outfile '${outputPath}' exists. Use --overwrite to proceed.`);
     }
-    outputStream = fs.createWriteStream(argv.outfile);
+    outputFD = fs.openSync(outputPath, 'w');
   }
-
-  outputStream.write(output.join('\n'));
+  _writeSyncToFile(outputFD, output);
 }

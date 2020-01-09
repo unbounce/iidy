@@ -2,6 +2,8 @@ import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import {sprintf} from 'sprintf-js';
+
+import {writeLine} from '../output';
 import * as yaml from '../yaml';
 
 export function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeSetOutput) {
@@ -11,10 +13,10 @@ export function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeS
       const sprintfTemplate = '  %-17s %-30s %s';
       switch (resourceChange.Action) {
         case 'Add':
-          console.log(sprintf(sprintfTemplate, cli.green('Add'), resourceChange.LogicalResourceId, cli.blackBright(resourceChange.ResourceType)));
+          writeLine(sprintf(sprintfTemplate, cli.green('Add'), resourceChange.LogicalResourceId, cli.blackBright(resourceChange.ResourceType)));
           break;
         case 'Remove':
-          console.log(sprintf(
+          writeLine(sprintf(
             sprintfTemplate,
             cli.red('Remove'),
             resourceChange.LogicalResourceId,
@@ -22,17 +24,17 @@ export function summarizeChangeSet(changeSet: aws.CloudFormation.DescribeChangeS
           break;
         case 'Modify':
           if (_.includes(['True', 'Conditional'], resourceChange.Replacement)) {
-            console.log(sprintf(
+            writeLine(sprintf(
               sprintfTemplate,
               cli.red('Replace' + (resourceChange.Replacement === 'Conditional' ? '?' : '')),
               resourceChange.LogicalResourceId,
               cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)));
           }
           else {
-            console.log(sprintf(sprintfTemplate, cli.yellow('Modify'), resourceChange.LogicalResourceId, cli.yellow(resourceChange.Scope || ''), cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)));
+            writeLine(sprintf(sprintfTemplate, cli.yellow('Modify'), resourceChange.LogicalResourceId, cli.yellow(resourceChange.Scope || ''), cli.blackBright(resourceChange.ResourceType + ' ' + resourceChange.PhysicalResourceId)));
           }
           if (resourceChange.Details) {
-            console.log(cli.blackBright(yaml.dump(resourceChange.Details)));
+            writeLine(cli.blackBright(yaml.dump(resourceChange.Details)));
           }
           break;
       }

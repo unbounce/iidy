@@ -60,6 +60,9 @@ describe('cfn', function() {
   });
 
   describe('stackArgsTo{CreateStackInput, UpdateStackInput, CreateChangeSetInput}', function() {
+    const stackArgsFile = './stack-args.yaml';
+    const environment = 'development';
+
     const assertValidOutputCommonOnMinimalStack = (
       stackArgs: StackArgs,
       cfnArgs: aws.CloudFormation.CreateStackInput
@@ -80,13 +83,13 @@ describe('cfn', function() {
 
     it('accepts the minimal required input and template on disk', async function() {
       const stackArgs = MINIMAL_STACK_ARGS_WITH_LOCAL_TEMPLATE;
-      const cfnArgsForCreate = await stackArgsToCreateStackInput(stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForCreate = await stackArgsToCreateStackInput(stackArgs, stackArgsFile, environment);
       assertValidOutputCommonOnMinimalStack(stackArgs, cfnArgsForCreate);
 
-      const cfnArgsForUpdate = await stackArgsToUpdateStackInput(stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForUpdate = await stackArgsToUpdateStackInput(stackArgs, stackArgsFile, environment);
       assertValidOutputCommonOnMinimalStack(stackArgs, cfnArgsForUpdate);
 
-      const cfnArgsForCreateChangeset = await stackArgsToCreateChangeSetInput('changes', stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForCreateChangeset = await stackArgsToCreateChangeSetInput('changes', stackArgs, stackArgsFile, environment);
       assertValidOutputCommonOnMinimalStack(stackArgs, cfnArgsForCreateChangeset);
     });
 
@@ -96,13 +99,13 @@ describe('cfn', function() {
       }
       await configureAWS({});
       const stackArgs = MINIMAL_STACK_ARGS_WITH_S3_TEMPLATE;
-      const cfnArgsForCreate = await stackArgsToCreateStackInput(stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForCreate = await stackArgsToCreateStackInput(stackArgs, stackArgsFile, environment);
       assertValidOutputCommonOnMinimalStack(stackArgs, cfnArgsForCreate);
 
-      const cfnArgsForUpdate = await stackArgsToUpdateStackInput(stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForUpdate = await stackArgsToUpdateStackInput(stackArgs, stackArgsFile, environment);
       assertValidOutputCommonOnMinimalStack(stackArgs, cfnArgsForUpdate);
 
-      const cfnArgsForCreateChangeset = await stackArgsToCreateChangeSetInput('changes', stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForCreateChangeset = await stackArgsToCreateChangeSetInput('changes', stackArgs, stackArgsFile, environment);
       assertValidOutputCommonOnMinimalStack(stackArgs, cfnArgsForCreateChangeset);
     });
 
@@ -119,13 +122,13 @@ describe('cfn', function() {
         Parameters,
         UsePreviousParameterValues
       };
-      const cfnArgsForCreate = await stackArgsToCreateStackInput(stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForCreate = await stackArgsToCreateStackInput(stackArgs, stackArgsFile, environment);
       expect(cfnArgsForCreate.Parameters).to.deep.equal(objectToCFNParams(stackArgs.Parameters));
 
-      const cfnArgsForUpdate = await stackArgsToUpdateStackInput(stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForUpdate = await stackArgsToUpdateStackInput(stackArgs, stackArgsFile, environment);
       expect(cfnArgsForUpdate.Parameters).to.deep.equal(transformedParams);
 
-      const cfnArgsForCreateChangeset = await stackArgsToCreateChangeSetInput('changes', stackArgs, './stack-args.yaml', 'development');
+      const cfnArgsForCreateChangeset = await stackArgsToCreateChangeSetInput('changes', stackArgs, stackArgsFile, environment);
       expect(cfnArgsForCreateChangeset.Parameters).to.deep.equal(transformedParams);
 
     });

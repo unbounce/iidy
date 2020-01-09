@@ -3,6 +3,7 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as nameGenerator from 'project-name-generator';
 import * as querystring from 'querystring';
+import {writeLine} from '../output';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
@@ -84,9 +85,9 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
       await this.cfn.deleteChangeSet({ChangeSetName, StackName}).promise();
       return FAILURE;
     }
-    console.log();
+    writeLine();
 
-    console.log('AWS Console URL for full changeset review:',
+    writeLine('AWS Console URL for full changeset review:',
       cli.blackBright(
         `https://${this.region}.console.aws.amazon.com/cloudformation/home?region=${this.region}#`
         + `/changeset/detail?stackId=${querystring.escape(changeSet.StackId as string)}`
@@ -95,9 +96,9 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
     await showPendingChangesets(StackName);
     // TODO diff createChangeSetInput.TemplateBody
     if (!stackExists) {
-      console.log('Your new stack is now in REVIEW_IN_PROGRESS state. To create the resources run the following \n  ' +
+      writeLine('Your new stack is now in REVIEW_IN_PROGRESS state. To create the resources run the following \n  ' +
         this.normalizeIidyCLICommand(`exec-changeset --stack-name ${this.stackName} ${this.argsfile} ${ChangeSetName}`));
-      console.log();
+      writeLine();
     }
     showFinalComandSummary(true);
     return SUCCESS;
@@ -167,7 +168,7 @@ export async function createOrUpdateStackMain(argv: GenericCLIArguments): Promis
     if (createChangesetResult > 0) {
       return createChangesetResult;
     } else {
-      console.log()
+      writeLine()
       return await confirmChangesetExec(argv, changeSetRunner, stackArgs);
     }
   } else {
@@ -186,7 +187,7 @@ async function confirmChangesetExec(argv: GenericCLIArguments, changeSetRunner: 
     argv.changesetName = changeSetRunner.changeSetName;
     return new ExecuteChangeSet(argv, stackArgs).run();
   } else {
-    console.log(
+    writeLine(
       `You can do so later using\n  `
       + changeSetRunner.normalizeIidyCLICommand(
         `exec-changeset -s ${changeSetRunner.stackName} ${changeSetRunner.argsfile} ${changeSetRunner.changeSetName}`));
@@ -203,10 +204,10 @@ export async function updateStackMain(argv: GenericCLIArguments, stackArgs?: Sta
     const changeSetRunner = new CreateChangeSet(argv, stackArgs);
 
     if (argv.diff) {
-      console.log()
-      console.log(formatSectionHeading('Stack Template Diff:'))
+      writeLine()
+      writeLine(formatSectionHeading('Stack Template Diff:'))
       await diffStackTemplates(changeSetRunner.stackName, stackArgs, argv.argsfile, argv.environment!);
-      console.log()
+      writeLine()
     }
 
     const createChangesetResult = await changeSetRunner.run();
@@ -218,7 +219,7 @@ export async function updateStackMain(argv: GenericCLIArguments, stackArgs?: Sta
         return SUCCESS;
       }
     }
-    console.log()
+    writeLine()
     return await confirmChangesetExec(argv, changeSetRunner, stackArgs);
   } else {
     return new UpdateStack(argv, stackArgs).run();

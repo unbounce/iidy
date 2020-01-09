@@ -2,6 +2,8 @@ import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import {sprintf} from 'sprintf-js';
+
+import {writeLine} from '../output';
 import calcElapsedSeconds from '../calcElapsedSeconds';
 import {GenericCLIArguments} from '../cli/utils';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
@@ -34,7 +36,7 @@ export async function updateStackDriftData(stack: aws.CloudFormation.Stack, cach
   if (stack.DriftInformation &&
     (stack.DriftInformation.StackDriftStatus == 'NOT_CHECKED'
       || stack.DriftInformation.LastCheckTimestamp! < recheckIfBefore)) {
-    console.log();
+    writeLine();
     const spinnerStartTime = new Date();
     const spinnerText = "Checking for stack drift.";
     const spinner = mkSpinner(cli.xterm(240)(spinnerText));
@@ -55,26 +57,26 @@ export async function updateStackDriftData(stack: aws.CloudFormation.Stack, cach
 
 export function summarizeResourceDrifts(drifts: aws.CloudFormation.StackResourceDrifts) {
   if (drifts.length > 0) {
-    console.log();
-    console.log(formatSectionHeading('Drifted Resources:'));
+    writeLine();
+    writeLine(formatSectionHeading('Drifted Resources:'));
 
     const idPadding = calcPadding(drifts, d => d.LogicalResourceId);
     const resourceTypePadding = calcPadding(drifts, d => d.ResourceType);
     for (const drift of drifts) {
-      console.log(
+      writeLine(
         formatLogicalId(sprintf(` %-${idPadding}s`, drift.LogicalResourceId)),
         cli.blackBright(sprintf(`%-${resourceTypePadding}s`, drift.ResourceType)),
         cli.blackBright(drift.PhysicalResourceId),
       );
-      console.log(`  ${cli.red(drift.StackResourceDriftStatus)}`);
+      writeLine(`  ${cli.red(drift.StackResourceDriftStatus)}`);
       if (drift.PropertyDifferences) {
         const diffString = yaml.dump(drift.PropertyDifferences)
-        console.log(diffString.replace(/^(?!\s*$)/mg, '   '));
+        writeLine(diffString.replace(/^(?!\s*$)/mg, '   '));
       }
     }
   } else {
-    console.log();
-    console.log('No drift detected. Stack resources are in sync with template.')
+    writeLine();
+    writeLine('No drift detected. Stack resources are in sync with template.')
   }
 }
 

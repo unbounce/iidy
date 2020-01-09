@@ -314,6 +314,7 @@ export class Visitor {
   }
 
   visit$string(node: yaml.$string, path: string, env: Env): string {
+    // pre-processes child nodes and then yaml dump them to a string
     const stringSource = (_.isArray(node.data) && node.data.length === 1)
       ? node.data[0]
       : node.data;

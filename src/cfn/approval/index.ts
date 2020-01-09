@@ -1,8 +1,10 @@
-import {S3} from 'aws-sdk';
+import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as path from 'path';
 import * as url from 'url';
+
+import {writeLine} from '../../output';
 import {GlobalArguments} from '../../cli/utils';
 import configureAWS from '../../configureAWS';
 import confirmationPrompt from '../../confirmationPrompt';
@@ -28,9 +30,8 @@ export async function request(argv: RequestArguments): Promise<number> {
   const stackArgs = await loadStackArgs(argv as any, stackArgsKeys); // this calls configureAWS internally
 
   if (typeof stackArgs.ApprovedTemplateLocation === "string" && stackArgs.ApprovedTemplateLocation.length > 0) {
-    const s3 = new S3();
+    const s3 = new aws.S3();
     const s3Args = await approvedTemplateVersionLocation(stackArgs.ApprovedTemplateLocation, stackArgs.Template, argv.argsfile, argv.environment);
-
     try {
       await s3.headObject(s3Args).promise();
       logSuccess(`👍 Your template has already been approved`);
@@ -75,7 +76,7 @@ export type ReviewArguments = GlobalArguments & {
 
 export async function review(argv: ReviewArguments): Promise<number> {
   await configureAWS(_.merge({}, argv, {region: 'us-east-1'})); // TODO why is this hard-coded to us-east-1?
-  const s3 = new S3();
+  const s3 = new aws.S3();
 
   const s3Url = url.parse(argv.url);
   const s3Path = s3Url.path ? s3Url.path.replace(/^\//, '') : '';
@@ -111,9 +112,12 @@ export async function review(argv: ReviewArguments): Promise<number> {
           }
         });
 
+      if (_.isUndefined(previouslyApprovedTemplate) || _.isUndefined(pendingTemplate)) {
+        throw new Error(`Error looking up previous template version or new on S3`);
+      }
       diff(
-        previouslyApprovedTemplate!.toString(),
-        pendingTemplate!.toString(),
+        previouslyApprovedTemplate.toString(),
+        pendingTemplate.toString(),
         500
       );
 
@@ -142,7 +146,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
         }).promise();
         logDebug('Deleted pending file.');
 
-        console.log();
+        writeLine();
         logSuccess(`Template has been successfully approved!`);
         return SUCCESS;
       } else {
@@ -158,7 +162,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
 }
 
 function logSuccess(text: string) {
-  logger.info(cli.green(text));
+  writeLine(cli.green(text));
 }
 
 function logDebug(text: string) {

@@ -1,14 +1,36 @@
 on: push
-name: Build and Publish
+name: Push / PR Builder
 jobs:
-  runSonarCloudScanner:
-    name: Run SonarCloud Scanner
+  sonar:
+    name: Run Tests & Sonar Analysis
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Run SonarCloud Scanner
-      uses: docker://unbounce/sonarcloud-github-typescript
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - run: npm ci
+    - run: npm run coverage
       env:
-        SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
-        SONAR_ORG: unbounce
-        SONAR_PROJECT_KEY: iidy
+        SKIP_IIDY_AWS_TEST: yes
+    - name: Fix Code Coverage Paths
+    # https://community.sonarsource.com/t/code-coverage-doesnt-work-with-github-action/16747
+      working-directory: ./coverage
+      run: |
+        sed -i 's/\/home\/runner\/work\/iidy\/iidy\//\/github\/workspace\//g' lcov.info
+    - name: Analyze with SonarCloud
+      uses: docker://unbounce/sonarcloud-github-action:dec-23-2019 #
+      # ^ built from https://github.com/SonarSource/sonarcloud-github-action/tree/c7f7c25d4114527c3634c44d19d47674909b51b3
+      # equivalent to `uses: sonarsource/sonarcloud-github-action@master` but cached docker image so faster
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

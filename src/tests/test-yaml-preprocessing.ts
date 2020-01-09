@@ -23,10 +23,10 @@ const visitor = new Visitor();
 const waitConditionTemplate = {
   Resources: {
     blah:
-      {
-        Type: 'AWS::CloudFormation::WaitConditionHandle',
-        Properties: {}
-      }
+    {
+      Type: 'AWS::CloudFormation::WaitConditionHandle',
+      Properties: {}
+    }
   }
 };
 
@@ -217,7 +217,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
 
     it('!$ works inside AWS Intrinsic functions', () => {
-      for (const [tag_name, ctor] of Object.entries(yaml.cfnIntrinsicTags)) {
+      for (const [tagName, ctor] of Object.entries(yaml.cfnIntrinsicTags)) {
         try {
           expect(transformNoImport({
             $envValues: {a: 'abc'},
@@ -240,7 +240,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
             .excludingEvery(['visited'])
             .to.deep.equal({out: new ctor('abc')});
         } catch (err) {
-          err.message = `${tag_name}: ${err.message}`;
+          err.message = `${tagName}: ${err.message}`;
           throw err;
         }
       }
@@ -249,7 +249,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     it('!$ works at the top level in the cloudformation Resources node', () => {
       const waitConditionResource = {
         Type: 'AWS::CloudFormation::WaitConditionHandle',
-        Parameters: {}};
+        Parameters: {}
+      };
       expect(transformNoImport({
         $envValues: {a: {Resource1: waitConditionResource}},
         Resources: new yaml.$include('a')
@@ -361,6 +362,34 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
     });
 
 
+  });
+
+
+  describe('!$escape', () => {
+    it('stops pre-processing of child nodes', () => {
+      expect(transformNoImport({out: new yaml.$escape(['{{a}}'])}))
+        .to.deep.equal({out: ['{{a}}']});
+    })
+  });
+
+  describe('!$string', () => {
+    it('pre-processes child nodes and then yaml dumps them to a string', () => {
+      expect(transformNoImport({
+        $envValues: {a: 1234},
+        out: new yaml.$string(['-{{a}}-', new yaml.$include('a')])
+      }))
+        .to.deep.equal({out: "- '-1234-'\n- 1234\n"});
+    })
+  });
+
+  describe('!$parseYaml', () => {
+    it('parses its arg as yaml and then pre-processes the resulting nodes', () => {
+      expect(transformNoImport({
+        $envValues: {a: 1234},
+        out: new yaml.$parseYaml('m1: ["{{a}}", !$ a]')
+      }))
+        .to.deep.equal({out: {m1: ["1234", 1234]}});
+    })
   });
 
   //////////////////////////////////////////////////////////////////////
@@ -525,6 +554,16 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.equal(jsyaml.load(`out: false`));
       });
 
+      it('!$if', () => {
+
+        expect(transformNoImport(`out: !$if {test: true, then: 't', else:'f'}`))
+          .to.deep.equal({out: 't'});
+
+        expect(transformNoImport(`out: !$if {test: false, then: 't', else: 'f'}`))
+          .to.deep.equal({out: 'f'});
+
+      });
+
       it('!$not', async () => {
 
         expect(await transform(`out: !$not true`))
@@ -661,6 +700,30 @@ nested:
   - CidrIp: 192.168.0.0/16
     FromPort: 443
     ToPort: 443`));
+
+
+        });
+
+      });
+
+      describe('!$mapValues', () => {
+
+        it('basic forms', async () => {
+
+          expect(await transform(`
+things: !$mapValues
+  items:
+    a: 1
+    b: 2
+  template: !$ item`
+          )).to.deep.equal(jsyaml.load(`
+things:
+  a:
+    value: 1
+    key: a
+  b:
+    value: 2
+    key: b`));
 
 
         });
@@ -807,6 +870,32 @@ m: !$split
    b
    c
 `)).to.deep.equal({m: ['a', 'b', 'c']});
+        });
+      });
+
+      describe('!$groupBy', () => {
+        // # !$groupBy { template: {}, items: [], var: 'item', filter: ~ }
+        // TODO filter
+        it('basic form', async () => {
+          expect(await transform(`
+people: !$groupBy
+  key: !$ item.company
+  items:
+    - name: Ken Tompson
+      company: Bell
+    - name: Margaret Hamilton
+      company: NASA
+    - name: Dennis Ritchie
+      company: Bell
+  template: !$ item.name`
+          )).to.deep.equal(jsyaml.load(`
+people:
+  Bell:
+    - Ken Tompson
+    - Dennis Ritchie
+  NASA:
+    - Margaret Hamilton`));
+
         });
       });
 

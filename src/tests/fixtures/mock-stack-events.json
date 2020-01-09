@@ -1,0 +1,59 @@
+{
+    "StackEvents": [
+        {
+            "StackId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "EventId": "ec7f1ca0-78c3-11e9-b4ca-0a746071dd90",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "2019-05-17T16:50:49.287Z",
+            "StackName": "iidy-demo-heartbreaking-company",
+            "PhysicalResourceId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "LogicalResourceId": "iidy-demo-heartbreaking-company"
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "EventId": "HelloWorld-CREATE_COMPLETE-2019-05-17T16:50:47.308Z",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "2019-05-17T16:50:47.308Z",
+            "StackName": "iidy-demo-heartbreaking-company",
+            "ResourceProperties": "{\"DisplayName\":\"Hello world\"}",
+            "PhysicalResourceId": "arn:aws:sns:us-west-2:123412341234:iidy-demo-heartbreaking-company-HelloWorld-138QXIGFY3TUC",
+            "LogicalResourceId": "HelloWorld"
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "EventId": "HelloWorld-CREATE_IN_PROGRESS-2019-05-17T16:50:36.585Z",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "2019-05-17T16:50:36.585Z",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "StackName": "iidy-demo-heartbreaking-company",
+            "ResourceProperties": "{\"DisplayName\":\"Hello world\"}",
+            "PhysicalResourceId": "arn:aws:sns:us-west-2:123412341234:iidy-demo-heartbreaking-company-HelloWorld-138QXIGFY3TUC",
+            "LogicalResourceId": "HelloWorld"
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "EventId": "HelloWorld-CREATE_IN_PROGRESS-2019-05-17T16:50:36.128Z",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "2019-05-17T16:50:36.128Z",
+            "StackName": "iidy-demo-heartbreaking-company",
+            "ResourceProperties": "{\"DisplayName\":\"Hello world\"}",
+            "PhysicalResourceId": "",
+            "LogicalResourceId": "HelloWorld"
+        },
+        {
+            "StackId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "EventId": "e194c510-78c3-11e9-9e0b-02c5b84a8036",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "2019-05-17T16:50:31.108Z",
+            "ResourceStatusReason": "User Initiated",
+            "StackName": "iidy-demo-heartbreaking-company",
+            "PhysicalResourceId": "arn:aws:cloudformation:us-west-2:123412341234:stack/iidy-demo-heartbreaking-company/e19428d0-78c3-11e9-9e0b-02c5b84a8036",
+            "LogicalResourceId": "iidy-demo-heartbreaking-company"
+        }
+    ]
+}

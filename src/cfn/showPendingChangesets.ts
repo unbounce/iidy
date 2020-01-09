@@ -1,6 +1,8 @@
 import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
+
+import {writeLine} from '../output';
 import def from '../default';
 import {formatSectionHeading, formatTimestamp, printSectionEntry, renderTimestamp} from './formatting';
 import {summarizeChangeSet} from "./summarizeChangeSet";
@@ -14,8 +16,8 @@ export async function showPendingChangesets(StackId: string, changeSetsPromise?:
   let changeSets = def([], (await changeSetsPromise).Summaries);
   changeSets = _.sortBy(changeSets, (cs) => cs.CreationTime);
   if (changeSets.length > 0) {
-    console.log();
-    console.log(formatSectionHeading('Pending Changesets:'));
+    writeLine();
+    writeLine(formatSectionHeading('Pending Changesets:'));
     for (const cs of changeSets) {
       printSectionEntry(formatTimestamp(renderTimestamp(cs.CreationTime as Date)), cli.magenta(cs.ChangeSetName) +
         ' ' +
@@ -23,11 +25,11 @@ export async function showPendingChangesets(StackId: string, changeSetsPromise?:
         ' ' +
         def('', cs.StatusReason));
       if (!_.isEmpty(cs.Description)) {
-        console.log('  Description:', cli.blackBright(cs.Description));
-        console.log();
+        writeLine('  Description:', cli.blackBright(cs.Description));
+        writeLine();
       }
       summarizeChangeSet(await cfn.describeChangeSet({StackName: StackId, ChangeSetName: cs.ChangeSetName!}).promise());
-      console.log();
+      writeLine();
     }
   }
 }

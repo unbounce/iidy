@@ -1,5 +1,7 @@
 import * as aws from 'aws-sdk';
 import * as cli from 'cli-color';
+
+import {writeLine} from '../output';
 import {GenericCLIArguments} from '../cli/utils';
 import confirmationPrompt from '../confirmationPrompt';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
@@ -36,15 +38,15 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
       return SUCCESS;
     }
   }
-  console.log();
+  writeLine();
   const stack = await summarizeStackDefinition(StackName, region, true);
   const StackId = stack.StackId as string;
-  console.log();
-  console.log(formatSectionHeading('Previous Stack Events (max 10):'));
+  writeLine();
+  writeLine(formatSectionHeading('Previous Stack Events (max 10):'));
   await showStackEvents(StackName, 10);
-  console.log();
+  writeLine();
   await summarizeStackContents(StackId);
-  console.log();
+  writeLine();
   let confirmed: boolean;
   if (argv.yes) {
     confirmed = true;
@@ -62,7 +64,7 @@ export async function deleteStackMain(argv: GenericCLIArguments): Promise<number
       ClientRequestToken: argv.clientRequestToken
     }).promise();
     await watchStack(StackId, startTime);
-    console.log();
+    writeLine();
     const {StackStatus} = await getStackDescription(StackId);
     return showFinalComandSummary(StackStatus === 'DELETE_COMPLETE');
   }

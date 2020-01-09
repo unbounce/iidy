@@ -1,0 +1,2 @@
+ApprovedTemplateLocation: s3://a-bucket-of-cfn-templates/blah
+Template: cfn-template.minimal.yaml

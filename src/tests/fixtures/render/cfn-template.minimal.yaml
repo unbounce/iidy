@@ -1,0 +1,8 @@
+Parameters:
+  Name:
+    Type: String
+Resources:
+  HelloWorld:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub "Hello ${Name}"

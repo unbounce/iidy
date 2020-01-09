@@ -3,6 +3,7 @@ import * as aws from 'aws-sdk'
 
 import * as jsyaml from 'js-yaml';
 
+import {writeLine} from '../output';
 import {GlobalArguments} from '../cli/utils';
 
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
@@ -76,8 +77,8 @@ export async function setParam(argv: SetParamArgs): Promise<number> {
 
   if (argv.withApproval) {
     const region = getCurrentAWSRegion();
-    console.log('Parameter change is pending approval. Review change with:');
-    console.log(`  iidy --region ${region} param review ${argv.path}`);
+    writeLine('Parameter change is pending approval. Review change with:');
+    writeLine(`  iidy --region ${region} param review ${argv.path}`);
   }
 
   if (argv.message) {
@@ -103,13 +104,13 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
     const Overwrite = true;
     const KeyId = Type === 'SecureString' ? await getKMSAliasForParameter(Name) : undefined;
 
-    console.log(`Current: ${currentValue}`);
-    console.log(`Pending: ${Value}`);
-    console.log('');
+    writeLine(`Current: ${currentValue}`);
+    writeLine(`Pending: ${Value}`);
+    writeLine('');
 
     if (pendingTags[MESSAGE_TAG]) {
-      console.log(`Message: ${pendingTags[MESSAGE_TAG]}`);
-      console.log('');
+      writeLine(`Message: ${pendingTags[MESSAGE_TAG]}`);
+      writeLine('');
     }
 
     const confirmed = await confirmationPrompt('Would you like to approve these changes?');
@@ -124,7 +125,7 @@ export async function reviewParam(argv: ReviewParamArgs): Promise<number> {
       return INTERRUPT;
     }
   } else {
-    console.log(`There is no pending change for parameter ${argv.path}`);
+    writeLine(`There is no pending change for parameter ${argv.path}`);
     return FAILURE;
   }
 }
@@ -168,13 +169,13 @@ export async function getParam(argv: GetParamArgs): Promise<number> {
   if (!res.Parameter) {
     throw new Error('Parameter lookup error');
   } else if (argv.format === 'simple') {
-    console.log(res.Parameter!.Value);
+    writeLine(res.Parameter!.Value);
   } else {
     const output = await mergeParamTags(ssm, res.Parameter);
     if (argv.format === 'json') {
-      console.log(JSON.stringify(output, null, ' '));
+      writeLine(JSON.stringify(output, null, ' '));
     } else {
-      console.log(jsyaml.dump(output));
+      writeLine(jsyaml.dump(output));
     }
   }
   return SUCCESS;
@@ -213,19 +214,19 @@ export async function getParamsByPath(argv: GetParamsByPathArgs): Promise<number
   const parameters = await _getParametersByPath(ssm, args);
 
   if (!parameters) {
-    console.log('No parameters found');
+    writeLine('No parameters found');
     return FAILURE;
   } else if (argv.format === 'simple') {
-    console.log(jsyaml.dump(
+    writeLine(jsyaml.dump(
       _.mapValues(paramsToSortedMap(parameters),
         (param) => param.Value)));
   } else {
     const promises = _.map(parameters, (parameter) => mergeParamTags(ssm, parameter));
     const taggedParams = paramsToSortedMap(await Promise.all(promises));
     if (argv.format === 'json') {
-      console.log(JSON.stringify(taggedParams, null, ' '));
+      writeLine(JSON.stringify(taggedParams, null, ' '));
     } else {
-      console.log(jsyaml.dump(taggedParams));
+      writeLine(jsyaml.dump(taggedParams));
     }
   }
   return SUCCESS;
@@ -246,7 +247,7 @@ export async function getParamHistory(argv: GetParamArgs): Promise<number> {
   const previous = sorted.slice(0, sorted.length - 1);
 
   if (argv.format === 'simple') {
-    console.log(jsyaml.dump({
+    writeLine(jsyaml.dump({
       Current: {
         Value: current.Value,
         LastModifiedDate: current.LastModifiedDate,
@@ -267,9 +268,9 @@ export async function getParamHistory(argv: GetParamArgs): Promise<number> {
       Previous: previous
     };
     if (argv.format === 'json') {
-      console.log(JSON.stringify(output, null, ' '));
+      writeLine(JSON.stringify(output, null, ' '));
     } else {
-      console.log(jsyaml.dump(output));
+      writeLine(jsyaml.dump(output));
     }
   }
   return SUCCESS;

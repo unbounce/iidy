@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import * as aws from 'aws-sdk'
 import * as jmespath from 'jmespath';
 
+import {writeLine} from '../output';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import def from '../default';
 import {SUCCESS} from '../statusCodes';
@@ -25,18 +26,18 @@ export async function describeStackMain(argv: GenericCLIArguments): Promise<numb
     const {StackResources} = await cfn.describeStackResources({StackName}).promise();
     const Resources = _.fromPairs(_.map(StackResources, (r) => [r.LogicalResourceId, r]));
     const combined = _.merge({Resources}, stack);
-    console.log(JSON.stringify(jmespath.search(combined, argv.query), null, ' '));
+    writeLine(JSON.stringify(jmespath.search(combined, argv.query), null, ' '));
     return SUCCESS;
   }
   else {
     const stackEventsPromise = getAllStackEvents(StackName);
     await summarizeStackDefinition(StackName, region, true, stackPromise);
     const StackId = stack.StackId as string;
-    console.log();
+    writeLine();
     const eventCount = def(50, argv.events);
-    console.log(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`));
+    writeLine(formatSectionHeading(`Previous Stack Events (max ${eventCount}):`));
     await showStackEvents(StackName, eventCount, stackEventsPromise);
-    console.log();
+    writeLine();
     await summarizeStackContents(StackId, stackPromise);
     return SUCCESS;
   }

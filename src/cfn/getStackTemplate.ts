@@ -1,5 +1,6 @@
 import * as aws from 'aws-sdk'
 
+import {writeLine, writeErrorRaw} from '../output';
 import * as yaml from '../yaml';
 import def from '../default';
 import {SUCCESS} from '../statusCodes';
@@ -16,21 +17,21 @@ export async function getStackTemplateMain(argv: GenericCLIArguments): Promise<n
   if (!output.TemplateBody) { // tslint:disable-line
     throw new Error('No template found');
   }
-  process.stderr.write(`# Stages Available: ${output.StagesAvailable}\n`);
-  process.stderr.write(`# Stage Shown: ${TemplateStage}\n\n`);
+  writeErrorRaw(`# Stages Available: ${output.StagesAvailable}\n`);
+  writeErrorRaw(`# Stage Shown: ${TemplateStage}\n\n`);
   const templateObj = parseTemplateBody(output.TemplateBody);
   switch (argv.format) {
     case 'yaml':
-      console.log(yaml.dump(templateObj));
+      writeLine(yaml.dump(templateObj));
       break;
     case 'json':
-      console.log(JSON.stringify(templateObj, null, ' '));
+      writeLine(JSON.stringify(templateObj, null, ' '));
       break;
     case 'original':
-      console.log(output.TemplateBody);
+      writeLine(output.TemplateBody);
       break;
     default:
-      console.log(output.TemplateBody);
+      writeLine(output.TemplateBody);
   }
   return SUCCESS;
 }

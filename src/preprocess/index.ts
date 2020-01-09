@@ -183,7 +183,7 @@ export function parseImportType(location: ImportLocation, baseLocation: ImportLo
   }
   const importType = importType0 as ImportType;
   const baseImportType = baseLocation.indexOf(':') > -1
-    ? baseLocation.toLowerCase().split(':')[0] as ImportType
+    ? baseLocation.toLowerCase().split(':')[0].replace('https', 'http') as ImportType
     : "file";
 
   if (_.includes(['s3', 'http'], baseImportType)) {

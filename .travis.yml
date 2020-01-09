@@ -1,3 +1,0 @@
-language: node_js
-env:
-  - SKIP_IIDY_AWS_TEST=yes

@@ -25,7 +25,7 @@ const ssmConfigFalse = [
 ];
 
 class MockSSM {
-  constructor(private parameters: typeof ssmConfigTrue) {}
+  constructor(private readonly parameters: typeof ssmConfigTrue) {}
   getParametersByPath(params: { Path: string }): { promise: () => Promise<{ Parameters?: typeof ssmConfigTrue }> } {
     const Parameters = params.Path.match(/iidy/) ? this.parameters : undefined;
     return {
@@ -35,26 +35,27 @@ class MockSSM {
 }
 
 describe('applyGlobalConfiguration', () => {
+  const Template = 'cfn-template.yaml';
   it('noop if ApprovedTemplateLocation if set', async () => {
-    const stackArgs = { StackName: 'name', Template: 'cfn-template.yaml' };
+    const stackArgs = { StackName: 'name', Template };
     await applyGlobalConfiguration(stackArgs, new MockSSM(ssmConfigTrue) as unknown as aws.SSM);
     expect(stackArgs).to.eqls({ StackName: 'name', Template: 'cfn-template.yaml' });
   });
 
   it('removes ApprovedTemplateLocation if set', async () => {
-    const stackArgs = { StackName: 'name', Template: 'cfn-template.yaml', ApprovedTemplateLocation: 'foo' };
+    const stackArgs = { StackName: 'name', Template, ApprovedTemplateLocation: 'foo' };
     await applyGlobalConfiguration(stackArgs, new MockSSM(ssmConfigTrue) as unknown as aws.SSM);
     expect(stackArgs).to.eqls({ StackName: 'name', Template: 'cfn-template.yaml' });
   });
 
   it('does not remove ApprovedTemplateLocation if not set', async () => {
-    const stackArgs = { StackName: 'name', Template: 'cfn-template.yaml', ApprovedTemplateLocation: 'foo' };
+    const stackArgs = { StackName: 'name', Template, ApprovedTemplateLocation: 'foo' };
     await applyGlobalConfiguration(stackArgs, new MockSSM([]) as unknown as aws.SSM);
     expect(stackArgs).to.eqls({ StackName: 'name', Template: 'cfn-template.yaml', ApprovedTemplateLocation: 'foo' });
   });
 
   it('does not remove ApprovedTemplateLocation if set to false', async () => {
-    const stackArgs = { StackName: 'name', Template: 'cfn-template.yaml', ApprovedTemplateLocation: 'foo' };
+    const stackArgs = { StackName: 'name', Template, ApprovedTemplateLocation: 'foo' };
     await applyGlobalConfiguration(stackArgs, new MockSSM(ssmConfigFalse) as unknown as aws.SSM);
     expect(stackArgs).to.eqls({ StackName: 'name', Template: 'cfn-template.yaml', ApprovedTemplateLocation: 'foo' });
   });

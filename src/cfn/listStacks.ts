@@ -4,6 +4,7 @@ import * as jmespath from 'jmespath';
 import * as cli from 'cli-color';
 import {sprintf} from 'sprintf-js';
 
+import {writeLine, writeRaw} from '../output';
 import configureAWS from '../configureAWS';
 import {logger} from '../logger';
 import def from '../default';
@@ -32,7 +33,7 @@ export async function listStacks(showTags = false, query?: string, tagsFilter?: 
   const stacks = _.sortBy(await stacksPromise, (st) => def(st.CreationTime, st.LastUpdatedTime));
   spinner.stop();
   if (stacks.length === 0) {
-    console.log('No stacks found');
+    writeLine('No stacks found');
     return SUCCESS;
   }
   const timePadding = 24;
@@ -63,11 +64,11 @@ export async function listStacks(showTags = false, query?: string, tagsFilter?: 
   }
   if (query) {
     // TODO consider adding in .Resources
-    console.log(JSON.stringify(jmespath.search({Stacks: filteredStacks}, query), null, ' '));
+    writeLine(JSON.stringify(jmespath.search({Stacks: filteredStacks}, query), null, ' '));
     return;
   }
   else {
-    console.log(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`));
+    writeLine(cli.blackBright(`Creation/Update Time, Status, Name${showTags ? ', Tags' : ''}`));
     for (const stack of filteredStacks) {
       const tags = _.fromPairs(_.map(stack.Tags, (tag) => [tag.Key, tag.Value]));
       const lifecyle: string | undefined = tags.lifetime;
@@ -99,14 +100,14 @@ export async function listStacks(showTags = false, query?: string, tagsFilter?: 
       else {
         stackName = baseStackName;
       }
-      process.stdout.write(
+      writeRaw(
         sprintf('%s %s %s %s\n',
           formatTimestamp(sprintf(`%${timePadding}s`, renderTimestamp(def(stack.CreationTime, stack.LastUpdatedTime)))),
           colorizeResourceStatus(stack.StackStatus, statusPadding),
           cli.blackBright(lifecyleIcon) + stackName,
           showTags ? cli.blackBright(prettyFormatTags(stack.Tags)) : ''));
       if (stack.StackStatus.indexOf('FAILED') > -1 && !_.isEmpty(stack.StackStatusReason)) {
-        console.log('  ', cli.blackBright(stack.StackStatusReason));
+        writeLine('  ', cli.blackBright(stack.StackStatusReason));
       }
     }
   }

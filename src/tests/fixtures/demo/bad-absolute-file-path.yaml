@@ -1,0 +1,4 @@
+files:
+  "/absolute.txt": abc
+demo:
+  - "true"

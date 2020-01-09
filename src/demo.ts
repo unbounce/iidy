@@ -7,6 +7,7 @@ import {Arguments} from 'yargs';
 import * as tmp from 'tmp';
 import * as cli from 'cli-color';
 
+import {writeLine, writeRaw} from './output';
 import timeout from './timeout';
 import {transform} from './preprocess';
 import * as yaml from './yaml';
@@ -64,8 +65,6 @@ class DemoRunner {
     try {
       this._unpackFiles(script.files);
       await this._runCommands(_.map(script.demo, normalizeRawCommand));
-    } catch (e) {
-      throw e;
     } finally {
       // TODO check result
       child_process.execSync(`rm -r "${this.tmpdir.name}"`, {cwd: this.tmpdir.name});
@@ -80,7 +79,10 @@ class DemoRunner {
       }
       const fullpath = pathmod.resolve(this.tmpdir.name, fp);
       if (fp.indexOf(pathmod.sep) !== -1) {
-        fs.mkdirSync(pathmod.dirname(fullpath));
+        const subDirName = pathmod.dirname(fullpath);
+        if (! fs.existsSync(subDirName)) {
+          fs.mkdirSync(subDirName);
+        }
       }
       fs.writeFileSync(fullpath, files[fp]);
     }
@@ -99,31 +101,31 @@ class DemoRunner {
       // TODO improve this
       throw new Error(`command failed: ${command}. exitcode=${res.status}`);
     }
-    console.log();
+    writeLine();
   }
 
   _displayBanner(command: Banner) {
     const bannerFormat = cli.bgXterm(236);
-    console.log()
+    writeLine()
     const tty: any = process.stdout; // tslint:disable-line
-    console.log(bannerFormat(' '.repeat(tty.columns)));
+    writeLine(bannerFormat(' '.repeat(tty.columns)));
     for (const ln of command.banner.split('\n')) {
       const pad = (tty.columns - ln.length);
-      console.log(bannerFormat(cli.bold(cli.yellow(' '.repeat(2) + ln + ' '.repeat(pad - 2)))));
+      writeLine(bannerFormat(cli.bold(cli.yellow(' '.repeat(2) + ln + ' '.repeat(pad - 2)))));
     }
-    console.log(bannerFormat(' '.repeat(tty.columns)));
-    console.log();
+    writeLine(bannerFormat(' '.repeat(tty.columns)));
+    writeLine();
   }
 
   async _printComm(command: string) {
-    process.stdout.write(cli.red('Shell Prompt > '));
-    process.stdout.write('\x1b[37m')
+    writeRaw(cli.red('Shell Prompt > '));
+    writeRaw('\x1b[37m')
     for (const char of command) {
-      process.stdout.write(char);
+      writeRaw(char);
       await timeout(50 * this.timescaling);
     }
-    process.stdout.write('\x1b[0m');
-    console.log();
+    writeRaw('\x1b[0m');
+    writeLine();
   }
 
   async _runCommands(commands: DemoCommand[]) {

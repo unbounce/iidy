@@ -23,9 +23,9 @@ export class Tag<T = any> {
   }
 }
 
-function mkTagClass(tag_name: string) {
+function mkTagClass(tagName: string) {
   return class AnonTag extends Tag {
-    tag_name = tag_name;
+    tagName = tagName;
   }
 }
 
@@ -35,10 +35,10 @@ export const cfnIntrinsicTags: {[key: string]: typeof Tag} = {};
 
 type Resolver = any;
 
-function addTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
-  const kls = _.has(customTags, tag_name) ? customTags[tag_name] : mkTagClass(tag_name);
-  customTags[tag_name] = kls;
-  schemaTypes.push(new jsyaml.Type('!' + tag_name, {
+function addTagType(tagName: string, kind: YamlKind, resolve?: Resolver) {
+  const kls = _.has(customTags, tagName) ? customTags[tagName] : mkTagClass(tagName);
+  customTags[tagName] = kls;
+  schemaTypes.push(new jsyaml.Type('!' + tagName, {
     kind: kind,
     instanceOf: kls,
     resolve: resolve,
@@ -48,9 +48,9 @@ function addTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
   return kls;
 }
 
-function addCFNTagType(tag_name: string, kind: YamlKind, resolve?: Resolver) {
-  const kls = addTagType(tag_name, kind, resolve);
-  cfnIntrinsicTags[tag_name] = kls;
+function addCFNTagType(tagName: string, kind: YamlKind, resolve?: Resolver) {
+  const kls = addTagType(tagName, kind, resolve);
+  cfnIntrinsicTags[tagName] = kls;
   return kls;
 }
 

@@ -3,6 +3,8 @@ import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as pathmod from 'path';
 import * as request from 'request-promise-native';
+
+import {writeLine} from '../output';
 import {AWSRegion} from '../aws-regions';
 import {GenericCLIArguments} from '../cli/utils';
 import def from '../default';
@@ -47,10 +49,10 @@ export abstract class AbstractCloudFormationStackCommand {
   protected startTime: Date;
   protected cfn: aws.CloudFormation;
   protected expectedFinalStackStatus: string[];
-  protected showTimesInSummary: boolean = true;
-  protected showPreviousEvents: boolean = true;
+  protected showTimesInSummary = true;
+  protected showPreviousEvents = true;
   protected previousStackEventsPromise: Promise<aws.CloudFormation.StackEvents>;
-  protected watchStackEvents: boolean = true;
+  protected watchStackEvents = true;
 
   constructor(readonly argv: GenericCLIArguments, readonly stackArgs: StackArgs) {
     // region, profile, and assumeRoleArn are the only used for cli output here
@@ -74,10 +76,10 @@ export abstract class AbstractCloudFormationStackCommand {
     }
   }
 
-  async _updateStackTerminationPolicy() {
+  async _updateStackTerminationPolicy(): Promise<void> {
     if (_.isBoolean(this.stackArgs.EnableTerminationProtection)) {
       const cfn = new aws.CloudFormation();
-      return cfn.updateTerminationProtection({
+      await cfn.updateTerminationProtection({
         StackName: this.stackName,
         EnableTerminationProtection: this.stackArgs.EnableTerminationProtection
       }).promise();
@@ -88,8 +90,8 @@ export abstract class AbstractCloudFormationStackCommand {
     const sts = new aws.STS();
     const iamIdentPromise = sts.getCallerIdentity().promise();
     const roleARN = this.stackArgs.ServiceRoleARN || this.stackArgs.RoleARN;
-    console.log(); // blank line
-    console.log(formatSectionHeading('Command Metadata:'));
+    writeLine(); // blank line
+    writeLine(formatSectionHeading('Command Metadata:'));
     printSectionEntry('CFN Operation:', cli.magenta(this.cfnOperation));
     printSectionEntry('iidy Environment:', cli.magenta(this.environment));
     printSectionEntry('Region:', cli.magenta(this.region));
@@ -101,7 +103,7 @@ export abstract class AbstractCloudFormationStackCommand {
     const iamIdent = await iamIdentPromise;
     printSectionEntry('Current IAM Principal:', cli.blackBright(iamIdent.Arn));
     printSectionEntry('iidy Version:', cli.blackBright(require('../../package.json').version));
-    console.log();
+    writeLine();
   }
 
   async run(): Promise<number> {
@@ -118,15 +120,15 @@ export abstract class AbstractCloudFormationStackCommand {
     const stackPromise = getStackDescription(stackId);
     await summarizeStackDefinition(stackId, this.region, this.showTimesInSummary, stackPromise);
     if (this.showPreviousEvents) {
-      console.log();
-      console.log(formatSectionHeading('Previous Stack Events (max 10):'));
+      writeLine();
+      writeLine(formatSectionHeading('Previous Stack Events (max 10):'));
       await showStackEvents(stackId, 10, this.previousStackEventsPromise);
     }
-    console.log();
+    writeLine();
     if (this.watchStackEvents) {
       await watchStack(stackId, this.startTime);
     }
-    console.log();
+    writeLine();
     const stack = await summarizeStackContents(stackId);
     return showFinalComandSummary(_.includes(this.expectedFinalStackStatus, stack.StackStatus));
   }
@@ -217,7 +219,8 @@ export abstract class AbstractCloudFormationStackCommand {
 
   _exitWithTemplateApprovalFailure(): number {
     logger.error('Template version has not been approved or the current IAM principal does not have permission to access it. Run:');
-    logger.error('  ' + this.normalizeIidyCLICommand(`template-approval request ${this.argsfile}`));
+    const command = this.normalizeIidyCLICommand(`template-approval request ${this.argsfile}`);
+    logger.error(`  ${command}`);
     logger.error('to begin the approval process.');
     return FAILURE;
   }

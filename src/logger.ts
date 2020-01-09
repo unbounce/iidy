@@ -48,7 +48,10 @@ const consoleLogger = new winston.transports.Console({
 
 export function setLogLevel(level: string) {
   consoleLogger.level = level;
+  LOG_LEVEL = level;
 }
+
+export const getLogLevel = () => consoleLogger.level || LOG_LEVEL;
 
 export const logger = winston.createLogger({
   transports: [consoleLogger]
