@@ -19,7 +19,7 @@ import {loadStackArgs} from './loadStackArgs';
 import {showPendingChangesets} from './showPendingChangesets';
 import {stackArgsToCreateChangeSetInput} from './stackArgsToX';
 import {summarizeStackDefinition} from './summarizeStackDefinition';
-import terminalStackStates from './terminalStackStates';
+import {TERMINAL as terminalStackStates} from './statusTypes';
 import {CfnOperation, StackArgs} from './types';
 
 export async function doesStackExist(StackName: string): Promise<boolean> {
