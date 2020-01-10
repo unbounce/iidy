@@ -1,5 +1,27 @@
 ### Changelog
 
+#### [1.11.0](https://github.com/unbounce/iidy/compare/v1.10.0...v1.11.0)
+
+9 January 2020
+
+- PR #235 by @tavisrudd - implement 145: display resource creation times
+- PR #243 by @tavisrudd - fix issue #238: partial writes to stdout when piping render output
+- PR #237 by @tavisrudd - Create CODE_OF_CONDUCT.md
+- PR #240 by @dannosaur - #239 fix invalid refs when node objects are duplicated within the template
+- PR #242 by @jpb - Support cross account template approval requests
+- PR #232 by @tavisrudd - update build deps, improve `make prepare_release`, implement new changelog generator
+- PR #233 by @tavisrudd - fix 228 and 105 double processing of refs in custom template Props
+- PR #234 by @tavisrudd - remove references to yarn
+- PR #231 by @kalupa - Add support for .nvmrc for node versioning
+- PR #230 by @tavisrudd - disable autochangelog for now
+- PR #229 by @tavisrudd - bump laundry to v1.5.0
+- PR #227 by @tavisrudd - fix #178: shasum filehash portability
+- PR #226 by @tavisrudd - add test for tojsonPretty handlebars function
+- PR #221 by @tavisrudd - misc error message improvements
+- PR #225 by @tavisrudd - fix #213: bug in resource node preprocessing
+- PR #224 by @dannosaur - [#223] fix issue with $merge syntax in Resources
+- PR #222 by @tavisrudd - add --color cli option
+
 #### [1.10.0](https://github.com/unbounce/iidy/compare/v1.9.0...v1.10.0)
 
 > 6 December 2019
