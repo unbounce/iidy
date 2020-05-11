@@ -134,7 +134,7 @@ $imports:
 #### Sources for `$imports`
 
 Imports are specified per YAML document under the special
-document-level key `$imports`. Its value is map from import names to
+document-level key `$imports`. Its value is a map of import names to
 import sources.
 
 For example, if we had the following file:
