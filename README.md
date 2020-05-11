@@ -13,7 +13,7 @@ CloudFormation templates.
   stack.
 * It does some template validation, guards against common issues, and will be
   extended over time to validate our best practices and security policies.
-* It provides seemless integration with AWS Parameter Store.
+* It provides seamless integration with AWS Parameter Store.
 * It includes an optional YAML pre-processor which allows CloudFormation
   templates to be abstracted and simplified in ways not possible with vanilla
   CloudFormation templates. The pre-processor language supports importing data

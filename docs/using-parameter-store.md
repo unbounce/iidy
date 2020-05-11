@@ -62,13 +62,13 @@ $ iidy param set --overwrite /path/to/param new-value
 $ iidy param get /path/to/param
 # new-value
 
-$ iidy param get-by-paht /path/to
+$ iidy param get-by-path /path/to
 # /path/to/param: new-value
 ```
 
 ## Parameter Approval
 
-Parameters can be set in a "pending" state by using the `--with-review` flag:
+Parameters can be set in a "pending" state by using the `--with-approval` flag:
 
 ```shell
 $ iidy param set --with-approval /path/to/param value

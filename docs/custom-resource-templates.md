@@ -72,4 +72,4 @@ Metadata: # ... elided ...
 
 TODO: more examples and cover the details
 
-TODO: This section is best explained with an worked example / executable demonstration
+TODO: This section is best explained with a working example / executable demonstration

@@ -27,7 +27,7 @@ $ iidy create-stack stack-args.yaml
 # ... lots of useful output about what iidy and CloudFormation are doing ...
 
 $ iidy list-stacks | grep iidy-demo
-Wed Aug 02 2017 00:41:49 CREATE_COMPLETE          iidy-demo owner=tavis, environment=development, lifetime=short, project=iidy-demo
+Wed Aug 02 2017 00:41:49 CREATE_COMPLETE          iidy-demo owner=your-name, environment=development, lifetime=short, project=iidy-demo
 
 # edit something in stack-args to demo a simple update-stack
 sed s/your-name/Tavis/ stack-args.yaml > stack-args2.yaml
