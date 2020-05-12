@@ -195,7 +195,7 @@ data for creating or updating a CloudFormation stack.
 | ServiceRoleARN | [CloudFormation Service Role](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-iam-servicerole.html) to use |
 | Tags | Tags to assign to CloudFormation stack | `{ service: my-app }` |
 | Parameters | [CloudFormation stack parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html) to use |
-| Capabililites | List of [CloudFormation capabilities to use](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-iam-template.html#using-iam-capabilities) | `CAPABILITY_NAMED_IAM` |
+| Capabilities | List of [CloudFormation capabilities to use](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-iam-template.html#using-iam-capabilities) | `CAPABILITY_NAMED_IAM` |
 | NotificationARNs | List of [SNS Topic ARNs to send CloudFormation notifications to] | `arn:aws:sns:us-east-1:123467890:my-topic` |
 | TimeoutInMinutes | Number of minutes to provide as [timeout to the CloudFormation service](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html) | `10` |
 | OnFailure | options: `ROLLBACK`, `DELETE`, `DO_NOTHING`, default `ROLLBACK` | `DELETE`
