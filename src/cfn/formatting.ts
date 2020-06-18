@@ -4,7 +4,7 @@ import * as dateformat from 'dateformat';
 import * as _ from 'lodash';
 import {sprintf} from 'sprintf-js';
 import {FAILURE, SUCCESS} from '../statusCodes';
-import {COMPLETE, FAILED, IN_PROGRESS} from './statusTypes';
+import {COMPLETE, FAILED, IN_PROGRESS, SKIPPED} from './statusTypes';
 
 export const COLUMN2_START = 25;
 export const DEFAULT_STATUS_PADDING = 35;
@@ -38,9 +38,12 @@ export function colorizeResourceStatus(status: string, padding = DEFAULT_STATUS_
   const fail = cli.redBright;
   const progress = cli.yellow;
   const complete = cli.green;
+  const skipped = cli.blue;
 
   if (_.includes(FAILED, status)) {
     return fail(padded);
+  } else if (_.includes(SKIPPED, status)) {
+    return skipped(padded);
   } else if (_.includes(COMPLETE, status)) {
     return complete(padded);
   } else if (_.includes(IN_PROGRESS, status)) {
@@ -48,7 +51,6 @@ export function colorizeResourceStatus(status: string, padding = DEFAULT_STATUS_
   } else {
     return padded;
   }
-
 }
 
 export const prettyFormatSmallMap = (map: {[key: string]: string}): string => {

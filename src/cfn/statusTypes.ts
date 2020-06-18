@@ -47,5 +47,10 @@ export const FAILED = [
 ] as const;
 export type FAILED = typeof FAILED[number];
 
-export type TERMINAL = COMPLETE | FAILED | 'REVIEW_IN_PROGRESS';
-export const TERMINAL: TERMINAL[] = (COMPLETE as any).concat(FAILED).concat(['REVIEW_IN_PROGRESS']);
+export const SKIPPED = [
+  'DELETE_SKIPPED'
+] as const;
+export type SKIPPED = typeof SKIPPED[number];
+
+export type TERMINAL = COMPLETE | FAILED | SKIPPED | 'REVIEW_IN_PROGRESS';
+export const TERMINAL: TERMINAL[] = (COMPLETE as any).concat(FAILED).concat(SKIPPED).concat(['REVIEW_IN_PROGRESS']);
