@@ -566,6 +566,7 @@ things: !$escape
 ```
 
 * `!$string` convert data to a YAML string
+`!$toYaml` is an alias of `!$string`
 
 ```yaml
 # !$string {}
@@ -583,6 +584,28 @@ things: !$string
 # !$parseYaml {}
 
 things: !$parseYaml "a: b\n"
+
+# things:
+#   a: b
+```
+
+* `!$toJson` convert data to a JSON string
+
+```yaml
+# !$toJson {}
+
+things: !$toJson
+  a: b
+
+# things: '{"a":"b"}'
+```
+
+* `!$parseJson` parse JSON string, opposite of `!$toJson`
+
+```json
+# !$parseJson {}
+
+things: !$parseJson '{ "a":"b" }'
 
 # things:
 #   a: b

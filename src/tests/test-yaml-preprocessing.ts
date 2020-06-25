@@ -516,6 +516,32 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
     });
 
+    describe('Data parsing / serizliation', () => {
+      it('!$string', async () => {
+        expect(await transform(`out: !$string { a: 1 }`))
+          .to.deep.eq({ out: 'a: 1\n'});
+      });
+
+      it('!$toYaml', async () => {
+        expect(await transform(`out: !$toYaml { a: 1 }`))
+          .to.deep.eq({ out: 'a: 1\n'});
+      });
+
+      it('!$parseYaml', async () => {
+        expect(await transform(`out: !$parseYaml 'a: 1'`))
+          .to.deep.eq({ out: { a: 1 } });
+      });
+
+      it('!$toJson', async () => {
+        expect(await transform(`out: !$toJson { a: 1 }`))
+          .to.deep.eq({ out: '{"a":1}'});
+      });
+
+      it('!$parseJson', async () => {
+        expect(await transform(`out: !$parseJson '{ "a": 1 }'`))
+          .to.deep.eq({ out: { a: 1 } });
+      });
+    });
 
     //////////////////////////////
     describe('Boolean / Logical Branching Tags', () => {
