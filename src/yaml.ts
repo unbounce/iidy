@@ -199,6 +199,9 @@ addCustomTag('$groupBy', $groupBy); // mapping
 export class $split extends Tag<[string, string]> {}
 addCustomTag('$split', $split); // sequence
 
+export class $join extends Tag<[string, string[]]> {}
+addCustomTag('$join', $join); // sequence
+
 // TODO enumerate, zip, zipWith
 
 ////////////////////////////////////////////////////////////////////////////////

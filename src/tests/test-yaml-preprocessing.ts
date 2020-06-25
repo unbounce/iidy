@@ -810,6 +810,22 @@ m: !$split
         });
       });
 
+      describe('!$join', () => {
+        it('basic forms', async () => {
+          expect(await transform(`
+m: !$join [',', ['a', 'b', 'c']]
+`)).to.deep.equal({m: 'a,b,c'});
+        });
+
+        it('newlines', async () => {
+          expect(await transform(`
+m: !$join
+  - "\\n"
+  - ['a', 'b', 'c']
+`)).to.deep.equal({m: 'a\nb\nc'});
+        });
+      });
+
 
     });
     // END 'Looping and Data Restructuring Tags'
