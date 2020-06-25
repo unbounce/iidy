@@ -138,9 +138,16 @@ addCustomTag('$escape', $escape); // any
 
 export class $string extends Tag {}
 addCustomTag('$string', $string); // any
+addCustomTag('$toYaml', $string); // any
 
 export class $parseYaml extends Tag<string> {}
 addCustomTag('$parseYaml', $parseYaml); // scalar string
+
+export class $toJson extends Tag {}
+addCustomTag('$toJson', $toJson); // any
+
+export class $parseJson extends Tag<string> {}
+addCustomTag('$parseJson', $parseJson); // scalar string
 
 ////////////////////////////////////////////////////////////////////////////////
 // variable definition and template expansion custom tags

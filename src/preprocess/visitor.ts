@@ -120,6 +120,10 @@ export class Visitor {
       return this.visit$string(node, path, env);
     } else if (node instanceof yaml.$parseYaml) {
       return this.visit$parseYaml(node, path, env);
+    } else if (node instanceof yaml.$toJson) {
+      return this.visit$toJson(node, path, env);
+    } else if (node instanceof yaml.$parseJson) {
+      return this.visit$parseJson(node, path, env);
     } else if (node instanceof yaml.$if) {
       return this.visit$if(node, path, env);
     } else if (node instanceof yaml.$eq) {
@@ -352,11 +356,28 @@ export class Visitor {
   }
 
   visit$parseYaml(node: yaml.$parseYaml, path: string, env: Env): AnyButUndefined {
-    if (!_.isString(node.data)) {
+    const visited = this.visitNode(node.data, path, env);
+    if (!_.isString(visited)) {
       throw new Error(
         `Invalid argument to !$parseYaml: expected string, got ${node.data}`);
     }
-    return this.visitNode(yaml.loadString(this.visitString(node.data, path, env), path), path, env);
+    return this.visitNode(yaml.loadString(visited, path), path, env);
+  }
+
+  visit$toJson(node: yaml.$toJson, path: string, env: Env): string {
+    const stringSource = (_.isArray(node.data) && node.data.length === 1)
+      ? node.data[0]
+      : node.data;
+    return JSON.stringify(this.visitNode(stringSource, path, env));
+  }
+
+  visit$parseJson(node: yaml.$parseJson, path: string, env: Env): AnyButUndefined {
+    const visited = this.visitNode(node.data, path, env);
+    if (!_.isString(visited)) {
+      throw new Error(
+        `Invalid argument to !$parseJson: expected string, got ${node.data}`);
+    }
+    return this.visitNode(JSON.parse(visited), path, env);
   }
 
   visit$concatMap(node: yaml.$concatMap, path: string, env: Env): AnyButUndefined {
