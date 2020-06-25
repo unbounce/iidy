@@ -418,6 +418,18 @@ things: !$split
 #   - b
 ```
 
+* `!$join` join a list into a string
+
+```yaml
+# !$join [delimiter, strings]
+
+things: !$join
+  - ', '
+  - - a
+    - b
+
+# things: a, b
+```
 
 ### String manipulation Tags
 
