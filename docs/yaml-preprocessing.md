@@ -163,6 +163,94 @@ outputs:
 
 See [Importing Data](../README.md#importing-data) for a complete list of import sources.
 
+### Handlebars Helpers
+
+The [string helpers from
+handlebars-helpers](https://github.com/helpers/handlebars-helpers#string) (such
+as `titleize`, `trim`, `reverse`, etc) are included for basic string
+manipulation in addition to the following helpers.
+
+#### `tojson`
+
+```yaml
+$defs:
+  a:
+    b: 9
+
+out: '{{tojson a}}'
+```
+
+```yaml
+out: '{"b":9}'
+```
+
+#### `tojsonPretty`
+
+```yaml
+$defs:
+  a:
+    b:
+      c: 9
+out: '{{tojsonPretty a}}'
+```
+
+```yaml
+out: '{\n \"b\": {\n  \"c\": 9\n }\n}'
+```
+
+#### `toyaml`
+
+```yaml
+$defs:
+  a:
+    b: 9
+
+out: '{{toyaml a}}'
+```
+
+```yaml
+out: 'b: 9\n'
+```
+
+#### `toLowerCase`
+
+```yaml
+$defs:
+  a: ABC
+
+out: '{{toLowerCase a}}'
+```
+
+```yaml
+out: 'abc'
+```
+
+#### `toUpperCase`
+
+```yaml
+$defs:
+  a: abc
+
+out: '{{toUpperCase a}}'
+```
+
+```yaml
+out: 'ABC'
+```
+
+#### `base64`
+
+```yaml
+$defs:
+  a: abc
+
+out: '{{base64 a}}'
+```
+
+```yaml
+out: 'YWJj'
+```
+
 ### Boolean / Logical Branching Tags
 
 ```yaml
