@@ -1,5 +1,4 @@
 import * as _ from 'lodash';
-import * as escapeStringRegexp from 'escape-string-regexp';
 import * as handlebars from 'handlebars';
 
 import * as yaml from '../yaml';
@@ -399,11 +398,11 @@ export class Visitor {
   visit$split(node: yaml.$split, path: string, env: Env): string[] {
     if (_.isArray(node.data) && node.data.length === 2) {
       const [delimiter, str]: [string, string] = node.data;
-      const escapedDelimiter = escapeStringRegexp(delimiter);
-      return this.visitNode(str, path, env)
-        .toString()
-        .replace(new RegExp(`${escapedDelimiter}+$`), '') // Remove trailing delimiters
-        .split(delimiter);
+      const visitedDelimiter = this.visitNode(delimiter, path, env);
+      return _.dropRightWhile(
+        this.visitNode(str, path, env).toString().split(visitedDelimiter),
+        (s) => s === "" // Remove trailing delimiters
+      );
     } else {
       throw new Error(`Invalid argument to $split at "${path}".`
         + " Must be array with two elements: a delimiter to split on and a string to split");
