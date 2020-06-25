@@ -8,6 +8,7 @@ import * as child_process from 'child_process';
 import * as _ from 'lodash';
 import * as crypto from 'crypto';
 import * as handlebars from 'handlebars';
+import * as handlebarsHelpers from 'handlebars-helpers';
 
 import * as nameGenerator from 'project-name-generator';
 
@@ -37,6 +38,8 @@ handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
 handlebars.registerHelper('base64', (context: any) => Buffer.from(context).toString('base64'));
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
 handlebars.registerHelper('toUpperCase', (str: string) => str.toUpperCase());
+
+handlebarsHelpers(['string'], { handlebars });
 
 export function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
   try {

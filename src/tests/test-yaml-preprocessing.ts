@@ -358,6 +358,12 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.equal({out: Buffer.from(longerString).toString('base64')});
       });
 
+      // https://github.com/helpers/handlebars-helpers#string
+      it('handlebars-helpers', async () => {
+        expect(await transform({$defs: {a: "one two three"}, out: '{{titleize a}}'}))
+          .to.deep.equal({out: 'One Two Three'});
+      });
+
     });
 
 
