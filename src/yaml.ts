@@ -138,13 +138,13 @@ addCustomTag('$escape', $escape); // any
 
 export class $string extends Tag {}
 addCustomTag('$string', $string); // any
-addCustomTag('$toYaml', $string); // any
+addCustomTag('$toYamlString', $string); // any
 
 export class $parseYaml extends Tag<string> {}
 addCustomTag('$parseYaml', $parseYaml); // scalar string
 
-export class $toJson extends Tag {}
-addCustomTag('$toJson', $toJson); // any
+export class $toJsonString extends Tag {}
+addCustomTag('$toJsonString', $toJsonString); // any
 
 export class $parseJson extends Tag<string> {}
 addCustomTag('$parseJson', $parseJson); // scalar string
