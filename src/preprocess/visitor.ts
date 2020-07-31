@@ -120,8 +120,8 @@ export class Visitor {
       return this.visit$string(node, path, env);
     } else if (node instanceof yaml.$parseYaml) {
       return this.visit$parseYaml(node, path, env);
-    } else if (node instanceof yaml.$toJson) {
-      return this.visit$toJson(node, path, env);
+    } else if (node instanceof yaml.$toJsonString) {
+      return this.visit$toJsonString(node, path, env);
     } else if (node instanceof yaml.$parseJson) {
       return this.visit$parseJson(node, path, env);
     } else if (node instanceof yaml.$if) {
@@ -364,7 +364,7 @@ export class Visitor {
     return this.visitNode(yaml.loadString(visited, path), path, env);
   }
 
-  visit$toJson(node: yaml.$toJson, path: string, env: Env): string {
+  visit$toJsonString(node: yaml.$toJsonString, path: string, env: Env): string {
     const stringSource = (_.isArray(node.data) && node.data.length === 1)
       ? node.data[0]
       : node.data;

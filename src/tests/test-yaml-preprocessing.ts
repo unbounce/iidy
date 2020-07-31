@@ -522,8 +522,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.eq({ out: 'a: 1\n'});
       });
 
-      it('!$toYaml', async () => {
-        expect(await transform(`out: !$toYaml { a: 1 }`))
+      it('!$toYamlString', async () => {
+        expect(await transform(`out: !$toYamlString { a: 1 }`))
           .to.deep.eq({ out: 'a: 1\n'});
       });
 
@@ -532,8 +532,8 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           .to.deep.eq({ out: { a: 1 } });
       });
 
-      it('!$toJson', async () => {
-        expect(await transform(`out: !$toJson { a: 1 }`))
+      it('!$toJsonString', async () => {
+        expect(await transform(`out: !$toJsonString { a: 1 }`))
           .to.deep.eq({ out: '{"a":1}'});
       });
 
