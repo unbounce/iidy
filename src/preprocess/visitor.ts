@@ -401,7 +401,7 @@ export class Visitor {
       const visitedDelimiter = this.visitNode(delimiter, path, env);
       return _.dropRightWhile(
         this.visitNode(str, path, env).toString().split(visitedDelimiter),
-        (s) => s === "" // Remove trailing delimiters
+        (s) => s === "" // Remove empty elements from trailing delimiters
       );
     } else {
       throw new Error(`Invalid argument to $split at "${path}".`
