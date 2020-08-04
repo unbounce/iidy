@@ -799,9 +799,25 @@ out:
 
       describe('!$split', () => {
         it('basic forms', async () => {
+          expect(await transform(`m: !$split [',', 'a,b,c']`)).to.deep.equal({m: ['a', 'b', 'c']});
+        });
+
+        it('trailing delimiter', async () => {
+          expect(await transform(`m: !$split [',', 'a,b,c,']`)).to.deep.equal({m: ['a', 'b', 'c']});
+        });
+
+        it('derived delimiter', async () => {
           expect(await transform(`
-m: !$split [',', 'a,b,c']
-`)).to.deep.equal({m: ['a', 'b', 'c']});
+$defs:
+  delimiter: ','
+m: !$split [!$ delimiter, 'a,b,c']`)).to.deep.equal({m: ['a', 'b', 'c']});
+        });
+
+        it('derived value', async () => {
+          expect(await transform(`
+$defs:
+  value: 'a,b,c'
+m: !$split [',', !$ value]`)).to.deep.equal({m: ['a', 'b', 'c']});
         });
 
         it('newlines', async () => {
@@ -813,6 +829,36 @@ m: !$split
    b
    c
 `)).to.deep.equal({m: ['a', 'b', 'c']});
+        });
+      });
+
+      describe('!$join', () => {
+        it('basic forms', async () => {
+          expect(await transform(`
+m: !$join [',', ['a', 'b', 'c']]
+`)).to.deep.equal({m: 'a,b,c'});
+        });
+
+        it('derived delimiter', async () => {
+          expect(await transform(`
+$defs:
+  delimiter: ','
+m: !$join [!$ delimiter,  ['a', 'b', 'c']]`)).to.deep.equal({m: 'a,b,c'});
+        });
+
+        it('derived values', async () => {
+          expect(await transform(`
+$defs:
+  strs: ['a', 'b', 'c']
+m: !$join [',', !$ strs]`)).to.deep.equal({m: 'a,b,c'});
+        });
+
+        it('newlines', async () => {
+          expect(await transform(`
+m: !$join
+  - "\\n"
+  - ['a', 'b', 'c']
+`)).to.deep.equal({m: 'a\nb\nc'});
         });
       });
 

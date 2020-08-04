@@ -497,6 +497,8 @@ people: !$groupBy
 ```yaml
 # !$split [delimiter, string]
 
+`!$split` can be used in places where CloudFormation does not allow its own `!Split` function, or when working with non-CloudFormation documents.
+
 things: !$split
   - ', '
   - a, b
@@ -506,6 +508,20 @@ things: !$split
 #   - b
 ```
 
+* `!$join` join a list into a string
+
+`!$join` can be used in places where CloudFormation does not allow its own `!Join` function, or when working with non-CloudFormation documents.
+
+```yaml
+# !$join [delimiter, strings]
+
+things: !$join
+  - ', '
+  - - a
+    - b
+
+# things: a, b
+```
 
 ### String manipulation Tags
 

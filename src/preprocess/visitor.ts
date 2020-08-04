@@ -1,5 +1,4 @@
 import * as _ from 'lodash';
-import * as escapeStringRegexp from 'escape-string-regexp';
 import * as handlebars from 'handlebars';
 
 import * as yaml from '../yaml';
@@ -149,6 +148,8 @@ export class Visitor {
       return this.visit$fromPairs(node, path, env);
     } else if (node instanceof yaml.$split) {
       return this.visit$split(node, path, env);
+    } else if (node instanceof yaml.$join) {
+      return this.visit$join(node, path, env);
     } else if (node instanceof yaml.Ref) {
       return this.visitRef(node, path, env);
     } else if (node instanceof yaml.GetAtt) {
@@ -397,14 +398,31 @@ export class Visitor {
   visit$split(node: yaml.$split, path: string, env: Env): string[] {
     if (_.isArray(node.data) && node.data.length === 2) {
       const [delimiter, str]: [string, string] = node.data;
-      const escapedDelimiter = escapeStringRegexp(delimiter);
-      return this.visitNode(str, path, env)
-        .toString()
-        .replace(new RegExp(`${escapedDelimiter}+$`), '') // Remove trailing delimiters
-        .split(delimiter);
+      const visitedDelimiter = this.visitNode(delimiter, path, env);
+      return _.dropRightWhile(
+        this.visitNode(str, path, env).toString().split(visitedDelimiter),
+        (s) => s === "" // Remove empty elements from trailing delimiters
+      );
     } else {
       throw new Error(`Invalid argument to $split at "${path}".`
         + " Must be array with two elements: a delimiter to split on and a string to split");
+    }
+  }
+
+  visit$join(node: yaml.$join, path: string, env: Env): string {
+    const error = new Error(`Invalid argument to $join at "${path}".`
+      + " Must be array with two elements: a delimiter to join on and a list of strings to join");
+    if (_.isArray(node.data) && node.data.length === 2) {
+      const [delimiter, strs]: [string, string[]] = node.data;
+      const visitedDelimiter = this.visitNode(delimiter, path, env);
+      const visitedStrs = this.visitNode(strs, path, env);
+      if (_.isString(visitedDelimiter) && _.isArray(visitedStrs)) {
+        return visitedStrs.join(visitedDelimiter);
+      } else {
+        throw error;
+      }
+    } else {
+      throw error;
     }
   }
 
