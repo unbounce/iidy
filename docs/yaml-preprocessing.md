@@ -170,47 +170,53 @@ handlebars-helpers](https://github.com/helpers/handlebars-helpers#string) (such
 as `titleize`, `trim`, `reverse`, etc) are included for basic string
 manipulation in addition to the following helpers.
 
-#### `tojson`
+#### `toJson`
 
 ```yaml
 $defs:
   a:
     b: 9
 
-out: '{{tojson a}}'
+out: '{{toJson a}}'
 ```
 
 ```yaml
 out: '{"b":9}'
 ```
 
-#### `tojsonPretty`
+`tojson` is an alias of `toJson` and is deprecated.
+
+#### `toJsonPretty`
 
 ```yaml
 $defs:
   a:
     b:
       c: 9
-out: '{{tojsonPretty a}}'
+out: '{{toJsonPretty a}}'
 ```
 
 ```yaml
 out: '{\n \"b\": {\n  \"c\": 9\n }\n}'
 ```
 
-#### `toyaml`
+`tojsonPretty` is an alias of `toJsonPretty` and is deprecated.
+
+#### `toYaml`
 
 ```yaml
 $defs:
   a:
     b: 9
 
-out: '{{toyaml a}}'
+out: '{{toYaml a}}'
 ```
 
 ```yaml
 out: 'b: 9\n'
 ```
+
+`toyaml` is an alias of `toYaml` and is deprecated.
 
 #### `toLowerCase`
 

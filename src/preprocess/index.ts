@@ -32,9 +32,14 @@ import paginateAwsCall from '../paginateAwsCall';
 import {_getParamsByPath} from '../params';
 import {Visitor} from './visitor';
 
+// `tojson`, `tojsonPretty`, and `toyaml` are deprecated in favour of the camelCase version
 handlebars.registerHelper('tojson', (context: any) => JSON.stringify(context));
 handlebars.registerHelper('tojsonPretty', (context: any) => JSON.stringify(context, null, ' '));
 handlebars.registerHelper('toyaml', (context: any) => yaml.dump(context));
+
+handlebars.registerHelper('toJson', (context: any) => JSON.stringify(context));
+handlebars.registerHelper('toJsonPretty', (context: any) => JSON.stringify(context, null, ' '));
+handlebars.registerHelper('toYaml', (context: any) => yaml.dump(context));
 handlebars.registerHelper('base64', (context: any) => Buffer.from(context).toString('base64'));
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
 handlebars.registerHelper('toUpperCase', (str: string) => str.toUpperCase());

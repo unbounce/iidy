@@ -325,18 +325,18 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
 
     describe('helper functions', () => {
 
-      it('tojson', async () => {
-        expect(await transform({$defs: {a: {b: 9}}, out: '{{tojson a}}'}))
+      it('toJson', async () => {
+        expect(await transform({$defs: {a: {b: 9}}, out: '{{toJson a}}'}))
           .to.deep.equal({out: '{"b":9}'});
       });
 
-      it('tojsonPretty', async () => {
-        expect(await transform({$defs: {a: {b: {c: 9}}}, out: '{{tojsonPretty a}}'}))
+      it('toJsonPretty', async () => {
+        expect(await transform({$defs: {a: {b: {c: 9}}}, out: '{{toJsonPretty a}}'}))
           .to.deep.equal({out: '{\n \"b\": {\n  \"c\": 9\n }\n}'});
       });
 
-      it('toyaml', async () => {
-        expect(await transform({$defs: {a: {b: 9}}, out: '{{toyaml a}}'}))
+      it('toYaml', async () => {
+        expect(await transform({$defs: {a: {b: 9}}, out: '{{toYaml a}}'}))
           .to.deep.equal({out: 'b: 9\n'});
       });
 
