@@ -1,7 +1,7 @@
 import * as pathmod from 'path';
 import {Md5} from 'ts-md5';
 import * as url from 'url';
-import {loadCFNTemplate} from "./loadCFNTemplate";
+import {loadCFNTemplate, S3_TEMPLATE_MAX_BYTES} from "./loadCFNTemplate";
 
 export async function approvedTemplateVersionLocation(approvedTemplateLocation: string, templatePath: string, baseLocation: string, environment: string): Promise<{
   Bucket: string;
@@ -9,7 +9,7 @@ export async function approvedTemplateVersionLocation(approvedTemplateLocation: 
 }> {
   // const templatePath = path.resolve(path.dirname(location), templatePath);
   // const cfnTemplate = await fs.readFileSync(path.resolve(path.dirname(location), templatePath));
-  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, environment, {omitMetadata: true});
+  const cfnTemplate = await loadCFNTemplate(templatePath, baseLocation, environment, {omitMetadata: true}, S3_TEMPLATE_MAX_BYTES);
   if (cfnTemplate && cfnTemplate.TemplateBody) {
     const s3Url = url.parse(approvedTemplateLocation);
     const s3Path = s3Url.path ? s3Url.path : "";
