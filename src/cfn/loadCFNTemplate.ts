@@ -4,14 +4,16 @@ import {PreprocessOptions, readFromImportLocation, transform} from '../preproces
 import * as yaml from '../yaml';
 import maybeSignS3HttpUrl from './maybeSignS3HttpUrl';
 
-export async function loadCFNTemplate(location0: string, baseLocation: string, environment: string, options: PreprocessOptions = {}): Promise<{
+export const TEMPLATE_MAX_BYTES = 51199;
+export const S3_TEMPLATE_MAX_BYTES = 460799;
+
+export async function loadCFNTemplate(location0: string, baseLocation: string, environment: string, options: PreprocessOptions = {}, maxSize = TEMPLATE_MAX_BYTES): Promise<{
   TemplateBody?: string;
   TemplateURL?: string;
 }> {
   if (_.isUndefined(location0)) {
     return {};
   }
-  const TEMPLATE_MAX_BYTES = 51199;
   const shouldRender = (location0.trim().indexOf('render:') === 0);
   const location = maybeSignS3HttpUrl(location0.trim().replace(/^ *render: */, ''));
   // We auto-sign any s3 http urls here ^ prior to reading from them
@@ -43,7 +45,7 @@ export async function loadCFNTemplate(location0: string, baseLocation: string, e
     const body = shouldRender
       ? yaml.dump(await transform(importData.doc, importData.resolvedLocation, options))
       : importData.data;
-    if (body.length >= TEMPLATE_MAX_BYTES) {
+    if (body.length >= maxSize) {
       throw new Error('Your cloudformation template is larger than the max allowed size. '
         + 'You need to upload it to S3 and reference it from there.');
     }
