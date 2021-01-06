@@ -37,7 +37,7 @@ export async function renderMain(argv0: GenericCLIArguments): Promise<number> {
   const file = isStdin ? 0 : templatePath;
   let output: string[] = [];
 
-  if (fs.statSync(templatePath).isDirectory()) {
+  if (!isStdin && fs.statSync(templatePath).isDirectory()) {
     for (const filename of fs.readdirSync(templatePath)) {
       if (filename.match(/\.(yml|yaml)$/)) {
         const filepath = pathmod.resolve(templatePath, filename);
