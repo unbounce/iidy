@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '12.x'
       - run: npm ci
-      - run: npm test
+      - run: npm run coverage
       - name: Run SonarCloud Scanner
         uses: docker://unbounce/sonarcloud-github-action:stable
         env:
