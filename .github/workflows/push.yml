@@ -1,13 +1,33 @@
 on: push
-name: Build and Publish
+name: Test and report
 jobs:
-  runSonarCloudScanner:
-    name: Run SonarCloud Scanner
+  test:
+    name: Test
     runs-on: ubuntu-latest
+    env:
+      SKIP_IIDY_AWS_TEST: yes
     steps:
-    - uses: actions/checkout@master
-    - name: Run SonarCloud Scanner
-      uses: docker://unbounce/sonarcloud-github-action:stable
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_LOGIN }}
+      - uses: actions/checkout@master
+      - uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - run: npm ci
+      - run: npm run coverage
+      - name: Fix Code Coverage Paths
+        # https://community.sonarsource.com/t/code-coverage-doesnt-work-with-github-action/16747
+        working-directory: ./coverage
+        run: |
+          sed -i "s@${GITHUB_WORKSPACE}@/github/workspace/@g" lcov.info
+      - name: Run SonarCloud Scanner
+        uses: docker://unbounce/sonarcloud-github-action:stable
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_LOGIN }}
