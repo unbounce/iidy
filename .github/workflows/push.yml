@@ -21,6 +21,11 @@ jobs:
           node-version: '12.x'
       - run: npm ci
       - run: npm run coverage
+      - name: Fix Code Coverage Paths
+        # https://community.sonarsource.com/t/code-coverage-doesnt-work-with-github-action/16747
+        working-directory: ./coverage
+        run: |
+          sed -i "s@${GITHUB_WORKSPACE}@/github/workspace/@g" lcov.info
       - name: Run SonarCloud Scanner
         uses: docker://unbounce/sonarcloud-github-action:stable
         env:
