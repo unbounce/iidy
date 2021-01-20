@@ -1,11 +1,26 @@
 on: push
-name: Build and Publish
+name: Test and report
 jobs:
-  runSonarCloudScanner:
-    name: Run SonarCloud Scanner
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    steps:
+  env:
+    SKIP_IIDY_AWS_TEST: yes
+  steps:
     - uses: actions/checkout@master
+    - uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - run: npm ci
+    - run: npm test
     - name: Run SonarCloud Scanner
       uses: docker://unbounce/sonarcloud-github-action:stable
       env:
