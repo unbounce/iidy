@@ -10,7 +10,7 @@ import {diff} from '../../diff';
 import {logger} from '../../logger';
 import {FAILURE, INTERRUPT, SUCCESS} from '../../statusCodes';
 import {approvedTemplateVersionLocation} from "../approvedTemplateVersionLocation";
-import {loadCFNTemplate} from "../loadCFNTemplate";
+import {loadCFNTemplate, S3_TEMPLATE_MAX_BYTES} from "../loadCFNTemplate";
 import {loadStackArgs} from "../loadStackArgs";
 import {lintTemplate} from '../lint';
 
@@ -37,7 +37,7 @@ export async function request(argv: RequestArguments): Promise<number> {
     } catch (e) {
       if (e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
-        const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true});
+        const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true}, S3_TEMPLATE_MAX_BYTES);
         if (argv.lintTemplate && cfnTemplate.TemplateBody) {
           const errors = lintTemplate(cfnTemplate.TemplateBody, stackArgs.Parameters);
           if (!_.isEmpty(errors)) {
