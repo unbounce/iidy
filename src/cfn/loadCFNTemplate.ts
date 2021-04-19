@@ -5,7 +5,7 @@ import * as yaml from '../yaml';
 import maybeSignS3HttpUrl from './maybeSignS3HttpUrl';
 
 export const TEMPLATE_MAX_BYTES = 51199;
-export const S3_TEMPLATE_MAX_BYTES = 460799;
+export const S3_TEMPLATE_MAX_BYTES = 999999;
 
 export async function loadCFNTemplate(location0: string, baseLocation: string, environment: string, options: PreprocessOptions = {}, maxSize = TEMPLATE_MAX_BYTES): Promise<{
   TemplateBody?: string;
