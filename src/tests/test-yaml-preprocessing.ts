@@ -239,7 +239,7 @@ aref: !$ nested.aref`, mockLoader)).to.deep.equal({aref: 'mock'});
           }))
             .excludingEvery(['visited'])
             .to.deep.equal({out: new ctor('abc')});
-        } catch (err) {
+        } catch (err: any) {
           err.message = `${tag_name}: ${err.message}`;
           throw err;
         }

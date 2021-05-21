@@ -44,16 +44,17 @@ handlebars.registerHelper('base64', (context: any) => Buffer.from(context).toStr
 handlebars.registerHelper('toLowerCase', (str: string) => str.toLowerCase());
 handlebars.registerHelper('toUpperCase', (str: string) => str.toUpperCase());
 
-handlebarsHelpers(['string'], { handlebars });
+handlebarsHelpers(['string'], {handlebars});
 
 export function interpolateHandlebarsString(templateString: string, env: object, errorContext: string) {
   try {
     const template = handlebars.compile(templateString, {noEscape: true, strict: true});
     return template(env);
   } catch (e) {
-    logger.debug(e);
+    const errMessage = e instanceof Error ? e.message : `${e}`;
+    logger.debug(errMessage);
     throw new Error(
-      `Error in string template at ${errorContext}:\n       ${e.message}\n       Template: ${templateString}`)
+      `Error in string template at ${errorContext}:\n       ${errMessage}\n       Template: ${templateString}`)
   }
 }
 
@@ -426,9 +427,9 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
     const param = await ssm.getParameter({Name: resolvedLocation, WithDecryption: true}).promise();
     if (param.Parameter && param.Parameter.Value) {
       const data = parseDataFromParamStore(param.Parameter.Value, format);
-        return {resolvedLocation, data, doc: data};
-      } else {
-        throw new Error(
+      return {resolvedLocation, data, doc: data};
+    } else {
+      throw new Error(
         `Invalid ssm parameter ${resolvedLocation} import at ${baseLocation}`);
     }
   },
@@ -451,16 +452,20 @@ export const importLoaders: {[key in ImportType]: ImportLoader} = {
 export async function readFromImportLocation(location: ImportLocation, baseLocation: ImportLocation)
   : Promise<ImportData> {
   // TODO handle relative paths and non-file types
-    const importType = parseImportType(location, baseLocation);
-    try {
-      const importData: ImportData = await importLoaders[importType](location, baseLocation);
-      return _.merge({importType}, importData);
-    } catch (error) {
+  const importType = parseImportType(location, baseLocation);
+  try {
+    const importData: ImportData = await importLoaders[importType](location, baseLocation);
+    return _.merge({importType}, importData);
+  } catch (error) {
+    if (error instanceof Error) {
       throw new ImportError(
         error.message || `Invalid import ${location} import at ${baseLocation}`,
         location, baseLocation, error
       );
+    } else {
+      throw error;
     }
+  }
 }
 
 export async function loadImports(

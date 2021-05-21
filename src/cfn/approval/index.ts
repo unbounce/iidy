@@ -1,4 +1,4 @@
-import {S3} from 'aws-sdk';
+import {S3, AWSError} from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as path from 'path';
@@ -35,7 +35,7 @@ export async function request(argv: RequestArguments): Promise<number> {
       await s3.headObject(s3Args).promise();
       logSuccess(`👍 Your template has already been approved`);
     } catch (e) {
-      if (e.code === "NotFound") {
+      if (e instanceof AWSError && e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
         const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true}, S3_TEMPLATE_MAX_BYTES);
         if (argv.lintTemplate && cfnTemplate.TemplateBody) {
@@ -57,7 +57,7 @@ export async function request(argv: RequestArguments): Promise<number> {
         logSuccess(`Successfully uploaded the cloudformation template to ${stackArgs.ApprovedTemplateLocation}`);
         logSuccess(`Approve template with:\n  iidy template-approval review s3://${s3Args.Bucket}/${s3Args.Key}`);
       } else {
-        throw new Error(e);
+        throw e;
       }
     }
 
@@ -91,7 +91,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
 
     logSuccess(`👍 The template has already been approved`);
   } catch (e) {
-    if (e.code === 'NotFound') {
+    if (e instanceof AWSError && e.code === 'NotFound') {
 
       const pendingTemplate = await s3.getObject({
         Bucket: s3Bucket,
@@ -150,7 +150,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
       }
 
     } else {
-      throw new Error(e);
+      throw e;
     }
   }
 
