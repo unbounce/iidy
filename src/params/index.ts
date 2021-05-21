@@ -134,7 +134,7 @@ async function maybeFetchParam(ssm: aws.SSM, req: aws.SSM.GetParameterRequest): 
     const res = await ssm.getParameter(req).promise();
     return res && res.Parameter;
   } catch (e) {
-    if (e.code && e.code === 'ParameterNotFound') {
+    if (e instanceof aws.AWSError && e.code && e.code === 'ParameterNotFound') {
       return undefined;
     } else {
       throw e;

@@ -2,13 +2,10 @@ diff --git a/node_modules/pkg/prelude/bootstrap.js.bak b/node_modules/pkg/prelud
 index 35b5989..677d270 100644
 --- a/node_modules/pkg/prelude/bootstrap.js.bak
 +++ b/node_modules/pkg/prelude/bootstrap.js
-@@ -1333,6 +1333,9 @@ function payloadFileSync (pointer) {
-     var opts = args[pos];
-     if (!opts.env) opts.env = require('util')._extend({}, process.env);
+@@ -1828,5 +1828,6 @@
+     const opts = args[pos];
+     if (!opts.env) opts.env = _extend({}, process.env);
      if (opts.env.PKG_EXECPATH === 'PKG_INVOKE_NODEJS') return;
-+    if (opts.env.PKG_SKIP_EXECPATH_PATCH) {
-+      return;
-+    }
++    if (opts.env.PKG_SKIP_EXECPATH_PATCH) return;
      opts.env.PKG_EXECPATH = EXECPATH;
    }
- 
