@@ -50,7 +50,7 @@ export function interpolateHandlebarsString(templateString: string, env: object,
   try {
     const template = handlebars.compile(templateString, {noEscape: true, strict: true});
     return template(env);
-  } catch (e) {
+  } catch (e: any) {
     logger.debug(e);
     throw new Error(
       `Error in string template at ${errorContext}:\n       ${e.message}\n       Template: ${templateString}`)
@@ -455,7 +455,7 @@ export async function readFromImportLocation(location: ImportLocation, baseLocat
     try {
       const importData: ImportData = await importLoaders[importType](location, baseLocation);
       return _.merge({importType}, importData);
-    } catch (error) {
+    } catch (error: any) {
       throw new ImportError(
         error.message || `Invalid import ${location} import at ${baseLocation}`,
         location, baseLocation, error

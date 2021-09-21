@@ -162,7 +162,7 @@ export abstract class AbstractCloudFormationStackCommand {
       const createStackOutput = await this.cfn.createStack(createStackInput).promise();
       await this._updateStackTerminationPolicy();
       return this._watchAndSummarize(createStackOutput.StackId as string);
-    } catch (e) {
+    } catch (e: any) {
       if (e.message === 'CreateStack cannot be used with templates containing Transforms.') {
         logger.error(`Your stack template contains an AWS:: Transform so you need to use 'iidy create-or-update ${cli.red('--changeset')}'`);
         return INTERRUPT;
@@ -197,7 +197,7 @@ export abstract class AbstractCloudFormationStackCommand {
       // TODO consider conditionally calling setStackPolicy if the policy has changed
       const updateStackOutput = await this.cfn.updateStack(updateStackInput).promise();
       return this._watchAndSummarize(updateStackOutput.StackId as string);
-    } catch (e) {
+    } catch (e: any) {
       if (e.message === 'No updates are to be performed.') {
         logger.info('No changes detected so no stack update needed.');
         return SUCCESS;

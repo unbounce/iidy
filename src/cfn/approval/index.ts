@@ -34,7 +34,7 @@ export async function request(argv: RequestArguments): Promise<number> {
     try {
       await s3.headObject(s3Args).promise();
       logSuccess(`👍 Your template has already been approved`);
-    } catch (e) {
+    } catch (e: any) {
       if (e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
         const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true}, S3_TEMPLATE_MAX_BYTES);
@@ -90,7 +90,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
     }).promise();
 
     logSuccess(`👍 The template has already been approved`);
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === 'NotFound') {
 
       const pendingTemplate = await s3.getObject({
