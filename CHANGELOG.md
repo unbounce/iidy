@@ -1,8 +1,40 @@
 ### Changelog
 
-#### [1.11.0](https://github.com/unbounce/iidy/compare/v1.10.0...v1.11.0)
+#### [v1.12.0](https://github.com/unbounce/iidy/compare/v1.11.0...v1.12.0)
 
-9 January 2020
+> 29 September 2021
+
+- PQ-229 Use github actions, report code coverage to sonar [`#265`](https://github.com/unbounce/iidy/pull/265)
+- PQ-228 Update sonar docker image and use properties file [`#264`](https://github.com/unbounce/iidy/pull/264)
+- Add !$join function [`#249`](https://github.com/unbounce/iidy/pull/249)
+- Add handlebars-helpers string helpers [`#251`](https://github.com/unbounce/iidy/pull/251)
+- Touches up some spelling and grammar issues [`#244`](https://github.com/unbounce/iidy/pull/244)
+- Avoid calling fs.statSync when input is from stdin [`#260`](https://github.com/unbounce/iidy/issues/260)
+- Fixes spelling of `command-implementations` [`fe8386a`](https://github.com/unbounce/iidy/commit/fe8386a6ed6d6324aa596a6f0b4fa487bb04c3bf)
+- Touches up some spelling/grammar in documentation [`fb52564`](https://github.com/unbounce/iidy/commit/fb52564747a14c736f8ea0fb078662000291bb19)
+- fix spelling mistake in the README [`567a66e`](https://github.com/unbounce/iidy/commit/567a66e7f4a5fe612d4d8ad45d4bcaa9b7bbdaa8)
+- add DELETE_SKIPPED as a colorized status [`d62b766`](https://github.com/unbounce/iidy/commit/d62b766881a207cbaae5a1eb18483d9c227e855b)
+- Accept derived values for !$split and !$join [`39ed8fd`](https://github.com/unbounce/iidy/commit/39ed8fd4732e201fe23bf32522aa3a18873d746a)
+- Add documentation [`a8fb86c`](https://github.com/unbounce/iidy/commit/a8fb86c7c116d6f4421f76c8a5a90e1d1045b539)
+- Add toJson, toYaml alias, accept non literal values [`5ec7d6f`](https://github.com/unbounce/iidy/commit/5ec7d6fb373d370298185937dcd69558e0bff6c3)
+- Bump lodash from 4.17.15 to 4.17.19 [`83ef7f6`](https://github.com/unbounce/iidy/commit/83ef7f6dabff68838bfa08fe72d5a34870eb93be)
+- Use toJsonString/toYamlString [`1b9299a`](https://github.com/unbounce/iidy/commit/1b9299ab960575610a98408de95f382e3b0a4cc6)
+- Clarify what is happening with trailing characters [`afa9de3`](https://github.com/unbounce/iidy/commit/afa9de3d0ee0d70823e62504b560d4a792cd34cf)
+- Add note about purpose of !$split and !$join [`4acdfa0`](https://github.com/unbounce/iidy/commit/4acdfa092fcc9e529a1131352c7ca032489a1f9d)
+- Deprecate non-camelCase helpers [`863b0e9`](https://github.com/unbounce/iidy/commit/863b0e9c034acc0cdfff3a7de917a743fd3116a1)
+- Use S3 template object limit when doing template approval request [`8926290`](https://github.com/unbounce/iidy/commit/892629099a4d719cf74d57809f95831a5d6ccbc9)
+- Bump node-fetch from 2.6.0 to 2.6.1 [`8d7b662`](https://github.com/unbounce/iidy/commit/8d7b6623ac426b1c76c8206c6d455177cc28f1a5)
+- Bump dot-prop from 4.2.0 to 4.2.1 [`bd9b402`](https://github.com/unbounce/iidy/commit/bd9b402716c3fab12e1e4ed2171ecbf4a84d5cb5)
+- bump laundry to v1.6.0 [`944aa66`](https://github.com/unbounce/iidy/commit/944aa66f6c9e93b16e7f6aac64fbc3f8129fe910)
+- updates s3 template size to match new max of 1MB; updates using s3 template size when loading a template for approval since the template will be stored on s3 [`db225b8`](https://github.com/unbounce/iidy/commit/db225b8c09ddb06b38d27b741ab68ba670993dc8)
+- bump deps and update a few exception types as required for ts update [`abd19a9`](https://github.com/unbounce/iidy/commit/abd19a9fa3cd93ba0f101d44f9e5a6f745430e89)
+- update aws-sdk-js version (with our creds cache patch) [`a6b375d`](https://github.com/unbounce/iidy/commit/a6b375dec6cd6c6cd76478801e588544b938aa84)
+- bump node version to 14x [`63747d4`](https://github.com/unbounce/iidy/commit/63747d4a5c0480a4f2507ff05ae403a3710a8719)
+- update gen-changelog script and deps [`c7ec9aa`](https://github.com/unbounce/iidy/commit/c7ec9aa0a886ddcc5a6ffa4c2d9e96256a956b44)
+
+#### [v1.11.0](https://github.com/unbounce/iidy/compare/v1.10.0...v1.11.0)
+
+> 9 January 2020
 
 - PR #235 by @tavisrudd - implement 145: display resource creation times
 - PR #243 by @tavisrudd - fix issue #238: partial writes to stdout when piping render output
@@ -22,7 +54,7 @@
 - PR #224 by @dannosaur - [#223] fix issue with $merge syntax in Resources
 - PR #222 by @tavisrudd - add --color cli option
 
-#### [1.10.0](https://github.com/unbounce/iidy/compare/v1.9.0...v1.10.0)
+#### [v1.10.0](https://github.com/unbounce/iidy/compare/v1.9.0...v1.10.0)
 
 > 6 December 2019
 
