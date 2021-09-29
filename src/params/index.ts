@@ -5,6 +5,7 @@ import * as jsyaml from 'js-yaml';
 
 import {GlobalArguments} from '../cli/utils';
 
+import isAWSError from '../is-aws-error';
 import getCurrentAWSRegion from '../getCurrentAWSRegion';
 import configureAWS from '../configureAWS';
 import def from '../default';
@@ -134,7 +135,7 @@ async function maybeFetchParam(ssm: aws.SSM, req: aws.SSM.GetParameterRequest): 
     const res = await ssm.getParameter(req).promise();
     return res && res.Parameter;
   } catch (e) {
-    if (e instanceof aws.AWSError && e.code && e.code === 'ParameterNotFound') {
+    if (isAWSError(e) && e.code && e.code === 'ParameterNotFound') {
       return undefined;
     } else {
       throw e;

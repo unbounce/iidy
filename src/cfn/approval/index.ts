@@ -1,9 +1,10 @@
-import {S3, AWSError} from 'aws-sdk';
+import {S3} from 'aws-sdk';
 import * as cli from 'cli-color';
 import * as _ from 'lodash';
 import * as path from 'path';
 import * as url from 'url';
 import {GlobalArguments} from '../../cli/utils';
+import isAWSError from '../../is-aws-error';
 import configureAWS from '../../configureAWS';
 import confirmationPrompt from '../../confirmationPrompt';
 import {diff} from '../../diff';
@@ -35,7 +36,7 @@ export async function request(argv: RequestArguments): Promise<number> {
       await s3.headObject(s3Args).promise();
       logSuccess(`👍 Your template has already been approved`);
     } catch (e) {
-      if (e instanceof AWSError && e.code === "NotFound") {
+      if (isAWSError(e) && e.code === "NotFound") {
         s3Args.Key = `${s3Args.Key}.pending`
         const cfnTemplate = await loadCFNTemplate(stackArgs.Template, argv.argsfile, argv.environment, {omitMetadata: true}, S3_TEMPLATE_MAX_BYTES);
         if (argv.lintTemplate && cfnTemplate.TemplateBody) {
@@ -91,7 +92,7 @@ export async function review(argv: ReviewArguments): Promise<number> {
 
     logSuccess(`👍 The template has already been approved`);
   } catch (e) {
-    if (e instanceof AWSError && e.code === 'NotFound') {
+    if (isAWSError(e) && e.code === 'NotFound') {
 
       const pendingTemplate = await s3.getObject({
         Bucket: s3Bucket,
