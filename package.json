@@ -52,7 +52,8 @@
     "yargs": "14.2.0"
   },
   "devDependencies": {
-    "@octokit/rest": "18.10.0",
+    "@octokit/rest": "18.11.2",
+    "@octokit/types": "6.31.1",
     "@types/bluebird": "3.5.36",
     "@types/bluebird-global": "3.5.13",
     "@types/chai": "4.2.22",
