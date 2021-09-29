@@ -1,7 +1,8 @@
 import {spawnSync} from "child_process";
 import * as yargs from 'yargs';
 import * as dateformat from 'dateformat';
-import * as Octokit from "@octokit/rest";
+import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
+type PullsListResponseItem = RestEndpointMethodTypes['pulls']['list']['response']['data'];
 
 const client = new Octokit();
 
@@ -14,7 +15,7 @@ async function listPRs(prevTag: string, currentTag: string) {
   const startDate = getTagDate(prevTag);
   const endDate = getTagDate(currentTag);
 
-  const pulls0: Octokit.PullsListResponseItem[] = await client.paginate(client.pulls.list.endpoint.merge({
+  const pulls0: PullsListResponseItem = await client.paginate(client.pulls.list.endpoint.merge({
     owner: 'unbounce',
     repo: 'iidy',
     state: 'closed',
@@ -30,7 +31,7 @@ async function listPRs(prevTag: string, currentTag: string) {
     ).sort(pr => pr.number);
 
   for (const pr of pulls) {
-    console.log(`- PR #${pr.number} by @${pr.user.login} - ${pr.title}`)
+    console.log(`- PR #${pr.number} by @${pr.user ? pr.user.login : '-'} - ${pr.title}`)
   }
 };
 
