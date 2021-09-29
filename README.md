@@ -102,16 +102,6 @@ ln -s $(pwd)/bin/iidy /usr/local/bin/
 # or npm install -g .
 ```
 
-### Docker Image
-
-A Docker image is automatically published to [Docker
-Hub](https://hub.docker.com/r/unbounce/iidy). The `latest` tag is updated on
-merges to the `master` branch. Releases are tagged with their version number.
-
-```shell
-docker run unbounce/iidy:v1.6.7
-```
-
 ## Usage
 
 ### Help
@@ -359,6 +349,14 @@ modules (what Node uses). See the `Makefile` and the script commands in
 Please format all files with `tsfmt` and remove extra whitespace before
 submitting a PR.
 
+### Releasing
+
+- Run `npm version minor|patch`
+- Run `git push --tags`
+- Run `make prepare_release`to generate the release artifacts for upload
+- Create a [GitHub release](https://github.com/unbounce/iidy/releases) following the template of previous releases
+- Update the [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb) (double check the sha)
+
 ## Global Configuration
 
 Some iidy features can be configured globally via [SSM Parameter
@@ -375,11 +373,3 @@ configurations.
 ## License
 
 MIT.
-
-## Releasing
-
-- Run `npm version minor|patch`
-- Run `git push --tags`
-- Run `make prepare_release`
-- Create a [GitHub release](https://github.com/unbounce/iidy/releases)
-- Update the [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb)
