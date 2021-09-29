@@ -10,7 +10,7 @@
     "build": "tsc -p .",
     "watch": "tsc --watch",
     "lint": "tslint -p . src/*ts src/**/*ts",
-    "pkg-binaries": "pkg --out-path dist -t node12-macos,node12-linux package.json",
+    "pkg-binaries": "pkg --out-path dist -t node14-macos,node14-linux package.json",
     "test": "mocha lib/tests/**/*js",
     "test-watch": "mocha --watch lib/tests/**/*js",
     "ts-test-watch": "mocha --watch src/tests/**/*ts",
@@ -20,7 +20,7 @@
   "repository": "https://github.com/unbounce/iidy",
   "license": "MIT",
   "engines": {
-    "node": ">=12.0.0",
+    "node": ">=14.0.0",
     "npm": ">=6.0.0"
   },
   "dependencies": {
