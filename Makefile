@@ -45,7 +45,7 @@ package: $(RELEASE_PACKAGES)
 	@git diff --quiet --ignore-submodules HEAD || echo -e '\x1b[0;31mWARNING: git workding dir not clean\x1b[0m'
 	@echo
 	@ls -alh dist/*zip
-	@shasum -a 256 dist/* || true
+	@shasum --UNIVERSAL -a 256 dist/* || true
 	@echo
 	@echo open dist/
 
@@ -91,7 +91,7 @@ $(RELEASE_PACKAGES) : $(BUILD_ARTIFACTS)
 	for OS in linux macos; do \
 		cp iidy-$$OS iidy; \
 		zip iidy-$${OS}-amd64.zip iidy;\
-		shasum -p -a 256 iidy-$${OS}-amd64.zip; \
+		shasum --UNIVERSAL -a 256 iidy-$${OS}-amd64.zip; \
 	done
 	rm -f dist/iidy
 
