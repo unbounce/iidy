@@ -551,7 +551,7 @@ export class Visitor {
       logger.debug(`entering ${path}:`, {node, nodeType: typeof node, env});
     }
     const result = (() => {
-      if (currNode === 'Resources' && path.indexOf('Overrides') === -1) {
+      if (currNode === 'Resources' && path === 'Root.Resources') {
         return this.visitResourceNode(node, path, env);
       } else if (currNode === '$envValues') {
         // filtered out in visitMapNode
