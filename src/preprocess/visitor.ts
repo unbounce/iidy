@@ -163,8 +163,10 @@ export class Visitor {
     } else {
       if (_.isArray(node.data)
         && node.data.length === 1
-        && node.data[0] instanceof yaml.Tag) {
+        && node.data[0] instanceof yaml.Tag && !yaml.isCfnIntrinsicTag(node.data[0])) {
         // unwrap Tags like !ImportValue [!$ someVar]
+        // It does not unwrap cfn intrinsics as that would prevent nesting.
+        // See https://github.com/unbounce/iidy/issues/262
         return node.update(this.visitNode(node.data[0], path, env));
       } else {
         return node.update(this.visitNode(node.data, path, env));

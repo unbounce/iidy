@@ -6,6 +6,8 @@ type YamlKind = 'scalar' | 'mapping' | 'sequence';
 
 export class Tag<T = any> {
   ctor: any // see below re fugly
+  tag_name: string;
+
   constructor(private _data: any, public visited: boolean = false) {
     // this.visited is used avoid double visiting/ref-rewriting in iidy's preprocessing step.
     this.ctor = new.target;
@@ -32,6 +34,9 @@ function mkTagClass(tag_name: string) {
 const schemaTypes: jsyaml.Type[] = [];
 export const customTags: {[key: string]: typeof Tag} = {};
 export const cfnIntrinsicTags: {[key: string]: typeof Tag} = {};
+
+export const isCustomIidyTag = (tag: Tag): boolean => Boolean(customTags[tag.tag_name]);
+export const isCfnIntrinsicTag = (tag: Tag): boolean => Boolean(cfnIntrinsicTags[tag.tag_name]);
 
 type Resolver = any;
 
