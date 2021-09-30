@@ -61,12 +61,14 @@ $defs:
 output:
   by-tag: !$ hello
   by-handlebars: "{{hello}}"
+  escaped-handlebars: "\\{{hello}}"
 
 ---
 # output document
 output:
   by-tag: "world"
   by-handlebars: "world"
+  escaped-handlebars: "{{hello}}"
 
 ```
 
@@ -163,7 +165,20 @@ outputs:
 
 See [Importing Data](../README.md#importing-data) for a complete list of import sources.
 
-### Handlebars Helpers
+### Escaping Handlebars braces
+
+If you're using cloudformation [dynamic
+references](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html) such as
+`{{resolve:secretsmanager:MyRDSSecret:SecretString:username}}` you'll need to escape the double braces with a double
+backslash to prevent `iidy` from interpreting them as the start of a handlebars expression.
+
+Handlebars string: `aYamlKey: "{{blah}}"`
+
+Handlebars string: `aYamlKey: "\\{{blah}}"`
+
+See issue [#260](https://github.com/unbounce/iidy/issues/260) for a longer example.
+
+### Handlebars Syntax and Helpers
 
 The [string helpers from
 handlebars-helpers](https://github.com/helpers/handlebars-helpers#string) (such
