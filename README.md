@@ -355,7 +355,7 @@ submitting a PR.
 - Run `git push --tags`
 - Run `make prepare_release`to generate the release artifacts for upload
 - Create a [GitHub release](https://github.com/unbounce/iidy/releases) following the template of previous releases
-- Update the [homebrew forumula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb) (double check the sha)
+- Update the [homebrew formula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb) (double check the sha)
 
 ## Global Configuration
 
