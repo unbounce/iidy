@@ -40,7 +40,7 @@ class CreateStack extends AbstractCloudFormationStackCommand {
 
 class UpdateStack extends AbstractCloudFormationStackCommand {
   cfnOperation: CfnOperation = 'UPDATE_STACK';
-  expectedFinalStackStatus = ['UPDATE_COMPLETE', 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS'];
+  expectedFinalStackStatus = ['UPDATE_COMPLETE'];
 
   async _run() {
     return this._runUpdate();
@@ -130,7 +130,7 @@ export class CreateChangeSet extends AbstractCloudFormationStackCommand {
 
 class ExecuteChangeSet extends AbstractCloudFormationStackCommand {
   cfnOperation: CfnOperation = 'EXECUTE_CHANGESET'
-  expectedFinalStackStatus = ['UPDATE_COMPLETE', 'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS', 'CREATE_COMPLETE']
+  expectedFinalStackStatus = ['UPDATE_COMPLETE', 'CREATE_COMPLETE']
 
   async _run() {
     await this.cfn.executeChangeSet(
