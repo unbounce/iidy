@@ -26,7 +26,7 @@ export async function summarizeStackContents(
   const resourcesPromise = cfn.describeStackResources({StackName: StackId}).promise();
   const exportsPromise = getAllStackExportsWithImports(StackId);
   const changeSetsPromise = cfn.listChangeSets({StackName: StackId}).promise();
-  const stack = await (stackPromise || getStackDescription(StackId));
+  const stack = await (stackPromise || getStackDescription(StackId, true));
   const resources = def([], (await resourcesPromise).StackResources);
   // TODO paginate resource lookup ^
   if (resources.length > 0) {
