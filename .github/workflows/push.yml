@@ -8,7 +8,7 @@ jobs:
       SKIP_IIDY_AWS_TEST: yes
     steps:
       - uses: actions/checkout@master
-      - uses: actions/cache@v1
+      - uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
