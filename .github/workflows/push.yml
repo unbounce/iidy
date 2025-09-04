@@ -27,7 +27,6 @@ jobs:
         run: |
           sed -i "s@${GITHUB_WORKSPACE}@/github/workspace/@g" lcov.info
       - name: Run SonarCloud Scanner
-        uses: docker://unbounce/sonarcloud-github-action:stable
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_LOGIN }}
