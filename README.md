@@ -366,9 +366,18 @@ credentials in a file:
   variables passed through.
 
 So before you start, put credentials for a `sandbox` profile in
-`~/.aws/credentials`. For SSO, export them with
-`aws configure export-credentials --profile <your-sso-profile> --format env`
-and write them to that profile.
+`~/.aws/credentials`:
+
+```ini
+[sandbox]
+aws_access_key_id = ...
+aws_secret_access_key = ...
+aws_session_token = ...
+```
+
+For SSO, `aws configure export-credentials --profile <your-sso-profile>`
+prints these three values. They expire, so get fresh ones just before you
+run `make prepare_release`.
 
 - Set the version.
   - If the version bump was merged in a PR, tag the merge commit:
