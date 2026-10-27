@@ -46,8 +46,9 @@ export function runCommandSet(commands: string[], cwd: string, handleBarsEnv?: o
       'iidy_region': _.get(handleBarsEnv, 'iidy.region'),
       'iidy_environment': _.get(handleBarsEnv, 'iidy.environment')
     }, process.env);
-    shellEnv.PKG_SKIP_EXECPATH_PATCH = 'yes';
-    // ^ workaround for https://github.com/zeit/pkg/issues/376
+    shellEnv.PKG_EXECPATH = '';
+    // ^ stops @yao-pkg/pkg injecting PKG_EXECPATH into child shells, so a
+    // nested packaged iidy parses its own argv (https://github.com/zeit/pkg/issues/376)
     const spawnOptions = {
       cwd,
       shell: fs.existsSync('/bin/bash') ? '/bin/bash' : true,

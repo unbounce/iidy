@@ -92,7 +92,7 @@ mv iidy /usr/local/bin/ # or somewhere more appropriate
 ### Installation from Source
 
 Counter-intuitively, this requires more disk space than the binary
-install. You need Node 7+ and npm 4+ installed.
+install. You need Node 22+ and npm 10+ installed.
 
 ```shell
 git clone git@github.com:unbounce/iidy.git
@@ -351,10 +351,34 @@ submitting a PR.
 
 ### Releasing
 
-- Run `npm version minor|patch`
-- Run `git push --tags`
-- Run `make prepare_release`to generate the release artifacts for upload
-- Create a [GitHub release](https://github.com/unbounce/iidy/releases) following the template of previous releases
+Releases are built on a macOS host with Node 22 and Docker. The
+`pkg-binaries` script builds four binaries: linux and macos, each for x64
+and arm64.
+
+- Set the version. Either run `npm version minor|patch` on master, or, if the
+  version bump was merged in a PR, tag the merge commit:
+  `git tag v$(jq -r .version package.json) && git push origin --tags`
+- Run `make prepare_release` to generate the release artifacts for upload.
+  It needs a clean master that matches `origin/master` and its tag.
+- Check the artifacts before you upload them:
+  - `dist/iidy-macos-arm64 --version` prints the new version.
+  - `PKG_EXECPATH=PKG_INVOKE_NODEJS dist/iidy-macos-arm64 -p process.version`
+    prints the embedded Node version (v22.x).
+  - `docker run --rm --platform linux/amd64 -v $PWD/dist:/dist ubuntu /dist/iidy-linux-amd64 --version`,
+    and the same with `linux/arm64` and `iidy-linux-arm64`.
+- Create a [GitHub release](https://github.com/unbounce/iidy/releases) following the template of previous releases.
+  Upload the eight files from `dist/`: `iidy-{linux,macos}-{amd64,arm64}` and
+  the matching `.zip` files.
+- Build and push the Docker image from a clean clone of the tag:
+
+  ```shell
+  VERSION=v$(jq -r .version package.json)
+  git clone --branch $VERSION https://github.com/unbounce/iidy.git /tmp/iidy-release
+  docker build --platform linux/amd64 -t unbounce/iidy:$VERSION -t unbounce/iidy:latest /tmp/iidy-release
+  docker run --rm --platform linux/amd64 unbounce/iidy:$VERSION --version
+  docker push unbounce/iidy:$VERSION
+  docker push unbounce/iidy:latest
+  ```
 - Update the [homebrew formula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb) (double check the sha)
 
 ## Global Configuration

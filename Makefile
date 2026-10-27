@@ -11,8 +11,10 @@ PREREQS_STATEFILE = .make/done_prereqs
 DEPS_STATEFILE = .make/done_deps
 TESTS_STATEFILE = .make/done_tests
 DOCKER_STATEFILE = .make/done_docker
-BUILD_ARTIFACTS = dist/iidy-macos dist/iidy-linux
-RELEASE_PACKAGES = dist/iidy-macos-amd64.zip dist/iidy-linux-amd64.zip
+BUILD_ARTIFACTS = dist/iidy-macos-x64 dist/iidy-macos-arm64 dist/iidy-linux-x64 dist/iidy-linux-arm64
+RELEASE_PACKAGES = dist/iidy-macos-amd64.zip dist/iidy-macos-arm64.zip dist/iidy-linux-amd64.zip dist/iidy-linux-arm64.zip
+# pkg arch name of the build host, used to pick the binaries the tests run
+HOST_ARCH := $(if $(filter arm64 aarch64,$(shell uname -m)),arm64,x64)
 
 DOCKER_BUILD_ARGS = --force-rm
 ##########################################################################################
@@ -89,20 +91,23 @@ $(BUILD_ARTIFACTS) : $(DEPS_STATEFILE) $(SRC_FILES)
 $(RELEASE_PACKAGES) : $(BUILD_ARTIFACTS)
 	cd dist && \
 	for OS in linux macos; do \
-		cp iidy-$$OS iidy; \
-		zip iidy-$${OS}-amd64.zip iidy;\
-		shasum --UNIVERSAL -a 256 iidy-$${OS}-amd64.zip; \
+		cp iidy-$$OS-x64 iidy-$$OS-amd64; \
+		for ARCH in amd64 arm64; do \
+			cp iidy-$$OS-$$ARCH iidy; \
+			zip iidy-$${OS}-$${ARCH}.zip iidy;\
+			shasum --UNIVERSAL -a 256 iidy-$${OS}-$${ARCH}.zip; \
+		done; \
 	done
 	rm -f dist/iidy
 
 $(TESTS_STATEFILE) : $(BUILD_ARTIFACTS) $(EXAMPLE_FILES)
 # initial sanity checks:
 ifeq ($(shell uname),Darwin)
-	dist/iidy-macos help | grep argsfile > /dev/null
+	dist/iidy-macos-$(HOST_ARCH) help | grep argsfile > /dev/null
 endif
 # functional tests:
 	mkdir -p dist/docker/
-	cp dist/iidy-linux dist/docker/iidy
+	cp dist/iidy-linux-$(HOST_ARCH) dist/docker/iidy
 	cp Dockerfile.test dist/docker/Dockerfile
 	cp Makefile.test dist/docker/Makefile
 	cp -a examples dist/docker/
