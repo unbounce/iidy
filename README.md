@@ -92,7 +92,7 @@ mv iidy /usr/local/bin/ # or somewhere more appropriate
 ### Installation from Source
 
 Counter-intuitively, this requires more disk space than the binary
-install. You need Node 7+ and npm 4+ installed.
+install. You need Node 22+ installed.
 
 ```shell
 git clone git@github.com:unbounce/iidy.git
@@ -351,10 +351,63 @@ submitting a PR.
 
 ### Releasing
 
-- Run `npm version minor|patch`
-- Run `git push --tags`
-- Run `make prepare_release`to generate the release artifacts for upload
-- Create a [GitHub release](https://github.com/unbounce/iidy/releases) following the template of previous releases
+Releases are built on a macOS host with Node 22, Docker and `jq`. The
+`pkg-binaries` script builds four binaries: linux and macos, each for x64
+and arm64.
+
+`make prepare_release` runs `make test`, and both its steps need AWS
+credentials in a file:
+
+- `npm test` stops with `no credentials found in ~/.aws` if `~/.aws` exists
+  but `~/.aws/credentials` does not (for example, on a machine that uses only
+  SSO profiles).
+- The functional test runs `examples/hello-world` in Docker against the
+  `sandbox` profile in us-west-2, with `~/.aws` mounted and your `AWS_*`
+  variables passed through.
+
+So before you start, put credentials for a `sandbox` profile in
+`~/.aws/credentials`:
+
+```ini
+[sandbox]
+aws_access_key_id = ...
+aws_secret_access_key = ...
+aws_session_token = ...
+```
+
+For SSO, `aws configure export-credentials --profile <your-sso-profile>`
+prints these three values. They expire, so get fresh ones just before you
+run `make prepare_release`.
+
+- Set the version.
+  - If the version bump was merged in a PR, tag the merge commit:
+    `git tag v$(jq -r .version package.json) && git push origin v$(jq -r .version package.json)`
+  - Otherwise, run `npm version minor|patch` on master, then
+    `git push origin master --follow-tags`.
+- Run `make prepare_release` to generate the release artifacts for upload.
+  It needs a clean master that matches `origin/master` and its tag.
+- Check the artifacts before you upload them:
+  - `dist/iidy-macos-arm64 --version` prints the new version.
+  - `PKG_EXECPATH=PKG_INVOKE_NODEJS dist/iidy-macos-arm64 -p process.version`
+    prints the embedded Node version (v22.x).
+  - Run `dist/iidy-macos-amd64 --version` on an Intel Mac. On Apple Silicon,
+    run it with `arch -x86_64` (this needs Rosetta).
+  - `docker run --rm --platform linux/amd64 -v $PWD/dist:/dist ubuntu /dist/iidy-linux-amd64 --version`,
+    and the same with `linux/arm64` and `iidy-linux-arm64`.
+- Create a [GitHub release](https://github.com/unbounce/iidy/releases) following the template of previous releases.
+  Upload the eight files from `dist/`: `iidy-{linux,macos}-{amd64,arm64}` and
+  the matching `.zip` files.
+- Build and push the Docker image from a clean clone of the tag:
+
+  ```shell
+  VERSION=v$(jq -r .version package.json)
+  rm -rf /tmp/iidy-release
+  git clone --branch $VERSION https://github.com/unbounce/iidy.git /tmp/iidy-release
+  docker build --platform linux/amd64 -t unbounce/iidy:$VERSION -t unbounce/iidy:latest /tmp/iidy-release
+  docker run --rm --platform linux/amd64 unbounce/iidy:$VERSION --version
+  docker push unbounce/iidy:$VERSION
+  docker push unbounce/iidy:latest
+  ```
 - Update the [homebrew formula](https://github.com/unbounce/homebrew-taps/blob/master/iidy.rb) (double check the sha)
 
 ## Global Configuration

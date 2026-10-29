@@ -50,8 +50,9 @@ class DemoRunner {
   constructor(demoscript: string, timescaling = 1) {
     this.demoscript = demoscript;
     this.bashEnv = _.merge({}, process.env);
-    this.bashEnv.PKG_SKIP_EXECPATH_PATCH = 'yes';
-    // ^ workaround for https://github.com/zeit/pkg/issues/376
+    this.bashEnv.PKG_EXECPATH = '';
+    // ^ stops @yao-pkg/pkg injecting PKG_EXECPATH into child shells, so a
+    // nested packaged iidy parses its own argv (https://github.com/zeit/pkg/issues/376)
     this.timescaling = timescaling;
     this.tmpdir = tmp.dirSync();
   }
